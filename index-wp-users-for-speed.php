@@ -11,7 +11,7 @@
  * Plugin Name: Index WP Users For Speed
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with many users.
- * Version:           0.0.1
+ * Version:           1.0.0
  * Requires at least: 5.2
  * Tested up to:      5.9.1
  * Requires PHP:      5.6
@@ -34,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '0.0.1' );
+define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
 
 /**
  * The code that runs during plugin activation.
