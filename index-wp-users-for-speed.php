@@ -38,7 +38,7 @@ define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
 
 /**
  * The code that runs during plugin activation.
- * This action is documented in includes/class-index-wp-users-for-speed-activator.php
+ * This action is documented in includes/class-index- wp-users-for-speed-activator.php
  */
 function activate_index_wp_users_for_speed() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-activator.php';

@@ -144,7 +144,7 @@ class Index_Wp_Users_For_Speed {
   }
 
   /**
-   * Register all of the hooks related to the admin area functionality
+   * Register all the hooks related to the admin area functionality
    * of the plugin.
    *
    * @since    1.0.0
@@ -159,7 +159,23 @@ class Index_Wp_Users_For_Speed {
 
     $this->loader->add_action( 'admin_init', $plugin_admin, 'admin_init', 10, 0 );
     $this->loader->add_action( 'set_user_role', $plugin_admin, 'set_user_role', 10, 3 );
-    $this->loader->add_filter( 'views_users', $plugin_admin, 'filter_view_list', 10, 1 );
+    $this->loader->add_action( 'delete_user', $plugin_admin, 'delete_user', 10, 3 );
+    $this->loader->add_action( 'add_user_to_blog', $plugin_admin, 'add_user_to_blog', 10, 3 );
+
+    $this->loader->add_action( 'wpmu_delete_user', $plugin_admin, 'wpmu_delete_user', 10, 2 );
+    $this->loader->add_action( 'wpmu_activate_user', $plugin_admin, 'wpmu_activate_user', 10, 3 );
+    $this->loader->add_action( 'added_existing_user', $plugin_admin, 'added_existing_user', 10, 2 );
+    $this->loader->add_action( 'network_site_new_created_user', $plugin_admin, 'network_site_new_created_user', 10, 1 );
+    $this->loader->add_action( 'network_site_users_created_user', $plugin_admin, 'network_site_users_created_user', 10, 1 );
+    $this->loader->add_filter( 'users_list_table_query_args', $plugin_admin, 'users_list_table_query_args', 10, 1 );
+    $this->loader->add_filter( 'views_users', $plugin_admin, 'views_users', 10, 1 );
+
+    $this->loader->add_filter( 'wp_dropdown_users_args', $plugin_admin, 'wp_dropdown_users_args', 10, 2 );
+    $this->loader->add_filter( 'quick_edit_dropdown_authors_args', $plugin_admin, 'quick_edit_dropdown_authors_args', 10, 2 );
+    $this->loader->add_filter( 'rest_user_query', $plugin_admin, 'rest_user_query', 10, 2 );
+    $this->loader->add_filter( 'pre_user_query', $plugin_admin, 'pre_user_query', 10, 2 );
+    $this->loader->add_filter( 'users_pre_query', $plugin_admin, 'users_pre_query', 10, 2 );
+
   }
 
   /**
@@ -184,7 +200,7 @@ class Index_Wp_Users_For_Speed {
   }
 
   /**
-   * Register all of the hooks related to the public-facing functionality
+   * Register all the hooks related to the public-facing functionality
    * of the plugin.
    *
    * @since    1.0.0
@@ -200,7 +216,7 @@ class Index_Wp_Users_For_Speed {
   }
 
   /**
-   * Run the loader to execute all of the hooks with WordPress.
+   * Run the loader to execute all the hooks with WordPress.
    *
    * @since    1.0.0
    */
