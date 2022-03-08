@@ -26,7 +26,7 @@
  */
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+  die;
 }
 
 /**
@@ -35,14 +35,17 @@ if ( ! defined( 'WPINC' ) ) {
  * Rename this for your plugin and update it as you release new versions.
  */
 define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
+define( 'INDEX_WP_USERS_FOR_SPEED_PREFIX', 'index_wp_users_' );
+define( 'INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME', 60 );
+define( 'INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME', 300 );
 
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-index- wp-users-for-speed-activator.php
  */
 function activate_index_wp_users_for_speed() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-activator.php';
-	Index_Wp_Users_For_Speed_Activator::activate();
+  require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-activator.php';
+  Index_Wp_Users_For_Speed_Activator::activate();
 }
 
 /**
@@ -50,8 +53,8 @@ function activate_index_wp_users_for_speed() {
  * This action is documented in includes/class-index-wp-users-for-speed-deactivator.php
  */
 function deactivate_index_wp_users_for_speed() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-deactivator.php';
-	Index_Wp_Users_For_Speed_Deactivator::deactivate();
+  require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-deactivator.php';
+  Index_Wp_Users_For_Speed_Deactivator::deactivate();
 }
 
 register_activation_hook( __FILE__, 'activate_index_wp_users_for_speed' );
@@ -74,8 +77,9 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed.p
  */
 function run_index_wp_users_for_speed() {
 
-	$plugin = new Index_Wp_Users_For_Speed();
-	$plugin->run();
+  $plugin = new Index_Wp_Users_For_Speed();
+  $plugin->run();
 
 }
+
 run_index_wp_users_for_speed();

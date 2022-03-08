@@ -1,14 +1,6 @@
 <?php
 
-/**
- * The admin-specific functionality of the plugin.
- *
- * @link       https://github.com/OllieJones
- * @since      1.0.0
- *
- * @package    Index_Wp_Users_For_Speed
- * @subpackage Index_Wp_Users_For_Speed/admin
- */
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-index-wp-users-for-speed-indexing.php';
 
 /**
  * The admin-specific functionality of the plugin.
@@ -16,16 +8,17 @@
  * Defines the plugin name, version, and two examples hooks for how to
  * enqueue the admin-specific stylesheet and JavaScript.
  *
+ * @link       https://github.com/OllieJones
  * @package    Index_Wp_Users_For_Speed
  * @subpackage Index_Wp_Users_For_Speed/admin
  * @author     Ollie Jones <oj@plumislandmedia.net>
  */
 class Index_Wp_Users_For_Speed_Admin {
 
-  /**
-   * @var int lifetime of transients.
+  /** List of author IDs.
+   * @var array
    */
-  public $timeToLive = 60;
+  public $authors = [];
   /**
    * The ID of this plugin.
    *
@@ -42,7 +35,7 @@ class Index_Wp_Users_For_Speed_Admin {
    * @var      string $version The current version of this plugin.
    */
   private $version;
-  private $userCounts;
+  private $indexer;
 
   /**
    * Initialize the class and set its properties.
@@ -56,6 +49,9 @@ class Index_Wp_Users_For_Speed_Admin {
 
     $this->plugin_name = $plugin_name;
     $this->version     = $version;
+    $this->indexer     = Index_Wp_Users_For_Speed_Indexing::getInstance();
+    $this->authors     = range( 0, 20 );  //TODO get this right.
+
 
   }
 
@@ -107,26 +103,11 @@ class Index_Wp_Users_For_Speed_Admin {
     if ( wp_doing_ajax() || wp_doing_cron() || ! is_admin() ) {
       return;
     }
-    $this->getUserCounts();
+    $this->indexer->getUserCounts();
     /* once we have a user count cached, we can intercept further counting */
     add_filter( 'pre_count_users', [ $this, 'memoized_pre_count_users' ], 10, 3 );
   }
 
-  private function getUserCounts() {
-    if ( is_array( $this->userCounts ) ) {
-      return $this->userCounts;
-    }
-    $transientName = $this->plugin_name . "_user_counts";
-    $userCounts    = get_transient( $transientName );
-    if ( $userCounts === false ) {
-      $userCounts = count_users();
-      set_transient( $transientName, $userCounts, $this->timeToLive );
-    }
-    $this->userCounts = $userCounts;
-
-    return $userCounts;
-
-  }
 
   public function delete_user( $user_id, $reassign, $user ) {
     $a = $user;
@@ -136,31 +117,12 @@ class Index_Wp_Users_For_Speed_Admin {
     $restoreBlogId = get_current_blog_id();
     try {
       switch_to_blog( $blog_id );
-      $userCounts = $this->getUserCounts();
-      $this->updateUserCounts( $userCounts, $role, + 1 );
-      $this->setUserCounts( $userCounts );
+      $this->indexer->getUserCounts();
+      $this->indexer->updateUserCounts( $role, + 1 );
+      $this->indexer->setUserCounts();
     } finally {
       switch_to_blog( $restoreBlogId );
     }
-  }
-
-  private function updateUserCounts( &$userCounts, $role, $value ) {
-    if ( is_array( $userCounts['avail_roles'] ) ) {
-      if ( ! array_key_exists( $role, $userCounts['avail_roles'] ) ) {
-        $userCounts['avail_roles'][ $role ] = 0;
-      }
-      $userCounts['avail_roles'][ $role ] += $value;
-      if ( $userCounts['avail_roles'][ $role ] === 0 ) {
-        unset ( $userCounts['avail_roles'][ $role ] );
-      }
-
-    }
-  }
-
-  private function setUserCounts( $userCounts ) {
-    $transientName = $this->plugin_name . "_user_counts";
-    set_transient( $transientName, $userCounts, $this->timeToLive );
-    $this->userCounts = $userCounts;
   }
 
   /**
@@ -197,12 +159,12 @@ class Index_Wp_Users_For_Speed_Admin {
    * @return void
    */
   public function set_user_role( $user_id, $newRole, $oldRoles ) {
-    $userCounts = $this->getUserCounts();
-    $this->updateUserCounts( $userCounts, $newRole, + 1 );
-    foreach ( $oldRoles as $role ) {
-      $this->updateUserCounts( $userCounts, $role, - 1 );
+    $this->indexer->getUserCounts();
+    $this->indexer->updateUserCounts( $newRole, + 1 );
+    foreach ( $oldRoles as $oldRole ) {
+      $this->indexer->updateUserCounts( $oldRole, - 1 );
     }
-    $this->setUserCounts( $userCounts );
+    $this->indexer->setUserCounts();
   }
 
   /** count users.
@@ -214,7 +176,7 @@ class Index_Wp_Users_For_Speed_Admin {
    * @return array
    */
   public function memoized_pre_count_users( $result, $strategy, $site_id ) {
-    return $this->getUserCounts();
+    return $this->indexer->getUserCounts();
   }
 
   /** filter the data going into the list of views -- the line with the user counts and links.
@@ -242,7 +204,7 @@ class Index_Wp_Users_For_Speed_Admin {
    *
    */
   public function wp_dropdown_users_args( $query_args, $parsed_args ) {
-    $query_args['include'] = range( 0, 20 );
+    $query_args['include'] = $this->authors;
 
     return $query_args;
   }
@@ -299,7 +261,7 @@ class Index_Wp_Users_For_Speed_Admin {
   public function rest_user_query( $prepared_args, $request ) {
     if ( $request->get_param( 'context' ) === 'view' && $request->get_param( 'who' ) === 'authors' ) {
       /* this rest query does SQL_CALC_FOUND_ROWS and pagination. */
-      $prepared_args['include'] = range( 0, 20 );
+      $prepared_args['include'] = $this->authors;
     }
 
     return $prepared_args;

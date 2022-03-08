@@ -22,20 +22,22 @@
  */
 class Index_Wp_Users_For_Speed_Activator {
 
-	/**
-	 * Short Description. (use period)
-	 *
-	 * Long Description.
-	 *
-	 * @since    1.0.0
-	 */
-	public static function activate() {
+  /**
+   * Short Description. (use period)
+   *
+   * Long Description.
+   *
+   * @since    1.0.0
+   */
+  public static function activate() {
     global $iufs_db_version;
     $iufs_db_version = '1.0';
 
-    Index_Wp_Users_For_Speed_Activator::createTables ();
+    Index_Wp_Users_For_Speed_Activator::createTables();
 
-	}
+    Index_Wp_Users_For_Speed_Activator::startIndexing();
+
+  }
 
   /** Create necessary tables.
    * @see https://codex.wordpress.org/Creating_Tables_with_Plugins
@@ -44,26 +46,34 @@ class Index_Wp_Users_For_Speed_Activator {
    */
   private static function createTables() {
 
-      global $wpdb;
-      global $iufs_db_version;
+    global $wpdb;
+    global $iufs_db_version;
+    require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
-      $userattributes = $wpdb->prefix . 'iufs_userattributes';
+    $userattributes = $wpdb->prefix . 'iufs_userattributes';
 
-      $charset_collate = $wpdb->get_charset_collate();
+    $charset_collate = $wpdb->get_charset_collate();
 
-      $sql = "CREATE TABLE $userattributes (
-		user_id bigint(20) NOT NULL,
-		time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-		name tinytext NOT NULL,
-		text text NOT NULL,
-		url varchar(55) DEFAULT '' NOT NULL,
-		PRIMARY KEY  (user_id)
-	) $charset_collate;";
+// TODO put this back if we need it.
+//      $sql = "CREATE TABLE $userattributes (
+//		user_id bigint(20) NOT NULL,
+//		time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+//		name tinytext NOT NULL,
+//		text text NOT NULL,
+//		url varchar(55) DEFAULT '' NOT NULL,
+//		PRIMARY KEY  (user_id)
+//	) $charset_collate;";
+//
+//      dbDelta( $sql );
 
-      require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-      dbDelta( $sql );
+    add_option( 'iufs_db_version', $iufs_db_version );
+  }
 
-      add_option( 'iufs_db_version', $iufs_db_version );
-    }
+  /**
+   * @return void
+   */
+  private static function startIndexing() {
+
+  }
 
 }
