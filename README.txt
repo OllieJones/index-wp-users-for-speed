@@ -52,7 +52,13 @@ e.g.
 
 1. Upload `index-wp-users-for-speed.php` to the `/wp-content/plugins/` directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php do_action('plugin_name_hook'); ?>` in your templates
+1. On the Users menu, visit the Index For Speed tab.
+
+= Credits =
+* "Crowd", a photo by James Cridland, in the banner and icon. [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
+* Japreet Sethi for advice, and for testing on his large installation.
+* Rick James for everything.
+
 
 == Frequently Asked Questions ==
 
