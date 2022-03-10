@@ -6,6 +6,8 @@ class Index_Wp_Users_For_Speed_Indexing {
   protected static $singleInstance;
   private $userCounts;
 
+  private $recursionLevel = 0;
+
   protected function __construct() {
   }
 

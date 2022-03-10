@@ -18,7 +18,7 @@ class Index_Wp_Users_For_Speed_Admin {
   /** List of author IDs.
    * @var array
    */
-  public $authors = [];
+  public $authorIdKludge = [];
   /**
    * The ID of this plugin.
    *
@@ -37,6 +37,12 @@ class Index_Wp_Users_For_Speed_Admin {
   private $version;
   private $indexer;
 
+  private $pluginPath;
+
+  private $recursionLevelBySite = [];
+
+  private $menuSlugName;
+
   /**
    * Initialize the class and set its properties.
    *
@@ -47,13 +53,54 @@ class Index_Wp_Users_For_Speed_Admin {
    */
   public function __construct( $plugin_name, $version ) {
 
-    $this->plugin_name = $plugin_name;
-    $this->version     = $version;
-    $this->indexer     = Index_Wp_Users_For_Speed_Indexing::getInstance();
-    $this->authors     = range( 0, 20 );  //TODO get this right.
+    $this->plugin_name    = $plugin_name;
+    $this->version        = $version;
+    $this->indexer        = Index_Wp_Users_For_Speed_Indexing::getInstance();
+    $this->authorIdKludge = range( 0, 20 );  //TODO get this right.
+    $this->pluginPath     = plugin_dir_path( dirname( __FILE__ ) );
+  }
 
+  public function admin_menu() {
+
+
+    add_users_page(
+      esc_html__( 'Index WP Users For Speed', 'index-wp-users-for-speed' ),
+      esc_html__( 'Index For Speed', 'index-wp-users-for-speed' ),
+      'manage_options',
+      $this->plugin_name,
+      [ $this, 'render_admin_page' ],
+      12 );
 
   }
+
+  public function render_admin_page() {
+    include_once $this->pluginPath . 'admin/views/page.php';
+  }
+
+  /** untrusted post action
+   * @return void
+   */
+  public function post_action_unverified() {
+    $valid = check_admin_referer ( $this->plugin_name, 'reindex' );
+    if ( $valid === 1 ) {
+      if ( current_user_can( 'update_options' ) ) {
+        do_action( $this->plugin_name . '-post-action', $_REQUEST );
+        wp_safe_redirect( $_REQUEST['_wp_http_referer'] );
+        return;
+      }
+    }
+    status_header( 403 );
+  }
+
+  /** Form post action handler, after verification.
+   * @param array $params
+   *
+   * @return void
+   */
+  public function post_action( $params ) {
+    $q = $params;
+  }
+
 
   /**
    * Register the stylesheets for the admin area.
@@ -99,15 +146,10 @@ class Index_Wp_Users_For_Speed_Admin {
     wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
   }
 
-  public function admin_init() {
-    if ( wp_doing_ajax() || wp_doing_cron() || ! is_admin() ) {
-      return;
-    }
-    $this->indexer->getUserCounts();
-    /* once we have a user count cached, we can intercept further counting */
-    add_filter( 'pre_count_users', [ $this, 'memoized_pre_count_users' ], 10, 3 );
-  }
+  public function button_click_callback( $value, $request, $param ) {
+    $o = $value;
 
+  }
 
   public function delete_user( $user_id, $reassign, $user ) {
     $a = $user;
@@ -115,14 +157,11 @@ class Index_Wp_Users_For_Speed_Admin {
 
   public function add_user_to_blog( $user_id, $role, $blog_id ) {
     $restoreBlogId = get_current_blog_id();
-    try {
-      switch_to_blog( $blog_id );
-      $this->indexer->getUserCounts();
-      $this->indexer->updateUserCounts( $role, + 1 );
-      $this->indexer->setUserCounts();
-    } finally {
-      switch_to_blog( $restoreBlogId );
-    }
+    switch_to_blog( $blog_id );
+    $this->indexer->getUserCounts();
+    $this->indexer->updateUserCounts( $role, + 1 );
+    $this->indexer->setUserCounts();
+    switch_to_blog( $restoreBlogId );
   }
 
   /**
@@ -175,22 +214,23 @@ class Index_Wp_Users_For_Speed_Admin {
    *
    * @return array
    */
-  public function memoized_pre_count_users( $result, $strategy, $site_id ) {
-    return $this->indexer->getUserCounts();
-  }
+  public function pre_count_users( $result, $strategy, $site_id ) {
+    if ( ! array_key_exists( $site_id, $this->recursionLevelBySite ) ) {
+      $this->recursionLevelBySite[ $site_id ] = 0;
+    }
+    if ( $this->recursionLevelBySite[ $site_id ] > 0 ) {
+      return $result;
+    }
+    $previousId = get_current_blog_id();
+    switch_to_blog( $site_id );
 
-  /** filter the data going into the list of views -- the line with the user counts and links.
-   *
-   *    TODO this is the wrong name for the filter hook.
-   *
-   * @param array list of views
-   *
-   * @return array list of views, changed if necessary
-   */
-  public function views_users( $result ) {
-    $o = $result;
+    $this->recursionLevelBySite[ $site_id ] ++;
+    $output = $this->indexer->getUserCounts();
+    $this->recursionLevelBySite[ $site_id ] --;
 
-    return $result;
+    switch_to_blog( $previousId );
+
+    return $output;
   }
 
   /**
@@ -204,7 +244,7 @@ class Index_Wp_Users_For_Speed_Admin {
    *
    */
   public function wp_dropdown_users_args( $query_args, $parsed_args ) {
-    $query_args['include'] = $this->authors;
+    $query_args['include'] = $this->authorIdKludge;
 
     return $query_args;
   }
@@ -247,7 +287,6 @@ class Index_Wp_Users_For_Speed_Admin {
     $q = $query;
   }
 
-
   /**
    * Filters WP_User_Query arguments when querying users via the REST API.
    *
@@ -261,7 +300,7 @@ class Index_Wp_Users_For_Speed_Admin {
   public function rest_user_query( $prepared_args, $request ) {
     if ( $request->get_param( 'context' ) === 'view' && $request->get_param( 'who' ) === 'authors' ) {
       /* this rest query does SQL_CALC_FOUND_ROWS and pagination. */
-      $prepared_args['include'] = $this->authors;
+      $prepared_args['include'] = $this->authorIdKludge;
     }
 
     return $prepared_args;
@@ -286,6 +325,10 @@ class Index_Wp_Users_For_Speed_Admin {
    */
   public function users_pre_query( $results, $query ) {
     return $results;  /* unmodified, this is null */
+  }
+
+  protected function showMessage() {
+    return true;  //TODO HACK HACK
   }
 
 }

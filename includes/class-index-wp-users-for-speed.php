@@ -154,10 +154,16 @@ class Index_Wp_Users_For_Speed {
 
     $plugin_admin = new Index_Wp_Users_For_Speed_Admin( $this->get_plugin_name(), $this->get_version() );
 
+    /* admin page stuff */
+    $this->loader->add_action( 'admin_menu', $plugin_admin, 'admin_menu' );
+
+
     $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
     $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
-    $this->loader->add_action( 'admin_init', $plugin_admin, 'admin_init', 10, 0 );
+    $this->loader->add_action( 'admin_post_index-wp-users-for-speed-action', $plugin_admin, 'post_action_unverified' );
+    $this->loader->add_action( $this->plugin_name . '-post-action', $plugin_admin, 'post_action', 10, 1);
+
     $this->loader->add_action( 'set_user_role', $plugin_admin, 'set_user_role', 10, 3 );
     $this->loader->add_action( 'delete_user', $plugin_admin, 'delete_user', 10, 3 );
     $this->loader->add_action( 'add_user_to_blog', $plugin_admin, 'add_user_to_blog', 10, 3 );
@@ -168,8 +174,8 @@ class Index_Wp_Users_For_Speed {
     $this->loader->add_action( 'network_site_new_created_user', $plugin_admin, 'network_site_new_created_user', 10, 1 );
     $this->loader->add_action( 'network_site_users_created_user', $plugin_admin, 'network_site_users_created_user', 10, 1 );
     $this->loader->add_filter( 'users_list_table_query_args', $plugin_admin, 'users_list_table_query_args', 10, 1 );
-    $this->loader->add_filter( 'views_users', $plugin_admin, 'views_users', 10, 1 );
 
+    $this->loader->add_filter( 'pre_count_users', $plugin_admin, 'pre_count_users', 1, 3 );
     $this->loader->add_filter( 'wp_dropdown_users_args', $plugin_admin, 'wp_dropdown_users_args', 10, 2 );
     $this->loader->add_filter( 'quick_edit_dropdown_authors_args', $plugin_admin, 'quick_edit_dropdown_authors_args', 10, 2 );
     $this->loader->add_filter( 'rest_user_query', $plugin_admin, 'rest_user_query', 10, 2 );

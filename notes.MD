@@ -1,4 +1,4 @@
-wp_usermeta
+wp_usermeta.meta_key = 'wp_capabilities'
 ---
 | COUNT(*) | meta_value |
 | ---: | --- |
@@ -9,6 +9,9 @@ wp_usermeta
 | 34 | a:1:{s:15:"css_js_designer";b:1;} |
 | 29 | a:1:{s:10:"translator";b:1;} |
 | 1 | a:2:{s:13:"administrator";b:1;s:14:"backwpup_admin";b:1;} |
+
+
+## Hooks....
 
 ```php
 		return apply_filters_ref_array( 'get_meta_sql', array( $sql, $this->queries, $type, $primary_table, $primary_id_column, $context ) );
@@ -176,3 +179,65 @@ wp_usermeta
 
 ## Gets users for Gutenberg editor.
 http://ubu2010.plumislandmedia.local/wp-json/wp/v2/users?context=view&who=authors&per_page=50&_fields=id,name&_locale=user
+
+
+Here's a query to populate the easily readable caps meta
+
+```sql
+# noinspection SqlNoDataSourceInspectionForFile
+# noinspection SqlResolve
+-- INSERT INTO wp_usermeta (user_id, meta_key)
+SELECT a.user_id, meta_key
+  FROM (
+           SELECT user_id, 'wp_caps_edit_posts' meta_key
+             FROM wp_usermeta
+            WHERE wp_usermeta.meta_value LIKE '%\"edit\\_posts\"%'
+            UNION ALL
+           SELECT user_id, 'wp_caps_administrator'
+             FROM wp_usermeta
+            WHERE wp_usermeta.meta_value LIKE '%\"administrator\"%'
+            UNION ALL
+           SELECT user_id, 'wp_caps_editor'
+             FROM wp_usermeta
+            WHERE wp_usermeta.meta_value LIKE '%\"editor\"%'
+            UNION ALL
+           SELECT user_id ID, 'wp_caps_author'
+             FROM wp_usermeta
+            WHERE wp_usermeta.meta_value LIKE '%\"author\"%'
+            UNION ALL
+           SELECT user_id ID, 'wp_caps_contributor'
+             FROM wp_usermeta
+            WHERE wp_usermeta.meta_value LIKE '%\"contributor\"%'
+           -- UNION ALL
+           -- SELECT user_id ID, 'wp_caps_subscriber' FROM wp_usermeta WHERE wp_usermeta.meta_value LIKE '%\"subscriber\"%'
+       ) a
+       LEFT JOIN (
+                     SELECT user_id
+                       FROM wp_usermeta
+                      WHERE meta_key IN
+                            ('wp_caps_edit_posts', 'wp_caps_administrator', 'wp_caps_editor', 'wp_caps_author',
+                             'wp_caps_contributor', 'wp_caps_subscriber')
+                 ) b ON a.user_id = b.user_id
+ WHERE b.user_id IS NULL
+-- LIMIT 5
+
+
+```
+
+## Error message
+
+Right after adding a user from the entire site.
+
+(Maybe a problem with users added by WP Demo)
+
+```
+Fatal error: Uncaught Error: Cannot create references to/from string offsets
+in /var/www/ubu2010.plumislandmedia.local/wp-admin/includes/class-wp-users-list-table.php on line 191
+
+Call stack:
+
+WP_Users_List_Table::get_views()
+wp-admin/includes/class-wp-list-table.php:398
+WP_List_Table::views()
+wp-admin/users.php:641
+```
