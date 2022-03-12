@@ -1,5 +1,7 @@
 <?php
 
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/count-users.php';
+
 class Index_Wp_Users_For_Speed_Indexing {
 
   /* a simple singleton class */
@@ -28,22 +30,31 @@ class Index_Wp_Users_For_Speed_Indexing {
     }
     $transientName    = INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts";
     $this->userCounts = get_transient( $transientName );
-    if ( $this->userCounts === false ) {
+    if ( $this->userCounts === false || ( isset( $this->userCounts['complete'] ) && ! $this->userCounts['complete'] ) ) {
       /* no user counts yet. We will fake them until they're available */
       $this->userCounts = $this->fakeUserCounts();
-      $this->setUserCounts(  );
+      $this->setUserCounts();
+      $countAll = new CountUsers();
+      $countAll->doAll();
     }
 
     return $this->userCounts;
   }
 
   public function setUserCounts( $userCounts = null ) {
-    $userCounts = $userCounts === null ? $this->userCounts : $userCounts;
+    $userCounts    = $userCounts === null ? $this->userCounts : $userCounts;
     $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts";
     set_transient( $transientName, $userCounts, INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME );
     $this->userCounts = $userCounts;
   }
 
+  /** Generate fake user counts for the views list on the users page.
+   * This is compatible with the structure handled by 'pre_count_users'.
+   * It's a hack. We put in ludicrously high user counts,
+   * then filter them out in the `views_users` filter.
+   *
+   * @return array
+   */
   private function fakeUserCounts() {
     $roles       = wp_roles()->get_names();
     $total_users = is_multisite() ? self::$sentinelCount : $this->getNetworkUserCount();
@@ -55,7 +66,10 @@ class Index_Wp_Users_For_Speed_Indexing {
     $result              = [
       'total_users' => $total_users,
       'avail_roles' => & $avail_roles,
+      'complete'    => false,
     ];
+
+
     add_filter( 'views_users', [ $this, 'fake_views_users' ] );
 
     return $result;
@@ -91,21 +105,23 @@ class Index_Wp_Users_For_Speed_Indexing {
     }
   }
 
-  /** @noinspection PhpUnused */
-
-  /** Filter to replace sentinel counts in the user view line
+  /**
+   * Filters the list of available list table views.
+   * Replaces sentinel counts in the user views.
    *
-   * @param array $lines
+   * @param string[] $views An array of available list table views.
    *
    * @return array
    */
-  public function fake_views_users( $lines ) {
+
+  public function fake_views_users( $views ) {
 
     $replacement = esc_attr__( 'Still counting users...', 'index-wp-users-for-speed' );
+    $sentinel    = number_format_i18n( self::$sentinelCount );
     $replacement = '<span title="' . $replacement . '">...</span>';
     $result      = [];
-    foreach ( $lines as $line ) {
-      $result[] = str_replace( number_format_i18n( self::$sentinelCount ), $replacement, $line );
+    foreach ( $views as $view ) {
+      $result[] = str_replace( $sentinel, $replacement, $view );
     }
 
     return $result;
