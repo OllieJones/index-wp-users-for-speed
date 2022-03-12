@@ -15,6 +15,7 @@ require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-index-wp-u
  */
 class Index_Wp_Users_For_Speed_Admin {
 
+  private static $messages;
   /** List of author IDs.
    * @var array
    */
@@ -36,12 +37,9 @@ class Index_Wp_Users_For_Speed_Admin {
    */
   private $version;
   private $indexer;
-
   private $pluginPath;
-
   private $recursionLevelBySite = [];
-
-  private $menuSlugName;
+  private $message;
 
   /**
    * Initialize the class and set its properties.
@@ -58,10 +56,21 @@ class Index_Wp_Users_For_Speed_Admin {
     $this->indexer        = Index_Wp_Users_For_Speed_Indexing::getInstance();
     $this->authorIdKludge = range( 0, 20 );  //TODO get this right.
     $this->pluginPath     = plugin_dir_path( dirname( __FILE__ ) );
+    /* after a POST, we get a redirect with ?st=message */
+    $this->message = isset( $_REQUEST['st'] ) ? sanitize_key( $_REQUEST['st'] ) : null;
+
+    self::$messages = [
+      'started'   => __( 'User Indexing Started', 'index-wp-users-for-speed' ),
+      'removed'   => __( 'User Indexing Removed', 'index-wp-users-for-speed' ),
+      /* translators: 1: fraction complete on index */
+      'progress'  => __( 'User Indexing %1$s Complete', 'index-wp-users-for-speed' ),
+      'completed' => __( 'User Indexing Complete', 'index-wp-users-for-speed' ),
+      /* translators: 1: message id, like 'started' or 'removed' This is a warning */
+      'default'   => __( 'Unknown message id %1$s', 'index-wp-users-for-speed' ),
+    ];
   }
 
   public function admin_menu() {
-
 
     add_users_page(
       esc_html__( 'Index WP Users For Speed', 'index-wp-users-for-speed' ),
@@ -77,30 +86,35 @@ class Index_Wp_Users_For_Speed_Admin {
     include_once $this->pluginPath . 'admin/views/page.php';
   }
 
+  //region Post Actions
+
   /** untrusted post action
    * @return void
    */
   public function post_action_unverified() {
-    $valid = check_admin_referer ( $this->plugin_name, 'reindex' );
+    $valid = check_admin_referer( $this->plugin_name, 'reindex' );
     if ( $valid === 1 ) {
       if ( current_user_can( 'update_options' ) ) {
-        do_action( $this->plugin_name . '-post-action', $_REQUEST );
-        wp_safe_redirect( $_REQUEST['_wp_http_referer'] );
+        $message = apply_filters( $this->plugin_name . '-post-filter', $_REQUEST, 'default' );
+        wp_safe_redirect( add_query_arg( 'st', $message, wp_get_referer() ) );
+
         return;
       }
     }
     status_header( 403 );
   }
 
-  /** Form post action handler, after verification.
+  /** Form post filter, after verification.
+   *
    * @param array $params
    *
    * @return void
    */
-  public function post_action( $params ) {
+  public function post_filter( $params, $message ) {
     $q = $params;
-  }
 
+    return $message;
+  }
 
   /**
    * Register the stylesheets for the admin area.
@@ -108,21 +122,13 @@ class Index_Wp_Users_For_Speed_Admin {
    * @since    1.0.0
    */
   public function enqueue_styles() {
-
-    /**
-     * This function is provided for demonstration purposes only.
-     *
-     * An instance of this class should be passed to the run() function
-     * defined in Index_Wp_Users_For_Speed_Loader as all of the hooks are defined
-     * in that particular class.
-     *
-     * The Index_Wp_Users_For_Speed_Loader will then create the relationship
-     * between the defined hooks and the functions defined in this
-     * class.
-     */
-
     wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/index-wp-users-for-speed-admin.css', [], $this->version, 'all' );
   }
+
+  //endregion
+
+
+  //region Enqueueing
 
   /**
    * Register the JavaScript for the admin area.
@@ -130,25 +136,7 @@ class Index_Wp_Users_For_Speed_Admin {
    * @since    1.0.0
    */
   public function enqueue_scripts() {
-
-    /**
-     * This function is provided for demonstration purposes only.
-     *
-     * An instance of this class should be passed to the run() function
-     * defined in Index_Wp_Users_For_Speed_Loader as all of the hooks are defined
-     * in that particular class.
-     *
-     * The Index_Wp_Users_For_Speed_Loader will then create the relationship
-     * between the defined hooks and the functions defined in this
-     * class.
-     */
-
     wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
-  }
-
-  public function button_click_callback( $value, $request, $param ) {
-    $o = $value;
-
   }
 
   public function delete_user( $user_id, $reassign, $user ) {
@@ -163,6 +151,8 @@ class Index_Wp_Users_For_Speed_Admin {
     $this->indexer->setUserCounts();
     switch_to_blog( $restoreBlogId );
   }
+
+  //endregion
 
   /**
    * @param array $args
@@ -327,8 +317,15 @@ class Index_Wp_Users_For_Speed_Admin {
     return $results;  /* unmodified, this is null */
   }
 
-  protected function showMessage() {
-    return true;  //TODO HACK HACK
+  protected function getMessage() {
+    if ( $this->message ) {
+      $message = array_key_exists( $this->message, self::$messages ) ? $this->message : 'default';
+
+      return sprintf( self::$messages[ $message ], $this->message );
+    }
+
+    return false;
   }
+
 
 }

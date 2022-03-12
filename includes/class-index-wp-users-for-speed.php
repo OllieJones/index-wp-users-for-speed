@@ -162,7 +162,7 @@ class Index_Wp_Users_For_Speed {
     $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
     $this->loader->add_action( 'admin_post_index-wp-users-for-speed-action', $plugin_admin, 'post_action_unverified' );
-    $this->loader->add_action( $this->plugin_name . '-post-action', $plugin_admin, 'post_action', 10, 1);
+    $this->loader->add_filter( $this->plugin_name . '-post-filter', $plugin_admin, 'post_filter', 10, 2);
 
     $this->loader->add_action( 'set_user_role', $plugin_admin, 'set_user_role', 10, 3 );
     $this->loader->add_action( 'delete_user', $plugin_admin, 'delete_user', 10, 3 );

@@ -1,3 +1,3 @@
-<div class="notice-warning notice is-dismissible" >
-    <p>Hello World. Stub.</p>
+<div class="notice is-dismissible" >
+    <p><?=esc_html($this->getMessage());?></p>
 </div>
