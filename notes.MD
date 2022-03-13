@@ -175,6 +175,41 @@ wp_usermeta.meta_key = 'wp_capabilities'
 				 * @param WP_User_Query $query The current WP_User_Query instance.
 				 */
 				$found_users_query = apply_filters( 'found_users_query', 'SELECT FOUND_ROWS()', $this );
+		/**
+		 * Fires immediately after a user is deleted via the REST API.
+		 *
+		 * @since 4.7.0
+		 *
+		 * @param WP_User          $user     The user data.
+		 * @param WP_REST_Response $response The response returned from the API.
+		 * @param WP_REST_Request  $request  The request sent to the API.
+		 */
+		do_action( 'rest_delete_user', $user, $response, $request );
+		
+		/**
+		 * Fires immediately after a user is created or updated via the REST API.
+		 *
+		 * @since 4.7.0
+		 *
+		 * @param WP_User         $user     Inserted or updated user object.
+		 * @param WP_REST_Request $request  Request object.
+		 * @param bool            $creating True when creating a user, false when updating.
+		 */
+		do_action( 'rest_insert_user', $user, $request, true );
+		
+		/**
+		 * Fires after a user is completely created or updated via the REST API.
+		 *
+		 * @since 5.0.0
+		 *
+		 * @param WP_User         $user     Inserted or updated user object.
+		 * @param WP_REST_Request $request  Request object.
+		 * @param bool            $creating True when creating a user, false when updating.
+		 */
+		do_action( 'rest_after_insert_user', $user, $request, true );
+
+
+
 ```
 
 ## Gets users for Gutenberg editor.

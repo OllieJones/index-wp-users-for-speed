@@ -63,6 +63,9 @@ class CountUsers {
   }
 
   /** Retrieve a chunk of user counts, and update the transient.
+   * We'll do this in one chunk for now.
+   * It doesn't make sense to use multiple chunks
+   * without KEY (meta_key, user_id)
    * @return boolean  done
    */
   public function doChunk() {
@@ -78,18 +81,14 @@ class CountUsers {
       "SELECT COUNT(*) num, meta_value val 
          FROM $wpdb->usermeta
         WHERE meta_key = %s
-         AND user_id >= %d
-         AND user_id < %d
        GROUP BY meta_value";
 
     $userCounts   = get_transient( $this->transientName );
-    $maxUserId    = $this->getMaxUserId();
-    $done         = ( $userCounts['nextChunk'] >= $maxUserId ) || $userCounts['complete'];
+    $done         = $userCounts['complete'];
     $capabilities = $wpdb->prefix . 'capabilities';
-    $start        = $userCounts['nextChunk'];
-    $end          = $start + $userCounts['chunkSize'];
     if ( ! $done ) {
-      $prepared = $wpdb->prepare( $query, $capabilities, $start, $end );
+      $wpdb->query("SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
+      $prepared = $wpdb->prepare( $query, $capabilities );
       $results  = $wpdb->get_results( $prepared );
       foreach ( $results as $result ) {
         $num                       = $result->num;
@@ -101,9 +100,7 @@ class CountUsers {
           }
         }
       }
-      $start                   = $end;
-      $userCounts['nextChunk'] = $start;
-      $done                    = $start >= $maxUserId;
+      $done = true;
     }
 
     $userCounts['complete'] = $done;

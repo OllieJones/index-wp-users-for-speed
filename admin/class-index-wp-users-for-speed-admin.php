@@ -122,13 +122,8 @@ class Index_Wp_Users_For_Speed_Admin {
    * @since    1.0.0
    */
   public function enqueue_styles() {
-    wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/index-wp-users-for-speed-admin.css', [], $this->version, 'all' );
+    //TODO wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/index-wp-users-for-speed-admin.css', [], $this->version, 'all' );
   }
-
-  //endregion
-
-
-  //region Enqueueing
 
   /**
    * Register the JavaScript for the admin area.
@@ -136,10 +131,36 @@ class Index_Wp_Users_For_Speed_Admin {
    * @since    1.0.0
    */
   public function enqueue_scripts() {
-    wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
+    //TODO wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
   }
 
+  /**
+   * Fires immediately before a user is deleted from the database.
+   *
+   * @since 2.0.0
+   * @since 5.5.0 Added the `$user` parameter.
+   *
+   * @param int      $id       ID of the user to delete.
+   * @param int|null $reassign ID of the user to reassign posts and links to.
+   *                           Default null, for no reassignment.
+   * @param WP_User  $user     WP_User object of the user to delete.
+   */
   public function delete_user( $user_id, $reassign, $user ) {
+    $a = $user;
+  }
+
+  /**
+   * Fires immediately before a user is deleted from the database.
+   *
+   * @since 2.0.0
+   * @since 5.5.0 Added the `$user` parameter.
+   *
+   * @param int      $id       ID of the user to delete.
+   * @param int|null $reassign ID of the user to reassign posts and links to.
+   *                           Default null, for no reassignment.
+   * @param WP_User  $user     WP_User object of the user to delete.
+   */
+  public function deleted_user( $user_id, $reassign, $user ) {
     $a = $user;
   }
 
@@ -152,12 +173,14 @@ class Index_Wp_Users_For_Speed_Admin {
     switch_to_blog( $restoreBlogId );
   }
 
-  //endregion
 
   /**
-   * @param array $args
+   * Filters the query arguments used to retrieve users for the current users list table.
    *
-   * @return array filtered args
+   * @since 4.4.0
+   *
+   * @param array $args Arguments passed to WP_User_Query to retrieve items for the current
+   *                    users list table.
    */
   public function users_list_table_query_args( $args ) {
     return $args;
@@ -196,13 +219,17 @@ class Index_Wp_Users_For_Speed_Admin {
     $this->indexer->setUserCounts();
   }
 
-  /** count users.
+  /**
+   * Filters the user count before queries are run.
    *
-   * @param $result
-   * @param $strategy
-   * @param $site_id
+   * Return a non-null value to cause count_users() to return early.
    *
-   * @return array
+   * @since 5.1.0
+   *
+   * @param null|string $result   The value to return instead. Default null to continue with the query.
+   * @param string      $strategy Optional. The computational strategy to use when counting the users.
+   *                              Accepts either 'time' or 'memory'. Default 'time'. (ignored)
+   * @param int|null    $site_id  Optional. The site ID to count users for. Defaults to the current site.
    */
   public function pre_count_users( $result, $strategy, $site_id ) {
     if ( ! array_key_exists( $site_id, $this->recursionLevelBySite ) ) {
@@ -224,7 +251,7 @@ class Index_Wp_Users_For_Speed_Admin {
   }
 
   /**
-   * Filters the query arguments for the list of users in the dropdown.
+   * Filters the query arguments for the list of users in the dropdown (classic editor, quick edit)
    *
    * @param array $query_args The query arguments for get_users().
    * @param array $parsed_args The arguments passed to wp_dropdown_users() combined with the defaults.
@@ -234,7 +261,7 @@ class Index_Wp_Users_For_Speed_Admin {
    *
    */
   public function wp_dropdown_users_args( $query_args, $parsed_args ) {
-    $query_args['include'] = $this->authorIdKludge;
+    $query_args['include'] = $this->authorIdKludge;  // TODO this is bogus.
 
     return $query_args;
   }
@@ -278,7 +305,7 @@ class Index_Wp_Users_For_Speed_Admin {
   }
 
   /**
-   * Filters WP_User_Query arguments when querying users via the REST API.
+   * Filters WP_User_Query arguments when querying users via the REST API. (Gutenberg author-selection box)
    *
    * @link https://developer.wordpress.org/reference/classes/wp_user_query/
    *
@@ -294,6 +321,46 @@ class Index_Wp_Users_For_Speed_Admin {
     }
 
     return $prepared_args;
+  }
+
+  /**
+   * Fires immediately after a user is created or updated via the REST API.
+   *
+   * @since 4.7.0
+   *
+   * @param WP_User         $user     Inserted or updated user object.
+   * @param WP_REST_Request $request  Request object.
+   * @param bool            $creating True when creating a user, false when updating.
+   */
+  public function rest_insert_user ( $user, $request, $creating ) {
+
+  }
+
+
+  /**
+   * Fires after a user is completely created or updated via the REST API.
+   *
+   * @since 5.0.0
+   *
+   * @param WP_User         $user     Inserted or updated user object.
+   * @param WP_REST_Request $request  Request object.
+   * @param bool            $creating True when creating a user, false when updating.
+   */
+  public function rest_after_insert_user ( $user, $request, $creating ) {
+
+  }
+
+  /**
+   * Fires immediately after a user is deleted via the REST API.
+   *
+   * @since 4.7.0
+   *
+   * @param WP_User          $user     The user data.
+   * @param WP_REST_Response $response The response returned from the API.
+   * @param WP_REST_Request  $request  The request sent to the API.
+   */
+  public function rest_delete_user ($user, $response, $request) {
+
   }
 
   /**
@@ -315,6 +382,20 @@ class Index_Wp_Users_For_Speed_Admin {
    */
   public function users_pre_query( $results, $query ) {
     return $results;  /* unmodified, this is null */
+  }
+
+  /**
+   * Filters SELECT FOUND_ROWS() query for the current WP_User_Query instance.
+   *
+   * @param string $sql The SELECT FOUND_ROWS() query for the current WP_User_Query.
+   * @param WP_User_Query $query The current WP_User_Query instance.
+   *
+   * @since 3.2.0
+   * @since 5.1.0 Added the `$this` parameter.
+   *
+   */
+  public function found_users_query( $sql, $query ) {
+    return $sql;
   }
 
   protected function getMessage() {

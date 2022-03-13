@@ -36,6 +36,9 @@ class Index_Wp_Users_For_Speed_Indexing {
       $this->setUserCounts();
       $countAll = new CountUsers();
       $countAll->doAll();
+      $foo = serialize($countAll);
+      $xxx = unserialize($foo);
+      $xxx->doAll();
     }
 
     return $this->userCounts;

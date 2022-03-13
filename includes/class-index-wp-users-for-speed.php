@@ -96,6 +96,7 @@ class Index_Wp_Users_For_Speed {
    *
    * @since    1.0.0
    * @access   private
+   * @noinspection PhpIncludeInspection
    */
   private function load_dependencies() {
 
@@ -152,36 +153,56 @@ class Index_Wp_Users_For_Speed {
    */
   private function define_admin_hooks() {
 
-    $plugin_admin = new Index_Wp_Users_For_Speed_Admin( $this->get_plugin_name(), $this->get_version() );
+    $admin = new Index_Wp_Users_For_Speed_Admin( $this->get_plugin_name(), $this->get_version() );
 
-    /* admin page stuff */
-    $this->loader->add_action( 'admin_menu', $plugin_admin, 'admin_menu' );
+    /* Wake up when loading admin. */
+    $this->loader->add_action_byname( 'admin_menu', $admin,1 );
 
+    /* Handle styles and scripts for the admin page */
+    $this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_styles' );
+    $this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_scripts' );
 
-    $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-    $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+    /* handle POSTs from the admin page form. They go to admin-post.php where these fire, then redirect to repaint */
+    $this->loader->add_action_byname( 'admin_post_index-wp-users-for-speed-action', $admin,1 );
+    $this->loader->add_filter_byname( $this->plugin_name . '-post-filter', $admin,2);
 
-    $this->loader->add_action( 'admin_post_index-wp-users-for-speed-action', $plugin_admin, 'post_action_unverified' );
-    $this->loader->add_filter( $this->plugin_name . '-post-filter', $plugin_admin, 'post_filter', 10, 2);
+    /* all sorts of stuff to monitor users' coming and going */
+    $this->loader->add_action_byname( 'set_user_role', $admin,3 );
+    /* fires immediately before a user is deleted from the database */
+    $this->loader->add_action_byname( 'delete_user', $admin,3 );
+    /* fires immediately after a user is deleted from the database */
+    $this->loader->add_action_byname( 'deleted_user', $admin, 3 );
 
-    $this->loader->add_action( 'set_user_role', $plugin_admin, 'set_user_role', 10, 3 );
-    $this->loader->add_action( 'delete_user', $plugin_admin, 'delete_user', 10, 3 );
-    $this->loader->add_action( 'add_user_to_blog', $plugin_admin, 'add_user_to_blog', 10, 3 );
+    /* Fires immediately after a user is deleted via the REST API. */
+    $this->loader->add_action_byname( 'rest_delete_user', $admin,3 );
+    /* Fires immediately after a user is created or updated via the REST API. */
+    $this->loader->add_action_byname( 'rest_insert_user', $admin,3 );
+    /* Fires immediately after a user is completey created or updated via the REST API. */
+    $this->loader->add_action_byname( 'rest_after_insert_user', $admin,3 );
 
-    $this->loader->add_action( 'wpmu_delete_user', $plugin_admin, 'wpmu_delete_user', 10, 2 );
-    $this->loader->add_action( 'wpmu_activate_user', $plugin_admin, 'wpmu_activate_user', 10, 3 );
-    $this->loader->add_action( 'added_existing_user', $plugin_admin, 'added_existing_user', 10, 2 );
-    $this->loader->add_action( 'network_site_new_created_user', $plugin_admin, 'network_site_new_created_user', 10, 1 );
-    $this->loader->add_action( 'network_site_users_created_user', $plugin_admin, 'network_site_users_created_user', 10, 1 );
-    $this->loader->add_filter( 'users_list_table_query_args', $plugin_admin, 'users_list_table_query_args', 10, 1 );
+    $this->loader->add_action_byname( 'add_user_to_blog', $admin,3 );
+    $this->loader->add_action_byname( 'wpmu_delete_user', $admin,2 );
+    $this->loader->add_action_byname( 'wpmu_activate_user', $admin,  3 );
+    $this->loader->add_action_byname( 'added_existing_user', $admin,2 );
+    $this->loader->add_action_byname( 'network_site_new_created_user', $admin,1 );
+    $this->loader->add_action_byname( 'network_site_users_created_user', $admin,1 );
 
-    $this->loader->add_filter( 'pre_count_users', $plugin_admin, 'pre_count_users', 1, 3 );
-    $this->loader->add_filter( 'wp_dropdown_users_args', $plugin_admin, 'wp_dropdown_users_args', 10, 2 );
-    $this->loader->add_filter( 'quick_edit_dropdown_authors_args', $plugin_admin, 'quick_edit_dropdown_authors_args', 10, 2 );
-    $this->loader->add_filter( 'rest_user_query', $plugin_admin, 'rest_user_query', 10, 2 );
-    $this->loader->add_filter( 'pre_user_query', $plugin_admin, 'pre_user_query', 10, 2 );
-    $this->loader->add_filter( 'users_pre_query', $plugin_admin, 'users_pre_query', 10, 2 );
-
+    /* Filters the query arguments used to retrieve users for the current users list table. */
+    $this->loader->add_filter_byname( 'users_list_table_query_args', $admin,1 );
+    /* Filters the user count before queries are run. */
+    $this->loader->add_filter_byname( 'pre_count_users', $admin,  3, 1 );
+    /* Filters the query arguments for the list of users in the dropdown (classic editor, quick edit) */
+    $this->loader->add_filter_byname( 'wp_dropdown_users_args', $admin,2 );
+    /* Filters the arguments used to generate the Quick Edit authors drop-down.  TODO how does this differ from wp_dropdown_users_args?  */
+    $this->loader->add_filter_byname( 'quick_edit_dropdown_authors_args', $admin,2 );
+    /* Filters WP_User_Query arguments when querying users via the REST API. (Gutenberg author-selection box) */
+    $this->loader->add_filter_byname( 'rest_user_query', $admin,  2 );
+    /* Fires after the WP_User_Query has been parsed, and before the query is executed. */
+    $this->loader->add_filter_byname( 'pre_user_query', $admin,   2 );
+    /* Filters the users array before the query takes place. */
+    $this->loader->add_filter_byname( 'users_pre_query', $admin,2 );
+    /* Filters SELECT FOUND_ROWS() query for the current WP_User_Query instance. */
+    $this->loader->add_filter_byname( 'found_users_query', $admin,2 );
   }
 
   /**
@@ -214,11 +235,11 @@ class Index_Wp_Users_For_Speed {
    */
   private function define_public_hooks() {
 
-    //TODO add this back if we need it.
+    //TODO add this back if we need it on the front end.
 //    $plugin_public = new Index_Wp_Users_For_Speed_Public( $this->get_plugin_name(), $this->get_version() );
 //
-//    $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-//    $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+//    $this->loader->add_action_byname( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
+//    $this->loader->add_action_byname( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
   }
 
