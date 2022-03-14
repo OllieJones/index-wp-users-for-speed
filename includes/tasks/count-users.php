@@ -1,30 +1,28 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 class CountUsers {
 
+  public $taskName = 'count-users';
+  public $lastTouch;
   private $siteId;
-  private $chunkSize;
-  private $roles;
   private $transientName;
 
-  public function __construct( $siteId = null, $chunkSize = 100 ) {
-    $this->siteId    = $siteId;
-    $maxUserId       = $this->getMaxUserId();
-    $chunkSize       = max( $maxUserId < $chunkSize ? intval( round( $maxUserId * 0.1 ) ) : $chunkSize, 2 );
-    $this->chunkSize = $chunkSize;
+  public function __construct( $siteId = null ) {
+    $this->lastTouch = time();
+    $this->transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts";
     $siteId          = $siteId === null ? get_current_blog_id() : $siteId;
+    $this->siteId    = $siteId;
     $switchSite      = is_multisite() && get_current_blog_id() != $siteId;
 
     if ( $switchSite ) {
       switch_to_blog( $siteId );
     }
-    $this->transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts";
     $userCounts          = get_transient( $this->transientName );
     if ( $userCounts === false || (isset($userCounts['complete']) && !$userCounts['complete']) ) {
       /* create the user count object */
       $avail_roles = [];
-      $this->roles = wp_roles()->get_names();
-      foreach ( $this->roles as $role => $name ) {
+      $roles = wp_roles()->get_names();
+      foreach ( $roles as $role => $name ) {
         $avail_roles[ $role ] = 0;
       }
       $avail_roles['none'] = 0;
@@ -32,9 +30,6 @@ class CountUsers {
         'total_users' => 0,
         'avail_roles' => & $avail_roles,
         'complete'    => false,
-        'maxUsers'    => $maxUserId,
-        'nextChunk'   => 0,
-        'chunkSize'   => $this->chunkSize,
       ];
       set_transient( $this->transientName, $userCounts, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
     }
@@ -44,32 +39,15 @@ class CountUsers {
     }
   }
 
-  private function getMaxUserId() {
-    global $wpdb;
-    /** @noinspection SqlNoDataSourceInspection */
-    /** @noinspection SqlResolve */
-    $q = /** @lang MySQL */
-      "SELECT MAX(ID) FROM $wpdb->users";
-
-    return $wpdb->get_var( $wpdb->prepare( $q, $wpdb->users ) );
-  }
-
-  /** @noinspection PhpUnused */
-  public function doAll() {
-
-    /** @noinspection PhpStatementHasEmptyBodyInspection */
-    while ( ! $this->doChunk() ) {
-    }
-  }
-
   /** Retrieve a chunk of user counts, and update the transient.
    * We'll do this in one chunk for now.
-   * It doesn't make sense to use multiple chunks
-   * without KEY (meta_key, user_id)
-   * @return boolean  done
+   * It doesn't make sense to use multiple chunks without KEY (meta_key, user_id)
+   * @return boolean  done When this is false, schedule another chunk.
    */
   public function doChunk() {
     global $wpdb;
+    $this->lastTouch = time();
+
     $switchSite = is_multisite() && get_current_blog_id() != $this->siteId;
 
     if ( $switchSite ) {

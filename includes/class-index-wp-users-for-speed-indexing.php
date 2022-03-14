@@ -2,6 +2,31 @@
 
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/count-users.php';
 
+
+/** WP Cron hook to handle a task and reschedule it if need be
+ *
+ * @param $serializedTask
+ *
+ * @return void
+ */
+function index_wp_users_for_speed_do_task( $serializedTask ) {
+  index_wp_users_for_speed_error_log( 'index_wp_users_for_speed_task: start cron hook: ' . $serializedTask );
+  try {
+    $task = unserialize( $serializedTask );
+    $done = $task->doChunk();
+    if ( ! $done ) {
+      $serializedTask = serialize( $task );
+      index_wp_users_for_speed_error_log( 'index_wp_users_for_speed_task: reschedule cron hook: ' . $serializedTask );
+
+      wp_schedule_single_event( time() + 1, 'index_wp_users_for_speed_task', [ $serializedTask ] );
+    }
+  } catch ( Exception $ex ) {
+    error_log( 'index_wp_users_for_speed_task: cron hook exception: ' . $ex->getMessage() . $ex->getTraceAsString() );
+  }
+}
+
+add_action( 'index_wp_users_for_speed_task', 'index_wp_users_for_speed_do_task' );
+
 class Index_Wp_Users_For_Speed_Indexing {
 
   /* a simple singleton class */
@@ -12,7 +37,8 @@ class Index_Wp_Users_For_Speed_Indexing {
 
   protected function __construct() {
 
-    self::$sentinelCount = 1024 * 1024 * 1024 - 1;
+    /* a magic count of users to indicate "don't know yet" */
+    self::$sentinelCount = 1024 * 1024 * 1024 * 2 - 7;
 
   }
 
@@ -28,26 +54,22 @@ class Index_Wp_Users_For_Speed_Indexing {
     if ( isset( $this->userCounts ) ) {
       return $this->userCounts;
     }
-    $transientName    = INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts";
-    $this->userCounts = get_transient( $transientName );
+    $this->userCounts = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
     if ( $this->userCounts === false || ( isset( $this->userCounts['complete'] ) && ! $this->userCounts['complete'] ) ) {
       /* no user counts yet. We will fake them until they're available */
       $this->userCounts = $this->fakeUserCounts();
       $this->setUserCounts();
-      $countAll = new CountUsers();
-      $countAll->doAll();
-      $foo = serialize($countAll);
-      $xxx = unserialize($foo);
-      $xxx->doAll();
+      $this->startBackgroundTask( new CountUsers() );
     }
 
     return $this->userCounts;
   }
 
   public function setUserCounts( $userCounts = null ) {
-    $userCounts    = $userCounts === null ? $this->userCounts : $userCounts;
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts";
-    set_transient( $transientName, $userCounts, INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME );
+    $userCounts = $userCounts === null ? $this->userCounts : $userCounts;
+    set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts",
+      $userCounts,
+      INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
     $this->userCounts = $userCounts;
   }
 
@@ -78,7 +100,6 @@ class Index_Wp_Users_For_Speed_Indexing {
     return $result;
   }
 
-  /** @noinspection SqlNoDataSourceInspection */
   public function getNetworkUserCount() {
     global $wpdb;
     if ( isset ( $this->networkUserCount ) ) {
@@ -96,6 +117,21 @@ class Index_Wp_Users_For_Speed_Indexing {
     return $this->networkUserCount;
   }
 
+  /** @noinspection SqlNoDataSourceInspection */
+
+  private function startBackgroundTask( $task ) {
+    $serializedTask = serialize( $task );
+    wp_schedule_single_event( time() + 1, 'index_wp_users_for_speed_task', [ $serializedTask ] );
+    index_wp_users_for_speed_error_log( 'index_wp_users_for_speed_task: schedule cron hook: ' . $serializedTask );
+  }
+
+  /** Update the user count for a particular role.
+   *
+   * @param string $role rolename to change
+   * @param integer $value number of users to add or subtract
+   *
+   * @return void
+   */
   public function updateUserCounts( $role, $value ) {
     if ( is_array( $this->userCounts['avail_roles'] ) ) {
       if ( ! array_key_exists( $role, $this->userCounts['avail_roles'] ) ) {
