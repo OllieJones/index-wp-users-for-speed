@@ -137,7 +137,7 @@ class Index_Wp_Users_For_Speed_Admin {
   /**
    * Fires immediately before a user is deleted from the database.
    *
-   * @param int $user_id
+   * @param int $id
    * @param int|null $reassign ID of the user to reassign posts and links to.
    *                           Default null, for no reassignment.
    * @param WP_User $user WP_User object of the user to delete.
@@ -146,26 +146,34 @@ class Index_Wp_Users_For_Speed_Admin {
    *
    * @since 2.0.0
    */
-  public function delete_user( $user_id, $reassign, $user ) {
+  public function delete_user( $id, $reassign, $user ) {
     $a = $user;
   }
 
   /**
-   * Fires immediately before a user is deleted from the database.
+   * Fires immediately after a user is deleted from the database.
    *
-   * @param int $user_id
-   * @param int|null $reassign ID of the user to reassign posts and links to.
-   *                           Default null, for no reassignment.
-   * @param WP_User $user WP_User object of the user to delete.
-   *
+   * @since 2.9.0
    * @since 5.5.0 Added the `$user` parameter.
    *
-   * @since 2.0.0
+   * @param int      $id       ID of the deleted user.
+   * @param int|null $reassign ID of the user to reassign posts and links to.
+   *                           Default null, for no reassignment.
+   * @param WP_User  $user     WP_User object of the deleted user.
    */
-  public function deleted_user( $user_id, $reassign, $user ) {
+  public function deleted_user( $id, $reassign, $user ) {
     $a = $user;
   }
 
+  /**
+   * Fires immediately after a user is added to a site.
+   *
+   * @since MU (3.0.0)
+   *
+   * @param int    $user_id User ID.
+   * @param string $role    User role.
+   * @param int    $blog_id Blog ID.
+   */
   public function add_user_to_blog( $user_id, $role, $blog_id ) {
     $restoreBlogId = get_current_blog_id();
     switch_to_blog( $blog_id );
@@ -204,13 +212,15 @@ class Index_Wp_Users_For_Speed_Admin {
     $a = $user_id;
   }
 
-  /** set a user role
+  /**
+   * Fires after the user's role has changed.
    *
-   * @param int $user_id
-   * @param string $newRole
-   * @param array $oldRoles
+   * @since 2.9.0
+   * @since 3.6.0 Added $old_roles to include an array of the user's previous roles.
    *
-   * @return void
+   * @param int      $user_id   The user ID.
+   * @param string   $newRole      The new role.
+   * @param string[] $oldRoles An array of the user's previous roles.
    */
   public function set_user_role( $user_id, $newRole, $oldRoles ) {
     $this->indexer->getUserCounts();
@@ -234,10 +244,11 @@ class Index_Wp_Users_For_Speed_Admin {
    * @param int|null    $site_id  Optional. The site ID to count users for. Defaults to the current site.
    */
   public function pre_count_users( $result, $strategy, $site_id ) {
-    /* cron jobs use this; don't intervene there. */
+    /* cron jobs use this; don't intervene with this filter there. */
     if (wp_doing_cron()) {
       return $result;
     }
+    /* this bad boy gets called recursively, the way we cache user counts. */
     if ( ! array_key_exists( $site_id, $this->recursionLevelBySite ) ) {
       $this->recursionLevelBySite[ $site_id ] = 0;
     }
@@ -411,6 +422,7 @@ class Index_Wp_Users_For_Speed_Admin {
   public function found_users_query( $sql, $query ) {
     return $sql;
   }
+
 
   protected function getMessage() {
     if ( $this->message ) {
