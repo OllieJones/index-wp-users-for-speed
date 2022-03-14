@@ -40,7 +40,7 @@ define( 'INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME', 60 );
 define( 'INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME', 300 );
 
 function index_wp_users_for_speed_error_log ($msg) {
-  if ( WP_DEBUG === true ) {
+  if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
     error_log ($msg);
   }
 }

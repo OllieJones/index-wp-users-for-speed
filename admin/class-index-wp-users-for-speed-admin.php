@@ -137,13 +137,14 @@ class Index_Wp_Users_For_Speed_Admin {
   /**
    * Fires immediately before a user is deleted from the database.
    *
-   * @since 2.0.0
-   * @since 5.5.0 Added the `$user` parameter.
-   *
-   * @param int      $id       ID of the user to delete.
+   * @param int $user_id
    * @param int|null $reassign ID of the user to reassign posts and links to.
    *                           Default null, for no reassignment.
-   * @param WP_User  $user     WP_User object of the user to delete.
+   * @param WP_User $user WP_User object of the user to delete.
+   *
+   * @since 5.5.0 Added the `$user` parameter.
+   *
+   * @since 2.0.0
    */
   public function delete_user( $user_id, $reassign, $user ) {
     $a = $user;
@@ -152,13 +153,14 @@ class Index_Wp_Users_For_Speed_Admin {
   /**
    * Fires immediately before a user is deleted from the database.
    *
-   * @since 2.0.0
-   * @since 5.5.0 Added the `$user` parameter.
-   *
-   * @param int      $id       ID of the user to delete.
+   * @param int $user_id
    * @param int|null $reassign ID of the user to reassign posts and links to.
    *                           Default null, for no reassignment.
-   * @param WP_User  $user     WP_User object of the user to delete.
+   * @param WP_User $user WP_User object of the user to delete.
+   *
+   * @since 5.5.0 Added the `$user` parameter.
+   *
+   * @since 2.0.0
    */
   public function deleted_user( $user_id, $reassign, $user ) {
     $a = $user;
@@ -232,6 +234,10 @@ class Index_Wp_Users_For_Speed_Admin {
    * @param int|null    $site_id  Optional. The site ID to count users for. Defaults to the current site.
    */
   public function pre_count_users( $result, $strategy, $site_id ) {
+    /* cron jobs use this; don't intervene there. */
+    if (wp_doing_cron()) {
+      return $result;
+    }
     if ( ! array_key_exists( $site_id, $this->recursionLevelBySite ) ) {
       $this->recursionLevelBySite[ $site_id ] = 0;
     }
@@ -261,6 +267,10 @@ class Index_Wp_Users_For_Speed_Admin {
    *
    */
   public function wp_dropdown_users_args( $query_args, $parsed_args ) {
+    /* cron jobs use this; don't intervene there. */
+    if (wp_doing_cron()) {
+      return $query_args;
+    }
     $query_args['include'] = $this->authorIdKludge;  // TODO this is bogus.
 
     return $query_args;
@@ -278,6 +288,10 @@ class Index_Wp_Users_For_Speed_Admin {
    *
    */
   public function quick_edit_dropdown_authors_args( $users_opt, $bulk ) {
+    /* cron jobs use this; don't intervene there. */
+    if (wp_doing_cron()) {
+      return $users_opt;
+    }
     $o = $users_opt;
 
     return $users_opt;

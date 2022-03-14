@@ -1,31 +1,8 @@
-<?php
+<?php /** @noinspection PhpIncludeInspection */
 
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/task.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/count-users.php';
 
-
-/** WP Cron hook to handle a task and reschedule it if need be
- *
- * @param $serializedTask
- *
- * @return void
- */
-function index_wp_users_for_speed_do_task( $serializedTask ) {
-  index_wp_users_for_speed_error_log( 'index_wp_users_for_speed_task: start cron hook: ' . $serializedTask );
-  try {
-    $task = unserialize( $serializedTask );
-    $done = $task->doChunk();
-    if ( ! $done ) {
-      $serializedTask = serialize( $task );
-      index_wp_users_for_speed_error_log( 'index_wp_users_for_speed_task: reschedule cron hook: ' . $serializedTask );
-
-      wp_schedule_single_event( time() + 1, 'index_wp_users_for_speed_task', [ $serializedTask ] );
-    }
-  } catch ( Exception $ex ) {
-    error_log( 'index_wp_users_for_speed_task: cron hook exception: ' . $ex->getMessage() . $ex->getTraceAsString() );
-  }
-}
-
-add_action( 'index_wp_users_for_speed_task', 'index_wp_users_for_speed_do_task' );
 
 class Index_Wp_Users_For_Speed_Indexing {
 
@@ -59,7 +36,8 @@ class Index_Wp_Users_For_Speed_Indexing {
       /* no user counts yet. We will fake them until they're available */
       $this->userCounts = $this->fakeUserCounts();
       $this->setUserCounts();
-      $this->startBackgroundTask( new CountUsers() );
+      $task = new CountUsers();
+      $task->schedule();
     }
 
     return $this->userCounts;
@@ -115,14 +93,6 @@ class Index_Wp_Users_For_Speed_Indexing {
     $this->networkUserCount = $wpdb->get_var( $wpdb->prepare( $q, $wpdb->users ) );
 
     return $this->networkUserCount;
-  }
-
-  /** @noinspection SqlNoDataSourceInspection */
-
-  private function startBackgroundTask( $task ) {
-    $serializedTask = serialize( $task );
-    wp_schedule_single_event( time() + 1, 'index_wp_users_for_speed_task', [ $serializedTask ] );
-    index_wp_users_for_speed_error_log( 'index_wp_users_for_speed_task: schedule cron hook: ' . $serializedTask );
   }
 
   /** Update the user count for a particular role.
