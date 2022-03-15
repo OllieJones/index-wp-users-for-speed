@@ -1,5 +1,8 @@
 <?php
 
+namespace OllieJones\index_wp_users_for_speed;
+
+
 /**
  * Define the internationalization functionality
  *
@@ -24,7 +27,7 @@
  * @subpackage Index_Wp_Users_For_Speed/includes
  * @author     Ollie Jones <oj@plumislandmedia.net>
  */
-class Index_Wp_Users_For_Speed_i18n {
+class i18n {
 
 
 	/**

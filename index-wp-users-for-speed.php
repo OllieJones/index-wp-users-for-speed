@@ -25,6 +25,9 @@
  * Tags:         users, performance
  */
 // If this file is called directly, abort.
+use OllieJones\index_wp_users_for_speed\Activator;
+use OllieJones\index_wp_users_for_speed\Deactivator;
+
 if ( ! defined( 'WPINC' ) ) {
   die;
 }
@@ -51,7 +54,7 @@ function index_wp_users_for_speed_error_log ($msg) {
  */
 function activate_index_wp_users_for_speed() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-activator.php';
-  Index_Wp_Users_For_Speed_Activator::activate();
+  Activator::activate();
 }
 
 /**
@@ -60,7 +63,7 @@ function activate_index_wp_users_for_speed() {
  */
 function deactivate_index_wp_users_for_speed() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-deactivator.php';
-  Index_Wp_Users_For_Speed_Deactivator::deactivate();
+  Deactivator::deactivate();
 }
 
 register_activation_hook( __FILE__, 'activate_index_wp_users_for_speed' );
@@ -81,11 +84,6 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed.p
  *
  * @since    1.0.0
  */
-function run_index_wp_users_for_speed() {
 
-  $plugin = new Index_Wp_Users_For_Speed();
-  $plugin->run();
-
-}
-
-run_index_wp_users_for_speed();
+$plugin = new OllieJones\index_wp_users_for_speed\Index_Wp_Users_For_Speed();
+$plugin->run();

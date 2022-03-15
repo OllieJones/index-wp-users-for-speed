@@ -1,5 +1,8 @@
 <?php
 
+namespace OllieJones\index_wp_users_for_speed;
+use Exception;
+
 /** WP Cron hook to handle a task and reschedule it if need be
  *
  * @param $serializedTask
@@ -18,12 +21,10 @@ function index_wp_users_for_speed_do_task( $serializedTask ) {
   }
 }
 
-add_action( 'index_wp_users_for_speed_task', 'index_wp_users_for_speed_do_task' );
+add_action( 'index_wp_users_for_speed_task',  __NAMESPACE__ . '\index_wp_users_for_speed_do_task' );
 
 
 class Task {
-
-
   public $taskName;
   public $lastTouch;
   public $useCount = 0;

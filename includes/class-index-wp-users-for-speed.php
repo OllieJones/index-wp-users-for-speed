@@ -1,5 +1,7 @@
 <?php
 
+namespace OllieJones\index_wp_users_for_speed;
+
 /**
  * The file that defines the core plugin class
  *
@@ -35,7 +37,7 @@ class Index_Wp_Users_For_Speed {
    *
    * @since    1.0.0
    * @access   protected
-   * @var      Index_Wp_Users_For_Speed_Loader $loader Maintains and registers all hooks for the plugin.
+   * @var      Loader $loader Maintains and registers all hooks for the plugin.
    */
   protected $loader;
 
@@ -100,6 +102,7 @@ class Index_Wp_Users_For_Speed {
    */
   private function load_dependencies() {
 
+    require_once  plugin_dir_path( dirname( __FILE__ ) ) . 'includes/word-press-hooks.php';
     /**
      * The class responsible for orchestrating the actions and filters of the
      * core plugin.
@@ -123,7 +126,7 @@ class Index_Wp_Users_For_Speed {
      */
     require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-index-wp-users-for-speed-public.php';
 
-    $this->loader = new Index_Wp_Users_For_Speed_Loader();
+    $this->loader = new Loader();
 
   }
 
@@ -138,7 +141,7 @@ class Index_Wp_Users_For_Speed {
    */
   private function set_locale() {
 
-    $plugin_i18n = new Index_Wp_Users_For_Speed_i18n();
+    $plugin_i18n = new i18n();
 
     $this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
 
@@ -153,56 +156,7 @@ class Index_Wp_Users_For_Speed {
    */
   private function define_admin_hooks() {
 
-    $admin = new Index_Wp_Users_For_Speed_Admin( $this->get_plugin_name(), $this->get_version() );
-
-    /* Wake up when loading admin. */
-    $this->loader->add_action_byname( 'admin_menu', $admin,1 );
-
-    /* Handle styles and scripts for the admin page */
-    $this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_styles' );
-    $this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_scripts' );
-
-    /* handle POSTs from the admin page form. They go to admin-post.php where these fire, then redirect to repaint */
-    $this->loader->add_action_byname( 'admin_post_index-wp-users-for-speed-action', $admin,1 );
-    $this->loader->add_filter_byname( $this->plugin_name . '-post-filter', $admin,2);
-
-    /* all sorts of stuff to monitor users' coming and going */
-    $this->loader->add_action_byname( 'set_user_role', $admin,3 );
-    /* fires immediately before a user is deleted from the database */
-    $this->loader->add_action_byname( 'delete_user', $admin,3 );
-    /* fires immediately after a user is deleted from the database */
-    $this->loader->add_action_byname( 'deleted_user', $admin, 3 );
-
-    /* Fires immediately after a user is deleted via the REST API. */
-    $this->loader->add_action_byname( 'rest_delete_user', $admin,3 );
-    /* Fires immediately after a user is created or updated via the REST API. */
-    $this->loader->add_action_byname( 'rest_insert_user', $admin,3 );
-    /* Fires immediately after a user is completey created or updated via the REST API. */
-    $this->loader->add_action_byname( 'rest_after_insert_user', $admin,3 );
-
-    $this->loader->add_action_byname( 'add_user_to_blog', $admin,3 );
-    $this->loader->add_action_byname( 'wpmu_delete_user', $admin,2 );
-    $this->loader->add_action_byname( 'wpmu_activate_user', $admin,  3 );
-    $this->loader->add_action_byname( 'added_existing_user', $admin,2 );
-    $this->loader->add_action_byname( 'network_site_new_created_user', $admin,1 );
-    $this->loader->add_action_byname( 'network_site_users_created_user', $admin,1 );
-
-    /* Filters the query arguments used to retrieve users for the current users list table. */
-    $this->loader->add_filter_byname( 'users_list_table_query_args', $admin,1 );
-    /* Filters the user count before queries are run. */
-    $this->loader->add_filter_byname( 'pre_count_users', $admin,  3, 1 );
-    /* Filters the query arguments for the list of users in the dropdown (classic editor, quick edit) */
-    $this->loader->add_filter_byname( 'wp_dropdown_users_args', $admin,2 );
-    /* Filters the arguments used to generate the Quick Edit authors drop-down.  TODO how does this differ from wp_dropdown_users_args?  */
-    $this->loader->add_filter_byname( 'quick_edit_dropdown_authors_args', $admin,2 );
-    /* Filters WP_User_Query arguments when querying users via the REST API. (Gutenberg author-selection box) */
-    $this->loader->add_filter_byname( 'rest_user_query', $admin,  2 );
-    /* Fires after the WP_User_Query has been parsed, and before the query is executed. */
-    $this->loader->add_filter_byname( 'pre_user_query', $admin,   2 );
-    /* Filters the users array before the query takes place. */
-    $this->loader->add_filter_byname( 'users_pre_query', $admin,2 );
-    /* Filters SELECT FOUND_ROWS() query for the current WP_User_Query instance. */
-    $this->loader->add_filter_byname( 'found_users_query', $admin,2 );
+    new Admin( $this->get_plugin_name(), $this->get_version() );
   }
 
   /**
@@ -255,7 +209,7 @@ class Index_Wp_Users_For_Speed {
   /**
    * The reference to the class that orchestrates the hooks with the plugin.
    *
-   * @return    Index_Wp_Users_For_Speed_Loader    Orchestrates the hooks of the plugin.
+   * @return    Loader    Orchestrates the hooks of the plugin.
    * @since     1.0.0
    */
   public function get_loader() {

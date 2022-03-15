@@ -1,10 +1,14 @@
 <?php /** @noinspection PhpIncludeInspection */
 
+namespace OllieJones\index_wp_users_for_speed;
+
+use Exception;
+
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/task.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/count-users.php';
 
 
-class Index_Wp_Users_For_Speed_Indexing {
+class Indexing {
 
   /* a simple singleton class */
   protected static $singleInstance;
@@ -97,20 +101,28 @@ class Index_Wp_Users_For_Speed_Indexing {
 
   /** Update the user count for a particular role.
    *
-   * @param string $role rolename to change
+   * @param string[]|string $roles rolename or names to change
    * @param integer $value number of users to add or subtract
    *
    * @return void
    */
-  public function updateUserCounts( $role, $value ) {
+  public function updateUserCounts( $roles, $value ) {
+    if (is_string ($roles)) {
+      $roles = [$roles];
+    }
     if ( is_array( $this->userCounts['avail_roles'] ) ) {
-      if ( ! array_key_exists( $role, $this->userCounts['avail_roles'] ) ) {
-        $this->userCounts['avail_roles'][ $role ] = 0;
+      foreach ($roles as $role) {
+        if ( ! array_key_exists( $role, $this->userCounts['avail_roles'] ) ) {
+          $this->userCounts['avail_roles'][ $role ] = 0;
+        }
+        $this->userCounts['avail_roles'][ $role ] += $value;
+        if ( $this->userCounts['avail_roles'][ $role ] === 0 ) {
+          unset ( $this->userCounts['avail_roles'][ $role ] );
+        }
       }
-      $this->userCounts['avail_roles'][ $role ] += $value;
-      if ( $this->userCounts['avail_roles'][ $role ] === 0 ) {
-        unset ( $this->userCounts['avail_roles'][ $role ] );
-      }
+    }
+    if ( is_numeric ($this->userCounts['total_users'])) {
+      $this->userCounts['total_users'] += $value;
     }
   }
 
@@ -122,7 +134,6 @@ class Index_Wp_Users_For_Speed_Indexing {
    *
    * @return array
    */
-
   public function fake_views_users( $views ) {
 
     $replacement = esc_attr__( 'Still counting users...', 'index-wp-users-for-speed' );

@@ -1,4 +1,5 @@
 <?php
+namespace OllieJones\index_wp_users_for_speed;
 
 /**
  * Fired during plugin activation
@@ -20,7 +21,7 @@
  * @subpackage Index_Wp_Users_For_Speed/includes
  * @author     Ollie Jones <oj@plumislandmedia.net>
  */
-class Index_Wp_Users_For_Speed_Activator {
+class Activator {
 
   /**
    * Short Description. (use period)
@@ -33,9 +34,9 @@ class Index_Wp_Users_For_Speed_Activator {
     global $iufs_db_version;
     $iufs_db_version = '1.0';
 
-    Index_Wp_Users_For_Speed_Activator::createTables();
+    Activator::createTables();
 
-    Index_Wp_Users_For_Speed_Activator::startIndexing();
+    Activator::startIndexing();
 
   }
 
@@ -66,7 +67,7 @@ class Index_Wp_Users_For_Speed_Activator {
 //
 //      dbDelta( $sql );
 
-    add_option( 'iufs_db_version', $iufs_db_version );
+    add_option( INDEX_WP_USERS_FOR_SPEED_PREFIX .  $iufs_db_version );
   }
 
   /**

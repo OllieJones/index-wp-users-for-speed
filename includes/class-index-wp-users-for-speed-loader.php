@@ -1,4 +1,5 @@
 <?php
+namespace OllieJones\index_wp_users_for_speed;
 
 /**
  * Register all actions and filters for the plugin
@@ -21,7 +22,7 @@
  * @subpackage Index_Wp_Users_For_Speed/includes
  * @author     Ollie Jones <oj@plumislandmedia.net>
  */
-class Index_Wp_Users_For_Speed_Loader {
+class Loader {
 
 	/**
 	 * The array of actions registered with WordPress.
@@ -107,6 +108,32 @@ class Index_Wp_Users_For_Speed_Loader {
    */
   public function add_filter_byname( $hook, $component, $accepted_args, $priority = 10) {
     $this->filters = $this->add( $this->filters, $hook, $component, $hook, $priority, $accepted_args );
+  }
+
+  /** Add an array of new actions, by name, to the collection to be registered with WordPress.
+   * @param array $hooks   hookName => acceptedArgs
+   * @param object $component  class to add them to
+   * @param int $priority  optional hook priority, default 10
+   *
+   * @return void
+   */
+  public function add_actions_byname ($hooks, $component, $priority = 10) {
+    foreach ($hooks as $hook => $accepted_args) {
+      $this->actions = $this->add( $this->actions, $hook, $component, $hook, $priority, $accepted_args);
+    }
+  }
+
+  /** Add an array of new filters, by name, to the collection to be registered with WordPress.
+   * @param array $hooks   hookName => acceptedArgs
+   * @param object $component  class to add them to
+   * @param int $priority  optional hook priority, default 10
+   *
+   * @return void
+   */
+  public function add_filters_byname ($hooks, $component, $priority = 10) {
+    foreach ($hooks as $hook => $accepted_args) {
+      $this->filters = $this->add( $this->filters, $hook, $component, $hook, $priority, $accepted_args);
+    }
   }
 
   /**

@@ -1,5 +1,7 @@
 <?php /** @noinspection PhpUnused */
 
+namespace OllieJones\index_wp_users_for_speed;
+
 /**
  * Task to count users by role.
  */

@@ -1,5 +1,7 @@
 <?php
 
+namespace OllieJones\index_wp_users_for_speed;
+
 /**
  * Fired during plugin deactivation
  *
@@ -20,7 +22,7 @@
  * @subpackage Index_Wp_Users_For_Speed/includes
  * @author     Ollie Jones <oj@plumislandmedia.net>
  */
-class Index_Wp_Users_For_Speed_Deactivator {
+class Deactivator {
 
 	/**
 	 * Short Description. (use period)
