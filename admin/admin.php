@@ -58,7 +58,7 @@ class Admin
    *
    * @since    1.0.0
    */
-  public function __construct( ) {
+  public function __construct() {
 
     $this->plugin_name    = INDEX_WP_USERS_FOR_SPEED_NAME;
     $this->version        = INDEX_WP_USERS_FOR_SPEED_VERSION;
@@ -137,59 +137,28 @@ class Admin
   }
 
   /**
-   * Fires immediately before a user is deleted from the database.
-   *
-   * @param int $id
-   * @param int|null $reassign ID of the user to reassign posts and links to.
-   *                           Default null, for no reassignment.
-   * @param WP_User $user WP_User object of the user to delete.
-   *
-   * @since 5.5.0 Added the `$user` parameter.
-   *
-   * @since 2.0.0
-   * @noinspection PhpUnused
-   */
-  public function action__delete_user( $id, $reassign, $user ) {
-    $a = $user;
-  }
-
-  /**
-   * Fires immediately after a user is deleted from the database.
-   *
-   * @since 2.9.0
-   * @since 5.5.0 Added the `$user` parameter.
-   *
-   * @param int      $id       ID of the deleted user.
-   * @param int|null $reassign ID of the user to reassign posts and links to.
-   *                           Default null, for no reassignment.
-   * @param WP_User  $user     WP_User object of the deleted user.
-   * @noinspection PhpUnused
-   */
-  public function action__deleted_user( $id, $reassign, $user ) {
-    $a = $user;
-  }
-
-  /**
    * Fires immediately after a user is added to a site.
    *
+   * @param int $user_id User ID.
+   * @param string $role User role.
+   * @param int $blog_id Blog ID.
+   *
+   * @noinspection PhpUnused
    * @since MU (3.0.0)
    *
-   * @param int    $user_id User ID.
-   * @param string $role    User role.
-   * @param int    $blog_id Blog ID.
-   * @noinspection PhpUnused
    */
   public function action__add_user_to_blog( $user_id, $role, $blog_id ) {
     $this->indexer->getUserCounts();
     $this->indexer->updateUserCounts( $role, + 1 );
     $this->indexer->setUserCounts();
+    $this->indexer->updateEditors( $user_id );
   }
 
   /**
    * Fires before a user is removed from a site.
    *
-   * @param int $user_id  ID of the user being removed.
-   * @param int $blog_id  ID of the blog the user is being removed from.
+   * @param int $user_id ID of the user being removed.
+   * @param int $blog_id ID of the blog the user is being removed from.
    * @param int $reassign ID of the user to whom to reassign posts.
    *
    * @noinspection PhpUnused
@@ -204,60 +173,25 @@ class Admin
     $this->indexer->getUserCounts();
     $this->indexer->updateUserCounts( $roles, - 1 );
     $this->indexer->setUserCounts();
-  }
-
-
-  /**
-   * Filters the query arguments used to retrieve users for the current users list table.
-   *
-   * (rendering the table itself)
-   *
-   * @since 4.4.0
-   *
-   * @param array $args Arguments passed to WP_User_Query to retrieve items for the current
-   *                    users list table.
-   * @noinspection PhpUnused
-   */
-  public function filter__users_list_table_query_args( $args ) {
-    return $args;
-  }
-
-  /** @noinspection PhpUnused */
-  public function action__wpmu_activate_user( $user_id, $password, $meta ) {
-    $a = $user_id;
-  }
-
-  /** @noinspection PhpUnused */
-  public function action__wpmu_delete_user( $user_id, $user ) {
-    $a = $user;
-  }
-
-  /** @noinspection PhpUnused */
-  public function action__network_site_new_created_user( $user_id ) {
-    $a = $user_id;
-  }
-
-  /** @noinspection PhpUnused */
-  public function action__network_site_users_created_user( $user_id ) {
-    $a = $user_id;
+    $this->indexer->updateEditors( $user_id, true );
   }
 
   /**
    * Fires after the user's role has changed.
    *
-   * @since 2.9.0
+   * @param int $user_id The user ID.
+   * @param string $newRole The new role.
+   * @param string[] $oldRoles An array of the user's previous roles.
+   *
+   * @noinspection PhpUnused
    * @since 3.6.0 Added $old_roles to include an array of the user's previous roles.
    *
-   * @param int      $user_id   The user ID.
-   * @param string   $newRole      The new role.
-   * @param string[] $oldRoles An array of the user's previous roles.
-   * @noinspection PhpUnused
+   * @since 2.9.0
    */
   public function action__set_user_role( $user_id, $newRole, $oldRoles ) {
-    $this->indexer->getUserCounts();
-    $this->indexer->updateUserCounts( $newRole, + 1 );
-    $this->indexer->updateUserCounts( $oldRoles, - 1 );
-    $this->indexer->setUserCounts();
+
+    $this->indexer->updateUserCountsForRoleChange( $newRole, $oldRoles );
+    $this->indexer->updateEditors ($user_id);
   }
 
   /**
@@ -265,17 +199,18 @@ class Admin
    *
    * Return a non-null value to cause count_users() to return early.
    *
+   * @param null|string $result The value to return instead. Default null to continue with the query.
+   * @param string $strategy Optional. The computational strategy to use when counting the users.
+   *                              Accepts either 'time' or 'memory'. Default 'time'. (ignored)
+   * @param int|null $site_id Optional. The site ID to count users for. Defaults to the current site.
+   *
+   * @noinspection PhpUnused
    * @since 5.1.0
    *
-   * @param null|string $result   The value to return instead. Default null to continue with the query.
-   * @param string      $strategy Optional. The computational strategy to use when counting the users.
-   *                              Accepts either 'time' or 'memory'. Default 'time'. (ignored)
-   * @param int|null    $site_id  Optional. The site ID to count users for. Defaults to the current site.
-   * @noinspection PhpUnused
    */
   public function filter__pre_count_users( $result, $strategy, $site_id ) {
     /* cron jobs use this; don't intervene with this filter there. */
-    if (wp_doing_cron()) {
+    if ( wp_doing_cron() ) {
       return $result;
     }
     /* this bad boy gets called recursively, the way we cache user counts. */
@@ -309,54 +244,32 @@ class Admin
    * @noinspection PhpUnused
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
-    /* cron jobs use this; don't intervene there. */
-    if (wp_doing_cron()) {
-      return $query_args;
-    }
-    $query_args['include'] = $this->authorIdKludge;  // TODO this is bogus.
 
+    if (! is_array($parsed_args['include'])
+        && ! (isset($parsed_args['capability']) &&  $parsed_args['capability'] === 'edit_users')) {
+      $editors = $this->indexer->getEditors();
+      if ( is_array( $editors ) ) {
+        $query_args['include'] = $editors;
+      }
+    }
     return $query_args;
 
-    /* TODO
-    Array
-(
-    [blog_id] => 1
-    [include] =>
-    [exclude] =>
-    [orderby] => display_name
-    [order] => ASC
-    [who] =>
-    [role] =>
-    [role__in] => Array
-        (
-        )
+  }
 
-    [role__not_in] => Array
-        (
-        )
-
-    [capability] => Array
-        (
-            [0] => edit_posts
-        )
-
-    [capability__in] => Array
-        (
-        )
-
-    [capability__not_in] => Array
-        (
-        )
-
-    [fields] => Array
-        (
-            [0] => ID
-            [1] => user_login
-            [2] => display_name
-        )
-
-)
-*/
+  /**
+   * Fires before the WP_User_Query has been parsed.
+   *
+   * The passed WP_User_Query object contains the query variables,
+   * not yet passed into SQL.
+   *
+   * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
+   *
+   * @noinspection PhpUnused*
+   * @since 4.0.0
+   *
+   */
+  public function action__pre_get_users( $query ) {
+    $a = $query;
   }
 
   /**
@@ -372,10 +285,6 @@ class Admin
    * @noinspection PhpUnused
    */
   public function filter__quick_edit_dropdown_authors_args( $users_opt, $bulk ) {
-    /* cron jobs use this; don't intervene there. */
-    if (wp_doing_cron()) {
-      return $users_opt;
-    }
     $o = $users_opt;
 
     return $users_opt;
@@ -396,7 +305,7 @@ class Admin
    *
    * @noinspection PhpUnused
    */
-  public function filter__pre_user_query( $query ) {
+  public function action__pre_user_query( $query ) {
     /* Here we have $query->query_fields, query_from, query_where, query_orderby, query_limit
      *  and serveral other members of the WP_User_Query object.
      * We can alter them as needed to change the query before it runs */
@@ -410,32 +319,36 @@ class Admin
    *
    * @since 4.7.0
    *
-   * @param array $prepared_args Array of arguments for WP_User_Query.
+   * @param array $query_args Array of arguments for WP_User_Query.
    * @param WP_REST_Request $request The REST API request.
    *
-   * @noinspection PhpUnused*/
-  public function filter__rest_user_query( $prepared_args, $request ) {
-    if ( $request->get_param( 'context' ) === 'view' && $request->get_param( 'who' ) === 'authors' ) {
-      /* this rest query does SQL_CALC_FOUND_ROWS and pagination. */
-      $prepared_args['include'] = $this->authorIdKludge;
+   * @noinspection PhpUnused
+   */
+  public function filter__rest_user_query( $query_args, $request ) {
+    if (! is_array($query_args['include'])
+        && ! (isset($query_args['capability']) &&  $query_args['capability'] === 'edit_users')) {
+      $editors = $this->indexer->getEditors();
+      if ( is_array( $editors ) ) {
+        $query_args['include'] = $editors;
+      }
     }
-
-    return $prepared_args;
+    return $query_args;
   }
 
   /**
    * Fires immediately after a user is created or updated via the REST API.
    *
-   * @param WP_User         $user     Inserted or updated user object.
-   * @param WP_REST_Request $request  Request object.
-   * @param bool            $creating True when creating a user, false when updating.
+   * @param WP_User $user Inserted or updated user object.
+   * @param WP_REST_Request $request Request object.
+   * @param bool $creating True when creating a user, false when updating.
    *
    * @noinspection PhpUnused
    * @noinspection PhpUnusedParameterInspection
-   *@since 4.7.0
+   * @since 4.7.0
    *
    */
-  public function action__rest_insert_user ( $user, $request, $creating ) {
+  public function action__rest_insert_user( $user, $request, $creating ) {
+    // TODO
     $a = $user;
   }
 
@@ -443,28 +356,31 @@ class Admin
   /**
    * Fires after a user is completely created or updated via the REST API.
    *
+   * @param WP_User $user Inserted or updated user object.
+   * @param WP_REST_Request $request Request object.
+   * @param bool $creating True when creating a user, false when updating.
+   *
+   * @noinspection PhpUnused
    * @since 5.0.0
    *
-   * @param WP_User         $user     Inserted or updated user object.
-   * @param WP_REST_Request $request  Request object.
-   * @param bool            $creating True when creating a user, false when updating.
-   * @noinspection PhpUnused
    */
-  public function action__rest_after_insert_user ( $user, $request, $creating ) {
+  public function action__rest_after_insert_user( $user, $request, $creating ) {
     $a = $user;
   }
 
   /**
    * Fires immediately after a user is deleted via the REST API.
    *
+   * @param WP_User $user The user data.
+   * @param WP_REST_Response $response The response returned from the API.
+   * @param WP_REST_Request $request The request sent to the API.
+   *
+   * @noinspection PhpUnused
    * @since 4.7.0
    *
-   * @param WP_User          $user     The user data.
-   * @param WP_REST_Response $response The response returned from the API.
-   * @param WP_REST_Request  $request  The request sent to the API.
-   * @noinspection PhpUnused
    */
-  public function action__rest_delete_user ($user, $response, $request) {
+  public function action__rest_delete_user( $user, $response, $request ) {
+    //TODO
     $a = $user;
   }
 
@@ -487,6 +403,9 @@ class Admin
    * @noinspection PhpUnused
    */
   public function filter__users_pre_query( $results, $query ) {
+    if (wp_doing_cron()) {
+      return $results;
+    }
     return $results;  /* unmodified, this is null */
   }
 
@@ -502,9 +421,12 @@ class Admin
    * @noinspection PhpUnused
    */
   public function filter__found_users_query( $sql, $query ) {
+    if (wp_doing_cron()) {
+      return $sql;
+    }
+
     return $sql;
   }
-
 
   protected function getMessage() {
     if ( $this->message ) {

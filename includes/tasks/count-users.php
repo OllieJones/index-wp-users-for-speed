@@ -32,6 +32,10 @@ class CountUsers extends Task {
 
     return true;
   }
+
+  public function getResult () {
+    get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
+  }
 }
 
 
