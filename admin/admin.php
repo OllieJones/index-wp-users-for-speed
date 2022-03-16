@@ -191,7 +191,7 @@ class Admin
   public function action__set_user_role( $user_id, $newRole, $oldRoles ) {
 
     $this->indexer->updateUserCountsForRoleChange( $newRole, $oldRoles );
-    $this->indexer->updateEditors ($user_id);
+    $this->indexer->updateEditors( $user_id );
   }
 
   /**
@@ -245,13 +245,14 @@ class Admin
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
 
-    if (! is_array($parsed_args['include'])
-        && ! (isset($parsed_args['capability']) &&  $parsed_args['capability'] === 'edit_users')) {
+    if ( ! is_array( $parsed_args['include'] )
+         && isset( $parsed_args['capability'] ) && in_array( 'edit_posts', $parsed_args['capability'] ) ) {
       $editors = $this->indexer->getEditors();
       if ( is_array( $editors ) ) {
         $query_args['include'] = $editors;
       }
     }
+
     return $query_args;
 
   }
@@ -325,13 +326,19 @@ class Admin
    * @noinspection PhpUnused
    */
   public function filter__rest_user_query( $query_args, $request ) {
-    if (! is_array($query_args['include'])
-        && ! (isset($query_args['capability']) &&  $query_args['capability'] === 'edit_users')) {
-      $editors = $this->indexer->getEditors();
-      if ( is_array( $editors ) ) {
-        $query_args['include'] = $editors;
+
+    /* Notice that the JSON ajax requests for lists of users have the deprecated who=authors
+     * query syntax. This code allows both that and the new capability=[edit_posts] syntax */
+    if ( ! is_array( $query_args['include'] ) || count( $query_args['include'] ) === 0 ) {
+      if ( ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' )
+           || ( isset ( $query_args ['capability'] ) && in_array( 'edit_posts', $query_args['capability'] ) ) ) {
+        $editors = $this->indexer->getEditors();
+        if ( is_array( $editors ) ) {
+          $query_args['include'] = $editors;
+        }
       }
     }
+
     return $query_args;
   }
 
@@ -403,9 +410,10 @@ class Admin
    * @noinspection PhpUnused
    */
   public function filter__users_pre_query( $results, $query ) {
-    if (wp_doing_cron()) {
+    if ( wp_doing_cron() ) {
       return $results;
     }
+
     return $results;  /* unmodified, this is null */
   }
 
@@ -421,7 +429,7 @@ class Admin
    * @noinspection PhpUnused
    */
   public function filter__found_users_query( $sql, $query ) {
-    if (wp_doing_cron()) {
+    if ( wp_doing_cron() ) {
       return $sql;
     }
 

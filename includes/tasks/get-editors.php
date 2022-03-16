@@ -44,6 +44,10 @@ class GetEditors extends Task {
         $editors[] = $qresult->ID;
       }
     }
+    /* there's some chance that a long IN(1,2,3) clause
+     * will run slightly more efficiently in MySQL
+     * if it is presorted for them. */
+    sort($editors, SORT_NUMERIC);
     set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors", $editors, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
     $this->endChunk();
 
