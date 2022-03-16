@@ -37,6 +37,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
+define ('INDEX_WP_USERS_FOR_SPEED_NAME', 'index-wp-users-for-speed');
 define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
 define( 'INDEX_WP_USERS_FOR_SPEED_PREFIX', 'index_wp_users_' );
 define( 'INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME', 60 );
@@ -50,19 +51,19 @@ function index_wp_users_for_speed_error_log ($msg) {
 
 /**
  * The code that runs during plugin activation.
- * This action is documented in includes/class-index- wp-users-for-speed-activator.php
+ * This action is documented in includes/activator.php
  */
 function activate_index_wp_users_for_speed() {
-  require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-activator.php';
+  require_once plugin_dir_path( __FILE__ ) . 'includes/activator.php';
   Activator::activate();
 }
 
 /**
  * The code that runs during plugin deactivation.
- * This action is documented in includes/class-index-wp-users-for-speed-deactivator.php
+ * This action is documented in includes/deactivator.php
  */
 function deactivate_index_wp_users_for_speed() {
-  require_once plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed-deactivator.php';
+  require_once plugin_dir_path( __FILE__ ) . 'includes/deactivator.php';
   Deactivator::deactivate();
 }
 
@@ -73,7 +74,7 @@ register_deactivation_hook( __FILE__, 'deactivate_index_wp_users_for_speed' );
  * The core plugin class that is used to define internationalization,
  * admin-specific hooks, and public-facing site hooks.
  */
-require plugin_dir_path( __FILE__ ) . 'includes/class-index-wp-users-for-speed.php';
+require plugin_dir_path( __FILE__ ) . 'includes/plugin.php';
 
 /**
  * Begins execution of the plugin.

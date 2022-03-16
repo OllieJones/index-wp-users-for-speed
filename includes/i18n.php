@@ -2,7 +2,6 @@
 
 namespace OllieJones\index_wp_users_for_speed;
 
-
 /**
  * Define the internationalization functionality
  *
@@ -27,15 +26,19 @@ namespace OllieJones\index_wp_users_for_speed;
  * @subpackage Index_Wp_Users_For_Speed/includes
  * @author     Ollie Jones <oj@plumislandmedia.net>
  */
-class i18n {
+class i18n extends WordPressHooks {
 
 
-	/**
+  public function __construct() {
+    parent::__construct();
+  }
+
+  /**
 	 * Load the plugin text domain for translation.
 	 *
 	 * @since    1.0.0
 	 */
-	public function load_plugin_textdomain() {
+	public function action__plugins_loaded() {
 
 		load_plugin_textdomain(
 			'index-wp-users-for-speed',
@@ -45,6 +48,5 @@ class i18n {
 
 	}
 
-
-
 }
+new i18n();

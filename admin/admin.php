@@ -1,15 +1,17 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**  */
 
 namespace OllieJones\index_wp_users_for_speed;
+
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/wordpress-hooks.php';
 
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_User;
 use WP_User_Query;
 
-require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-index-wp-users-for-speed-indexing.php';
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
 
 /**
  * The admin-specific functionality of the plugin.
@@ -54,16 +56,13 @@ class Admin
   /**
    * Initialize the class and set its properties.
    *
-   * @param string $plugin_name The name of this plugin.
-   * @param string $version The version of this plugin.
-   *
    * @since    1.0.0
    */
-  public function __construct( $plugin_name, $version ) {
+  public function __construct( ) {
 
-    $this->plugin_name    = $plugin_name;
-    $this->version        = $version;
-    $this->indexer        = Indexing::getInstance();
+    $this->plugin_name    = INDEX_WP_USERS_FOR_SPEED_NAME;
+    $this->version        = INDEX_WP_USERS_FOR_SPEED_VERSION;
+    $this->indexer        = Indexer::getInstance();
     $this->authorIdKludge = range( 0, 20 );  //TODO get this right.
     $this->pluginPath     = plugin_dir_path( dirname( __FILE__ ) );
     /* after a POST, we get a redirect with ?st=message */
@@ -82,7 +81,8 @@ class Admin
     parent::__construct();
   }
 
-  public function action_admin_menu() {
+  /** @noinspection PhpUnused */
+  public function action__admin_menu() {
     add_users_page(
       esc_html__( 'Index WP Users For Speed', 'index-wp-users-for-speed' ),
       esc_html__( 'Index For Speed', 'index-wp-users-for-speed' ),
@@ -100,7 +100,7 @@ class Admin
   /** untrusted post action
    * @return void
    */
-  public function action_post_action_unverified() {
+  public function action__post_action_unverified() {
     $valid = check_admin_referer( $this->plugin_name, 'reindex' );
     if ( $valid === 1 ) {
       if ( current_user_can( 'update_options' ) ) {
@@ -119,7 +119,7 @@ class Admin
    *
    * @return void
    */
-  public function filter_post_filter( $params, $message ) {
+  public function filter__post_filter( $params, $message ) {
     $q = $params;
 
     return $message;
@@ -129,8 +129,9 @@ class Admin
    * Register the stylesheets for the admin area.
    *
    * @since    1.0.0
+   * @noinspection PhpUnused
    */
-  public function action_admin_enqueue_scripts() {
+  public function action__admin_enqueue_scripts() {
     //TODO wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/index-wp-users-for-speed-admin.css', [], $this->version, 'all' );
     //TODO wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
   }
@@ -146,8 +147,9 @@ class Admin
    * @since 5.5.0 Added the `$user` parameter.
    *
    * @since 2.0.0
+   * @noinspection PhpUnused
    */
-  public function action_delete_user( $id, $reassign, $user ) {
+  public function action__delete_user( $id, $reassign, $user ) {
     $a = $user;
   }
 
@@ -161,8 +163,9 @@ class Admin
    * @param int|null $reassign ID of the user to reassign posts and links to.
    *                           Default null, for no reassignment.
    * @param WP_User  $user     WP_User object of the deleted user.
+   * @noinspection PhpUnused
    */
-  public function action_deleted_user( $id, $reassign, $user ) {
+  public function action__deleted_user( $id, $reassign, $user ) {
     $a = $user;
   }
 
@@ -174,8 +177,9 @@ class Admin
    * @param int    $user_id User ID.
    * @param string $role    User role.
    * @param int    $blog_id Blog ID.
+   * @noinspection PhpUnused
    */
-  public function action_add_user_to_blog( $user_id, $role, $blog_id ) {
+  public function action__add_user_to_blog( $user_id, $role, $blog_id ) {
     $this->indexer->getUserCounts();
     $this->indexer->updateUserCounts( $role, + 1 );
     $this->indexer->setUserCounts();
@@ -184,14 +188,17 @@ class Admin
   /**
    * Fires before a user is removed from a site.
    *
-   * @since MU (3.0.0)
-   * @since 5.4.0 Added the `$reassign` parameter.
-   *
    * @param int $user_id  ID of the user being removed.
    * @param int $blog_id  ID of the blog the user is being removed from.
    * @param int $reassign ID of the user to whom to reassign posts.
+   *
+   * @noinspection PhpUnused
+   *
+   * @since 5.4.0 Added the `$reassign` parameter.
+   *
+   * @since MU (3.0.0)
    */
-  public function action_remove_user_from_blog( $user_id, $blog_id, $reassign ) {
+  public function action__remove_user_from_blog( $user_id, $blog_id, $reassign ) {
     $user  = get_userdata( $user_id );
     $roles = $user->roles;
     $this->indexer->getUserCounts();
@@ -209,24 +216,29 @@ class Admin
    *
    * @param array $args Arguments passed to WP_User_Query to retrieve items for the current
    *                    users list table.
+   * @noinspection PhpUnused
    */
-  public function filter_users_list_table_query_args( $args ) {
+  public function filter__users_list_table_query_args( $args ) {
     return $args;
   }
 
-  public function action_wpmu_activate_user( $user_id, $password, $meta ) {
+  /** @noinspection PhpUnused */
+  public function action__wpmu_activate_user( $user_id, $password, $meta ) {
     $a = $user_id;
   }
 
-  public function action_wpmu_delete_user( $user_id, $user ) {
+  /** @noinspection PhpUnused */
+  public function action__wpmu_delete_user( $user_id, $user ) {
     $a = $user;
   }
 
-  public function action_network_site_new_created_user( $user_id ) {
+  /** @noinspection PhpUnused */
+  public function action__network_site_new_created_user( $user_id ) {
     $a = $user_id;
   }
 
-  public function action_network_site_users_created_user( $user_id ) {
+  /** @noinspection PhpUnused */
+  public function action__network_site_users_created_user( $user_id ) {
     $a = $user_id;
   }
 
@@ -239,8 +251,9 @@ class Admin
    * @param int      $user_id   The user ID.
    * @param string   $newRole      The new role.
    * @param string[] $oldRoles An array of the user's previous roles.
+   * @noinspection PhpUnused
    */
-  public function action_set_user_role( $user_id, $newRole, $oldRoles ) {
+  public function action__set_user_role( $user_id, $newRole, $oldRoles ) {
     $this->indexer->getUserCounts();
     $this->indexer->updateUserCounts( $newRole, + 1 );
     $this->indexer->updateUserCounts( $oldRoles, - 1 );
@@ -258,8 +271,9 @@ class Admin
    * @param string      $strategy Optional. The computational strategy to use when counting the users.
    *                              Accepts either 'time' or 'memory'. Default 'time'. (ignored)
    * @param int|null    $site_id  Optional. The site ID to count users for. Defaults to the current site.
+   * @noinspection PhpUnused
    */
-  public function filter_pre_count_users( $result, $strategy, $site_id ) {
+  public function filter__pre_count_users( $result, $strategy, $site_id ) {
     /* cron jobs use this; don't intervene with this filter there. */
     if (wp_doing_cron()) {
       return $result;
@@ -292,8 +306,9 @@ class Admin
    * @returns array Updated $query_args
    * @since 4.4.0
    *
+   * @noinspection PhpUnused
    */
-  public function filter_wp_dropdown_users_args( $query_args, $parsed_args ) {
+  public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
     /* cron jobs use this; don't intervene there. */
     if (wp_doing_cron()) {
       return $query_args;
@@ -354,8 +369,9 @@ class Admin
    *
    * @see wp_dropdown_users()
    *
+   * @noinspection PhpUnused
    */
-  public function filter_quick_edit_dropdown_authors_args( $users_opt, $bulk ) {
+  public function filter__quick_edit_dropdown_authors_args( $users_opt, $bulk ) {
     /* cron jobs use this; don't intervene there. */
     if (wp_doing_cron()) {
       return $users_opt;
@@ -378,8 +394,9 @@ class Admin
    * The passed WP_User_Query object contains SQL parts formed
    * from parsing the given query.
    *
+   * @noinspection PhpUnused
    */
-  public function filter_pre_user_query( $query ) {
+  public function filter__pre_user_query( $query ) {
     /* Here we have $query->query_fields, query_from, query_where, query_orderby, query_limit
      *  and serveral other members of the WP_User_Query object.
      * We can alter them as needed to change the query before it runs */
@@ -397,7 +414,7 @@ class Admin
    * @param WP_REST_Request $request The REST API request.
    *
    * @noinspection PhpUnused*/
-  public function filter_rest_user_query( $prepared_args, $request ) {
+  public function filter__rest_user_query( $prepared_args, $request ) {
     if ( $request->get_param( 'context' ) === 'view' && $request->get_param( 'who' ) === 'authors' ) {
       /* this rest query does SQL_CALC_FOUND_ROWS and pagination. */
       $prepared_args['include'] = $this->authorIdKludge;
@@ -409,13 +426,16 @@ class Admin
   /**
    * Fires immediately after a user is created or updated via the REST API.
    *
-   * @since 4.7.0
-   *
    * @param WP_User         $user     Inserted or updated user object.
    * @param WP_REST_Request $request  Request object.
    * @param bool            $creating True when creating a user, false when updating.
+   *
+   * @noinspection PhpUnused
+   * @noinspection PhpUnusedParameterInspection
+   *@since 4.7.0
+   *
    */
-  public function action_rest_insert_user ( $user, $request, $creating ) {
+  public function action__rest_insert_user ( $user, $request, $creating ) {
     $a = $user;
   }
 
@@ -428,8 +448,9 @@ class Admin
    * @param WP_User         $user     Inserted or updated user object.
    * @param WP_REST_Request $request  Request object.
    * @param bool            $creating True when creating a user, false when updating.
+   * @noinspection PhpUnused
    */
-  public function action_rest_after_insert_user ( $user, $request, $creating ) {
+  public function action__rest_after_insert_user ( $user, $request, $creating ) {
     $a = $user;
   }
 
@@ -441,8 +462,9 @@ class Admin
    * @param WP_User          $user     The user data.
    * @param WP_REST_Response $response The response returned from the API.
    * @param WP_REST_Request  $request  The request sent to the API.
+   * @noinspection PhpUnused
    */
-  public function action_rest_delete_user ($user, $response, $request) {
+  public function action__rest_delete_user ($user, $response, $request) {
     $a = $user;
   }
 
@@ -462,8 +484,9 @@ class Admin
    *
    * @since 5.1.0
    *
+   * @noinspection PhpUnused
    */
-  public function filter_users_pre_query( $results, $query ) {
+  public function filter__users_pre_query( $results, $query ) {
     return $results;  /* unmodified, this is null */
   }
 
@@ -476,8 +499,9 @@ class Admin
    * @since 3.2.0
    * @since 5.1.0 Added the `$this` parameter.
    *
+   * @noinspection PhpUnused
    */
-  public function filter_found_users_query( $sql, $query ) {
+  public function filter__found_users_query( $sql, $query ) {
     return $sql;
   }
 
@@ -494,3 +518,5 @@ class Admin
 
 
 }
+
+new Admin();

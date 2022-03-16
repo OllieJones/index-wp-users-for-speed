@@ -8,7 +8,7 @@ require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/task.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/count-users.php';
 
 
-class Indexing {
+class Indexer {
 
   /* a simple singleton class */
   protected static $singleInstance;

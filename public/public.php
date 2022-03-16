@@ -1,5 +1,7 @@
 <?php
 
+namespace OllieJones\index_wp_users_for_speed;
+
 /**
  * The public-facing functionality of the plugin.
  *
@@ -40,17 +42,15 @@ class Index_Wp_Users_For_Speed_Public {
 	 */
 	private $version;
 
-	/**
-	 * Initialize the class and set its properties.
-	 *
-	 * @since    1.0.0
-	 * @param      string    $plugin_name       The name of the plugin.
-	 * @param      string    $version    The version of this plugin.
-	 */
-	public function __construct( $plugin_name, $version ) {
+  /**
+   * Initialize the class and set its properties.
+   *
+   * @since    1.0.0
+   */
+	public function __construct(  ) {
 
-		$this->plugin_name = $plugin_name;
-		$this->version = $version;
+		$this->plugin_name = INDEX_WP_USERS_FOR_SPEED_NAME;
+		$this->version = INDEX_WP_USERS_FOR_SPEED_VERSION;
 
 	}
 
@@ -73,7 +73,7 @@ class Index_Wp_Users_For_Speed_Public {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/index-wp-users-for-speed-public.css', array(), $this->version, 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/public.css', array(), $this->version, 'all' );
 
 	}
 
@@ -101,3 +101,6 @@ class Index_Wp_Users_For_Speed_Public {
 	}
 
 }
+
+/** @noinspection PhpExpressionResultUnusedInspection */
+new Index_Wp_Users_For_Speed_Public();
