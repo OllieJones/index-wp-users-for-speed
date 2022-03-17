@@ -25,14 +25,19 @@ namespace OllieJones\index_wp_users_for_speed;
 class Deactivator {
 
 	/**
-	 * Short Description. (use period)
+	 * We wipe out stashed indexes on deactivation, not deletion.
 	 *
-	 * Long Description.
+	 * It doesn't make sense to keep the indexes when the plugin isn't active
+   * because they don't get maintained.
 	 *
 	 * @since    1.0.0
 	 */
 	public static function deactivate() {
 
-	}
+    delete_transient(INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
+    delete_transient ( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
+
+
+  }
 
 }

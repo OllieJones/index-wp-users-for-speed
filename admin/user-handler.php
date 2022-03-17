@@ -41,10 +41,10 @@ class UserHandler extends WordPressHooks {
 
   public function __construct() {
 
-    $this->plugin_name    = INDEX_WP_USERS_FOR_SPEED_NAME;
-    $this->version        = INDEX_WP_USERS_FOR_SPEED_VERSION;
-    $this->indexer        = Indexer::getInstance();
-    $this->pluginPath     = plugin_dir_path( dirname( __FILE__ ) );
+    $this->plugin_name = INDEX_WP_USERS_FOR_SPEED_NAME;
+    $this->version     = INDEX_WP_USERS_FOR_SPEED_VERSION;
+    $this->indexer     = Indexer::getInstance();
+    $this->pluginPath  = plugin_dir_path( dirname( __FILE__ ) );
     parent::__construct();
   }
 
@@ -132,14 +132,17 @@ class UserHandler extends WordPressHooks {
     if ( $this->recursionLevelBySite[ $site_id ] > 0 ) {
       return $result;
     }
-    $previousId = get_current_blog_id();
-    switch_to_blog( $site_id );
 
+    if ( is_multisite() ) {
+      switch_to_blog( $site_id );
+    }
     $this->recursionLevelBySite[ $site_id ] ++;
     $output = $this->indexer->getUserCounts();
     $this->recursionLevelBySite[ $site_id ] --;
 
-    switch_to_blog( $previousId );
+    if ( is_multisite() ) {
+      restore_current_blog();
+    }
 
     return $output;
   }

@@ -24,10 +24,10 @@
  * Network:      true
  * Tags:         users, performance
  */
-// If this file is called directly, abort.
 use OllieJones\index_wp_users_for_speed\Activator;
 use OllieJones\index_wp_users_for_speed\Deactivator;
 
+// If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
   die;
 }
@@ -38,15 +38,19 @@ if ( ! defined( 'WPINC' ) ) {
  * Rename this for your plugin and update it as you release new versions.
  */
 define ('INDEX_WP_USERS_FOR_SPEED_NAME', 'index-wp-users-for-speed');
+define ('INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename ( __FILE__ ));
 define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
 define( 'INDEX_WP_USERS_FOR_SPEED_PREFIX', 'index_wp_users_' );
 define( 'INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME', 60 );
 define( 'INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME', 300 );
 
+/** Error logging, useful for caught errors in cronjobs.
+ * @param $msg
+ *
+ * @return void
+ */
 function index_wp_users_for_speed_error_log ($msg) {
-  if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
     error_log ($msg);
-  }
 }
 
 /**

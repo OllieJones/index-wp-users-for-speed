@@ -38,7 +38,6 @@ class Admin
   private $version;
   private $indexer;
   private $pluginPath;
-  private $recursionLevelBySite = [];
   private $message;
 
   /**
@@ -48,9 +47,9 @@ class Admin
    */
   public function __construct() {
 
-    $this->plugin_name    = INDEX_WP_USERS_FOR_SPEED_NAME;
-    $this->version        = INDEX_WP_USERS_FOR_SPEED_VERSION;
-    $this->pluginPath     = plugin_dir_path( dirname( __FILE__ ) );
+    $this->plugin_name = INDEX_WP_USERS_FOR_SPEED_NAME;
+    $this->version     = INDEX_WP_USERS_FOR_SPEED_VERSION;
+    $this->pluginPath  = plugin_dir_path( dirname( __FILE__ ) );
     /* after a POST, we get a redirect with ?st=message */
     $this->message = isset( $_REQUEST['st'] ) ? sanitize_key( $_REQUEST['st'] ) : null;
 
@@ -65,8 +64,12 @@ class Admin
     ];
 
     /* postback handlers for form. */
-    add_action('admin_post_index-wp-users-for-speed-action', [$this, 'post_action_unverified']);
-    add_action('index-wp-users-for-speed-post-filter', [$this, 'post_filter']);
+    add_action( 'admin_post_index-wp-users-for-speed-action', [ $this, 'post_action_unverified' ] );
+    add_action( 'index-wp-users-for-speed-post-filter', [ $this, 'post_filter' ] );
+
+    /* action link for plugins page */
+    add_filter( 'plugin_action_links_' . INDEX_WP_USERS_FOR_SPEED_FILENAME, [$this, 'action_link']);
+
     parent::__construct();
   }
 
@@ -95,11 +98,11 @@ class Admin
   public function post_action_unverified() {
     $valid = check_admin_referer( $this->plugin_name, 'reindex' );
     if ( $valid === 1 ) {
-      if ( current_user_can( 'update_options' ) ) {
-        $params = $_REQUEST;
+      if ( current_user_can( 'manage_options' ) ) {
+        $params                    = $_REQUEST;
         $params['postback_status'] = 'default';
-        $message = apply_filters( $this->plugin_name . '-post-filter', $params );
-        $postbackStatus = $message['postback_status'];
+        $message                   = apply_filters( $this->plugin_name . '-post-filter', $params );
+        $postbackStatus            = $message['postback_status'];
         wp_safe_redirect( add_query_arg( 'st', $postbackStatus, wp_get_referer() ) );
 
         return;
@@ -130,6 +133,7 @@ class Admin
     //TODO wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/index-wp-users-for-speed-admin.css', [], $this->version, 'all' );
     //TODO wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
   }
+
   protected function getMessage() {
     if ( $this->message ) {
       $message = array_key_exists( $this->message, self::$messages ) ? $this->message : 'default';
@@ -139,6 +143,36 @@ class Admin
     }
 
     return false;
+  }
+
+  /**
+   * Filters the list of action links displayed for a specific plugin in the Plugins list table.
+   *
+   * The dynamic portion of the hook name, `$plugin_file`, refers to the path
+   * to the plugin file, relative to the plugins directory.
+   *
+   * @param string[] $actions     An array of plugin action links. By default this can include
+   *                              'activate', 'deactivate', and 'delete'. With Multisite active
+   *                              this can also include 'network_active' and 'network_only' items.
+   * @param string   $plugin_file Path to the plugin file relative to the plugins directory.
+   * @param array    $plugin_data An array of plugin data. See `get_plugin_data()`
+   *                              and the {@see 'plugin_row_meta'} filter for the list
+   *                              of possible values.
+   * @param string   $context     The plugin context. By default this can include 'all',
+   *                              'active', 'inactive', 'recently_activated', 'upgrade',
+   *                              'mustuse', 'dropins', and 'search'.
+   *
+   * @since 2.7.0
+   * @since 4.9.0 The 'Edit' link was removed from the list of action links.
+   *
+   * @noinspection PhpDocSignatureInspection
+   */
+  public function action_link( $actions ) {
+    $mylinks = [
+      '<a href="' . admin_url( 'users.php?page=' . $this->plugin_name ) . '">' . __( 'Settings' ) . '</a>',
+    ];
+
+    return array_merge( $mylinks, $actions );
   }
 
 
