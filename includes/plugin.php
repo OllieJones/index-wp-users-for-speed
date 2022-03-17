@@ -32,16 +32,6 @@ namespace OllieJones\index_wp_users_for_speed;
 class Index_Wp_Users_For_Speed {
 
   /**
-   * The loader that's responsible for maintaining and registering all hooks that power
-   * the plugin.
-   *
-   * @since    1.0.0
-   * @access   protected
-   * @var      Loader $loader Maintains and registers all hooks for the plugin.
-   */
-  protected $loader;
-
-  /**
    * The unique identifier of this plugin.
    *
    * @since    1.0.0
@@ -72,17 +62,21 @@ class Index_Wp_Users_For_Speed {
     $this->version     = INDEX_WP_USERS_FOR_SPEED_VERSION;
     $this->plugin_name = INDEX_WP_USERS_FOR_SPEED_NAME;
 
-    /* try to minimize front-end overhead. */
+    /* stuff required for all back-end. cron, REST api operations. */
     if ( wp_doing_cron() || wp_doing_ajax() || is_admin() || wp_is_json_request() || wp_is_xml_request()) {
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/wordpress-hooks.php';
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/i18n.php';
+      require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/user-handler.php';
+    }
+
+    /* stuff required for admin page but not for cron, REST */
+    if ( wp_doing_cron() || wp_doing_ajax() || is_admin() || wp_is_json_request() || wp_is_xml_request()) {
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/admin.php';
     } /** @noinspection PhpStatementHasEmptyBodyInspection */ else {
       /* front-facing: empty for now */
     }
 
   }
-
 
   /**
    * The name of the plugin used to uniquely identify it within the context of
