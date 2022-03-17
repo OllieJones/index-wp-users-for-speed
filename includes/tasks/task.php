@@ -12,7 +12,6 @@ use Exception;
 function index_wp_users_for_speed_do_task( $serializedTask ) {
   try {
     $task = unserialize( $serializedTask );
-    index_wp_users_for_speed_error_log( 'index_wp_users_for_speed_task: cron hook start: ' . $task->taskName  );
     $done = $task->doChunk();
     if ( ! $done ) {
       $task->schedule();

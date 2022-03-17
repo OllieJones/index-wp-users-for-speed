@@ -63,7 +63,6 @@ class Admin
     $this->plugin_name    = INDEX_WP_USERS_FOR_SPEED_NAME;
     $this->version        = INDEX_WP_USERS_FOR_SPEED_VERSION;
     $this->indexer        = Indexer::getInstance();
-    $this->authorIdKludge = range( 0, 20 );  //TODO get this right.
     $this->pluginPath     = plugin_dir_path( dirname( __FILE__ ) );
     /* after a POST, we get a redirect with ?st=message */
     $this->message = isset( $_REQUEST['st'] ) ? sanitize_key( $_REQUEST['st'] ) : null;
@@ -75,9 +74,12 @@ class Admin
       'progress'  => __( 'User Indexing %1$s Complete', 'index-wp-users-for-speed' ),
       'completed' => __( 'User Indexing Complete', 'index-wp-users-for-speed' ),
       /* translators: 1: message id, like 'started' or 'removed' This is a warning */
-      'default'   => __( 'Unknown message id %1$s', 'index-wp-users-for-speed' ),
+      'default'   => null,
     ];
 
+    /* postback handlers for form. */
+    add_action('admin_post_index-wp-users-for-speed-action', [$this, 'post_action_unverified']);
+    add_action('index-wp-users-for-speed-post-filter', [$this, 'post_filter']);
     parent::__construct();
   }
 
@@ -100,12 +102,15 @@ class Admin
   /** untrusted post action
    * @return void
    */
-  public function action__post_action_unverified() {
+  public function post_action_unverified() {
     $valid = check_admin_referer( $this->plugin_name, 'reindex' );
     if ( $valid === 1 ) {
       if ( current_user_can( 'update_options' ) ) {
-        $message = apply_filters( $this->plugin_name . '-post-filter', $_REQUEST, 'default' );
-        wp_safe_redirect( add_query_arg( 'st', $message, wp_get_referer() ) );
+        $params = $_REQUEST;
+        $params['postback_status'] = 'default';
+        $message = apply_filters( $this->plugin_name . '-post-filter', $params );
+        $postbackStatus = $message['postback_status'];
+        wp_safe_redirect( add_query_arg( 'st', $postbackStatus, wp_get_referer() ) );
 
         return;
       }
@@ -117,12 +122,12 @@ class Admin
    *
    * @param array $params
    *
-   * @return void
+   * @return array 
    */
-  public function filter__post_filter( $params, $message ) {
-    $q = $params;
+  public function post_filter( $params ) {
+    /* modify  $params['postback_status'] to get something else. */
 
-    return $message;
+    return $params;
   }
 
   /**
@@ -439,8 +444,9 @@ class Admin
   protected function getMessage() {
     if ( $this->message ) {
       $message = array_key_exists( $this->message, self::$messages ) ? $this->message : 'default';
-
-      return sprintf( self::$messages[ $message ], $this->message );
+      if ( $message !== 'default' ) {
+        return sprintf( self::$messages[ $message ], $this->message );
+      }
     }
 
     return false;
