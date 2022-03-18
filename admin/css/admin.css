@@ -1,4 +1,14 @@
-/**
- * All of the CSS for your admin-specific functionality should be
- * included in this file.
- */
+@media (min-width: 783px) {
+    div.wrap.index-users > form > table.form-table > tbody > tr > th {
+        text-align: right;
+        font-weight: 400;
+    }
+}
+
+div.wrap.index-users > form > table.form-table > tbody > tr > td > div > span.radioitem {
+    margin-right: 1em;
+}
+
+div.wrap.index-users > form > table.form-table > tbody > tr > td > div > p {
+    word-break: break-word;
+}

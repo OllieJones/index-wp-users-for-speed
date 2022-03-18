@@ -4,11 +4,11 @@
 
 namespace OllieJones\index_wp_users_for_speed;
 
+use Exception;
+
 /**
- * The admin-specific functionality of the plugin.
+ * The admin settings page of the plugin.
  *
- * Defines the plugin name, version, and two examples hooks for how to
- * enqueue the admin-specific stylesheet and JavaScript.
  *
  * @link       https://github.com/OllieJones
  * @package    Index_Wp_Users_For_Speed
@@ -20,21 +20,8 @@ class Admin
 
   private static $messages;
 
-  /**
-   * The ID of this plugin.
-   *
-   * @since    1.0.0
-   * @access   private
-   * @var      string $plugin_name The ID of this plugin.
-   */
   private $plugin_name;
-  /**
-   * The version of this plugin.
-   *
-   * @since    1.0.0
-   * @access   private
-   * @var      string $version The current version of this plugin.
-   */
+  private $options_name;
   private $version;
   private $indexer;
   private $pluginPath;
@@ -51,7 +38,8 @@ class Admin
     $this->version     = INDEX_WP_USERS_FOR_SPEED_VERSION;
     $this->pluginPath  = plugin_dir_path( dirname( __FILE__ ) );
     /* after a POST, we get a redirect with ?st=message */
-    $this->message = isset( $_REQUEST['st'] ) ? sanitize_key( $_REQUEST['st'] ) : null;
+    $this->message      = isset( $_REQUEST['st'] ) ? sanitize_key( $_REQUEST['st'] ) : null;
+    $this->options_name = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options';
 
     self::$messages = [
       'started'   => __( 'User Indexing Started', 'index-wp-users-for-speed' ),
@@ -68,13 +56,22 @@ class Admin
     add_action( 'index-wp-users-for-speed-post-filter', [ $this, 'post_filter' ] );
 
     /* action link for plugins page */
-    add_filter( 'plugin_action_links_' . INDEX_WP_USERS_FOR_SPEED_FILENAME, [$this, 'action_link']);
+    add_filter( 'plugin_action_links_' . INDEX_WP_USERS_FOR_SPEED_FILENAME, [ $this, 'action_link' ] );
 
     parent::__construct();
   }
 
   /** @noinspection PhpUnused */
   public function action__admin_menu() {
+
+
+    /* first arg: same as page slug (last arg to settings_section, second-to-last in settings field).
+     * second arg: becomes wp_options.option_name value.
+     * sanitize_callback: gets called with wp_options.option_value value, deserialized */
+    register_setting( $this->options_name,
+      $this->options_name,
+      [ 'sanitize_callback' => [ $this, 'sanitize_settings' ] ] );
+
     add_users_page(
       esc_html__( 'Index WP Users For Speed', 'index-wp-users-for-speed' ),
       esc_html__( 'Index For Speed', 'index-wp-users-for-speed' ),
@@ -83,6 +80,113 @@ class Admin
       [ $this, 'render_admin_page' ],
       12 );
 
+    add_settings_section( 'timing',
+      esc_html__( 'Rebuilding user indexes', 'index-wp-users-for-speed' ),
+      [ $this, 'render_timing_section' ],
+      $this->plugin_name );
+
+    add_settings_field( 'auto_rebuild',
+      esc_html__( 'Rebuild indexes', 'index-wp-users-for-speed' ),
+      [ $this, 'render_auto_rebuild_field' ],
+      $this->plugin_name,
+      'timing' );
+
+    add_settings_field( 'rebuild_time',
+      esc_html__( '...at this time', 'index-wp-users-for-speed' ),
+      [ $this, 'render_rebuild_time_field' ],
+      $this->plugin_name,
+      'timing' );
+
+    add_settings_field( 'now_rebuild',
+      esc_html__( 'Rebuild indexes immediately', 'index-wp-users-for-speed' ),
+      [ $this, 'render_now_rebuild_field' ],
+      $this->plugin_name,
+      'timing' );
+
+    add_settings_field( 'now_remove',
+      esc_html__( 'Remove indexes immediately', 'index-wp-users-for-speed' ),
+      [ $this, 'render_now_remove_field' ],
+      $this->plugin_name,
+      'timing' );
+
+  }
+
+  public function sanitize_settings( $input ) {
+
+    $output = [];
+    try {
+      $autoRebuild = isset( $input['auto_rebuild'] ) && $input['auto_rebuild'] === 'on';
+      $time   = isset( $input['rebuild_time'] ) ?  $input['rebuild_time'] : '';
+      $timeString = $this->formatTime($time);
+
+      if ($timeString === false) {
+        add_settings_error( $this->options_name, 'rebuild',
+          esc_html__( 'Incorrect time.', 'index-wp-users-for-speed' ),
+          'error' );
+
+        return $input;
+      }
+
+      $rebuildNow  = isset( $input['now_rebuild'] ) && $input['now_rebuild'] === 'on';
+      $removeNow   = isset( $input['now_remove'] ) && $input['now_remove'] === 'on';
+
+
+      if ( $rebuildNow && $removeNow ) {
+        add_settings_error( $this->options_name, 'rebuild',
+          esc_html__( 'You may rebuild or remove indexes immediately, but not both. Please choose just one.', 'index-wp-users-for-speed' ),
+          'error' );
+
+        return $input;
+      } else if ( $rebuildNow ) {
+        add_settings_error( $this->options_name, 'rebuild',
+          esc_html__( 'Index rebuilding process starting', 'index-wp-users-for-speed' ),
+          'info' );
+      } else if ( $removeNow ) {
+        add_settings_error( $this->options_name, 'rebuild',
+          esc_html__( 'Index removing process starting', 'index-wp-users-for-speed' ),
+          'info' );
+      }
+
+      if ( $autoRebuild ) {
+            /* translators: 1: localized time like 1:22 PM or 13:22 */
+            $format  = __( 'Automatic index rebuilding scheduled for %1$s each day', 'index-wp-users-for-speed' );
+            $display = esc_html( sprintf( $format, $timeString ) );
+            add_settings_error( $this->options_name, 'rebuild', $display, 'success' );
+
+      } else {
+        $output['rebuild_time'] = $time;
+        $output['auto_rebuild'] = 'off';
+        $display                = esc_html( 'Automatic index rebuilding disabled', 'index-wp-users-for-speed' );
+        add_settings_error( $this->options_name, 'rebuild', $display, 'success' );
+      }
+
+      if ($autoRebuild) {
+
+      } else {
+
+      }
+    } catch ( Exception $ex ) {
+      add_settings_error( $this->options_name, 'rebuild', $ex->getMessage(), 'error' );
+    }
+
+    return $input;
+  }
+
+  private function formatTime ($time) {
+    $result = false;
+    try {
+      if ( preg_match( '/^\d\d:\d\d$/', $time ) ) {
+        $ts = intval( substr( $time, 0, 2 ) ) * 3600;
+        $ts += intval( substr( $time, 3, 2 ) ) * 60;
+        if ( $ts >= 0 && $ts < 86400 ) {
+          $result = wp_date( get_option( 'time_format' ), $ts, 'UTC' );
+        }
+      }
+    } catch ( Exception $ex ) {
+      /* empty, intentionally, no croaking here on bogus time */
+    }
+
+    return $result;
   }
 
   public function render_admin_page() {
@@ -92,36 +196,80 @@ class Admin
     include_once $this->pluginPath . 'admin/views/page.php';
   }
 
-  /** untrusted post action
-   * @return void
-   */
-  public function post_action_unverified() {
-    $valid = check_admin_referer( $this->plugin_name, 'reindex' );
-    if ( $valid === 1 ) {
-      if ( current_user_can( 'manage_options' ) ) {
-        $params                    = $_REQUEST;
-        $params['postback_status'] = 'default';
-        $message                   = apply_filters( $this->plugin_name . '-post-filter', $params );
-        $postbackStatus            = $message['postback_status'];
-        wp_safe_redirect( add_query_arg( 'st', $postbackStatus, wp_get_referer() ) );
-
-        return;
-      }
-    }
-    status_header( 403 );
+  public function render_timing_section() {
+    ?>
+      <p>
+        <?= esc_html__( 'You may rebuild your user indexes each day, or immediately.', 'index-wp-users-for-speed' ) ?>
+        <?= esc_html__( '(It is possible for them to become out-of-date.)', 'index-wp-users-for-speed' ) ?>
+      </p>
+    <?php
   }
 
-  /** Form post handler filter, after verification.
-   *
-   * @param array $params
-   *
-   * @return array  containing a 'postback_status' item.
-   */
-  public function post_filter( $params ) {
-    /* modify  $params['postback_status'] to get something else. */
-
-    return $params;
+  public function render_auto_rebuild_field() {
+    $options     = get_option( $this->options_name );
+    $autoRebuild = isset( $options['auto_rebuild'] ) ? $options['auto_rebuild'] : "on";
+    ?>
+      <div>
+      <span class="radioitem">
+          <input type="radio"
+                 id="auto_rebuild_yes"
+                 name="<?= $this->options_name ?>[auto_rebuild]"
+                 value="on"
+                 <?= $autoRebuild === 'on' ? 'checked' : '' ?> >
+            <label for="auto_rebuild_yes">
+                <?= esc_html__( 'daily', 'index-wp-users-for-speed' ) ?>
+            </label>
+      </span>
+          <span class="radioitem">
+          <input type="radio"
+                 id="auto_rebuild_no"
+                 name="<?= $this->options_name ?>[auto_rebuild]"
+                 value="off"
+                 <?= $autoRebuild !== 'on' ? 'checked' : '' ?> >
+            <label for="auto_rebuild_no">
+                <?= esc_html__( 'never', 'index-wp-users-for-speed' ) ?>
+            </label>
+      </span>
+      </div>
+    <?php
   }
+
+  public function render_rebuild_time_field() {
+    $options     = get_option( $this->options_name );
+    $rebuildTime = isset( $options['rebuild_time'] ) ? $options['rebuild_time'] : '00:25';
+    ?>
+      <div>
+          <input type="time"
+                 id="rebuild_time"
+                 name="<?= $this->options_name ?>[rebuild_time]"
+                 value="<?= $rebuildTime ?>">
+      </div>
+      <p>
+        <?= esc_html__( 'Avoid rebuilding exactly on the hour to avoid contending with other processing jobs.' ) ?>
+      </p>
+    <?php
+  }
+
+  public function render_now_rebuild_field() {
+    ?>
+      <div>
+          <input type="checkbox"
+                 id="rebuild_now"
+                 name="<?= $this->options_name ?>[now_rebuild]">
+      </div>
+    <?php
+  }
+
+  public function render_now_remove_field() {
+    ?>
+      <div>
+          <input type="checkbox"
+                 id="rebuild_now"
+                 name="<?= $this->options_name ?>[now_remove]">
+      </div>
+    <?php
+  }
+
 
   /**
    * Register the stylesheets for the admin area.
@@ -130,19 +278,8 @@ class Admin
    * @noinspection PhpUnused
    */
   public function action__admin_enqueue_scripts() {
-    //TODO wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/index-wp-users-for-speed-admin.css', [], $this->version, 'all' );
+    wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/admin.css', [], $this->version, 'all' );
     //TODO wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
-  }
-
-  protected function getMessage() {
-    if ( $this->message ) {
-      $message = array_key_exists( $this->message, self::$messages ) ? $this->message : 'default';
-      if ( $message !== 'default' ) {
-        return sprintf( self::$messages[ $message ], $this->message );
-      }
-    }
-
-    return false;
   }
 
   /**
@@ -151,14 +288,14 @@ class Admin
    * The dynamic portion of the hook name, `$plugin_file`, refers to the path
    * to the plugin file, relative to the plugins directory.
    *
-   * @param string[] $actions     An array of plugin action links. By default this can include
+   * @param string[] $actions An array of plugin action links. By default this can include
    *                              'activate', 'deactivate', and 'delete'. With Multisite active
    *                              this can also include 'network_active' and 'network_only' items.
-   * @param string   $plugin_file Path to the plugin file relative to the plugins directory.
-   * @param array    $plugin_data An array of plugin data. See `get_plugin_data()`
+   * @param string $plugin_file Path to the plugin file relative to the plugins directory.
+   * @param array $plugin_data An array of plugin data. See `get_plugin_data()`
    *                              and the {@see 'plugin_row_meta'} filter for the list
    *                              of possible values.
-   * @param string   $context     The plugin context. By default this can include 'all',
+   * @param string $context The plugin context. By default this can include 'all',
    *                              'active', 'inactive', 'recently_activated', 'upgrade',
    *                              'mustuse', 'dropins', and 'search'.
    *
@@ -173,6 +310,17 @@ class Admin
     ];
 
     return array_merge( $mylinks, $actions );
+  }
+
+  protected function getMessage() {
+    if ( $this->message ) {
+      $message = array_key_exists( $this->message, self::$messages ) ? $this->message : 'default';
+      if ( $message !== 'default' ) {
+        return sprintf( self::$messages[ $message ], $this->message );
+      }
+    }
+
+    return false;
   }
 
 
