@@ -34,6 +34,8 @@ class Deactivator {
 	 */
 	public static function deactivate() {
 
+    wp_unschedule_hook ( 'index_wp_users_for_speed_repeating_task');
+    wp_unschedule_hook ( 'index_wp_users_for_speed_task');  // TODO not until we run all the deletes.
     delete_transient(INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
     delete_transient ( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
 

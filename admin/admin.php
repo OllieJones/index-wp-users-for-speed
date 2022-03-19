@@ -4,6 +4,7 @@
 
 namespace OllieJones\index_wp_users_for_speed;
 
+use DateTimeZone;
 use Exception;
 
 /**
@@ -18,14 +19,13 @@ use Exception;
 class Admin
   extends WordPressHooks {
 
-  private static $messages;
-
   private $plugin_name;
   private $options_name;
   private $version;
   private $indexer;
   private $pluginPath;
-  private $message;
+  /** @var bool Sometimes sanitize() gets called twice. Avoid repeating operations. */
+  private $didAnyOperations = false;
 
   /**
    * Initialize the class and set its properties.
@@ -34,24 +34,11 @@ class Admin
    */
   public function __construct() {
 
-    $this->plugin_name = INDEX_WP_USERS_FOR_SPEED_NAME;
-    $this->version     = INDEX_WP_USERS_FOR_SPEED_VERSION;
-    $this->pluginPath  = plugin_dir_path( dirname( __FILE__ ) );
-    /* after a POST, we get a redirect with ?st=message */
-    $this->message      = isset( $_REQUEST['st'] ) ? sanitize_key( $_REQUEST['st'] ) : null;
+    $this->plugin_name  = INDEX_WP_USERS_FOR_SPEED_NAME;
+    $this->version      = INDEX_WP_USERS_FOR_SPEED_VERSION;
+    $this->pluginPath   = plugin_dir_path( dirname( __FILE__ ) );
     $this->options_name = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options';
 
-    self::$messages = [
-      'started'   => __( 'User Indexing Started', 'index-wp-users-for-speed' ),
-      'removed'   => __( 'User Indexing Removed', 'index-wp-users-for-speed' ),
-      /* translators: 1: fraction complete on index */
-      'progress'  => __( 'User Indexing %1$s Complete', 'index-wp-users-for-speed' ),
-      'completed' => __( 'User Indexing Complete', 'index-wp-users-for-speed' ),
-      /* translators: 1: message id, like 'started' or 'removed' This is a warning */
-      'default'   => null,
-    ];
-
-    /* postback handlers for form. */
     add_action( 'admin_post_index-wp-users-for-speed-action', [ $this, 'post_action_unverified' ] );
     add_action( 'index-wp-users-for-speed-post-filter', [ $this, 'post_filter' ] );
 
@@ -63,8 +50,6 @@ class Admin
 
   /** @noinspection PhpUnused */
   public function action__admin_menu() {
-
-
     /* first arg: same as page slug (last arg to settings_section, second-to-last in settings field).
      * second arg: becomes wp_options.option_name value.
      * sanitize_callback: gets called with wp_options.option_value value, deserialized */
@@ -113,13 +98,17 @@ class Admin
 
   public function sanitize_settings( $input ) {
 
-    $output = [];
+    require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
+    $this->indexer = Indexer::getInstance();
+
+    $didAnOperation = false;
+
     try {
       $autoRebuild = isset( $input['auto_rebuild'] ) && $input['auto_rebuild'] === 'on';
-      $time   = isset( $input['rebuild_time'] ) ?  $input['rebuild_time'] : '';
-      $timeString = $this->formatTime($time);
+      $time        = isset( $input['rebuild_time'] ) ? $input['rebuild_time'] : '';
+      $timeString  = $this->formatTime( $time );
 
-      if ($timeString === false) {
+      if ( $timeString === false ) {
         add_settings_error( $this->options_name, 'rebuild',
           esc_html__( 'Incorrect time.', 'index-wp-users-for-speed' ),
           'error' );
@@ -127,8 +116,8 @@ class Admin
         return $input;
       }
 
-      $rebuildNow  = isset( $input['now_rebuild'] ) && $input['now_rebuild'] === 'on';
-      $removeNow   = isset( $input['now_remove'] ) && $input['now_remove'] === 'on';
+      $rebuildNow = isset( $input['now_rebuild'] ) && $input['now_rebuild'] === 'on';
+      $removeNow  = isset( $input['now_remove'] ) && $input['now_remove'] === 'on';
 
 
       if ( $rebuildNow && $removeNow ) {
@@ -141,52 +130,78 @@ class Admin
         add_settings_error( $this->options_name, 'rebuild',
           esc_html__( 'Index rebuilding process starting', 'index-wp-users-for-speed' ),
           'info' );
+        if ( ! $this->didAnyOperations ) {
+          $didAnOperation = true;
+          $this->indexer->rebuildNow();
+        }
       } else if ( $removeNow ) {
         add_settings_error( $this->options_name, 'rebuild',
           esc_html__( 'Index removing process starting', 'index-wp-users-for-speed' ),
           'info' );
+        if ( ! $this->didAnyOperations ) {
+          $didAnOperation = true;
+          $this->indexer->removeNow();
+        }
       }
 
       if ( $autoRebuild ) {
-            /* translators: 1: localized time like 1:22 PM or 13:22 */
-            $format  = __( 'Automatic index rebuilding scheduled for %1$s each day', 'index-wp-users-for-speed' );
-            $display = esc_html( sprintf( $format, $timeString ) );
-            add_settings_error( $this->options_name, 'rebuild', $display, 'success' );
-
-      } else {
-        $output['rebuild_time'] = $time;
-        $output['auto_rebuild'] = 'off';
-        $display                = esc_html( 'Automatic index rebuilding disabled', 'index-wp-users-for-speed' );
+        /* translators: 1: localized time like 1:22 PM or 13:22 */
+        $format  = __( 'Automatic index rebuilding scheduled for %1$s each day', 'index-wp-users-for-speed' );
+        $display = esc_html( sprintf( $format, $timeString ) );
         add_settings_error( $this->options_name, 'rebuild', $display, 'success' );
-      }
-
-      if ($autoRebuild) {
+        if ( ! $this->didAnyOperations ) {
+          $didAnOperation = true;
+          $this->indexer->enableAutoRebuild( $this->timeToSeconds( $time ) );
+        }
 
       } else {
-
+        $display = esc_html( 'Automatic index rebuilding disabled', 'index-wp-users-for-speed' );
+        add_settings_error( $this->options_name, 'rebuild', $display, 'success' );
+        if ( ! $this->didAnyOperations ) {
+          $didAnOperation = true;
+          $this->indexer->disableAutoRebuild( $time );
+        }
       }
     } catch ( Exception $ex ) {
       add_settings_error( $this->options_name, 'rebuild', $ex->getMessage(), 'error' );
+    }
+    if ( $didAnOperation ) {
+      $this->didAnyOperations = true;
     }
 
     return $input;
   }
 
-  private function formatTime ($time) {
-    $result = false;
+  /**
+   * @param string $time  like '16:42'
+   *
+   * @return string  time string or false if input was bogus.
+   */
+  private function formatTime( $time ) {
+    $ts = $this->timeToSeconds( $time );
+    $utc = new DateTimeZone ('UTC');
+    return $ts === false ? $time : wp_date( get_option( 'time_format' ), $ts, $utc );
+  }
+
+  /**
+   * @param string $time like '16:42'
+   *
+   * @return false|int
+   */
+  private function timeToSeconds( $time ) {
     try {
       if ( preg_match( '/^\d\d:\d\d$/', $time ) ) {
-        $ts = intval( substr( $time, 0, 2 ) ) * 3600;
-        $ts += intval( substr( $time, 3, 2 ) ) * 60;
-        if ( $ts >= 0 && $ts < 86400 ) {
-          $result = wp_date( get_option( 'time_format' ), $ts, 'UTC' );
+        $ts = intval( substr( $time, 0, 2 ) ) * HOUR_IN_SECONDS;
+        $ts += intval( substr( $time, 3, 2 ) ) * MINUTE_IN_SECONDS;
+        if ( $ts >= 0 && $ts < DAY_IN_SECONDS ) {
+          return intval($ts);
         }
       }
     } catch ( Exception $ex ) {
-      /* empty, intentionally, no croaking here on bogus time */
+      return false;
     }
 
-    return $result;
+    return false;
   }
 
   public function render_admin_page() {
@@ -311,18 +326,6 @@ class Admin
 
     return array_merge( $mylinks, $actions );
   }
-
-  protected function getMessage() {
-    if ( $this->message ) {
-      $message = array_key_exists( $this->message, self::$messages ) ? $this->message : 'default';
-      if ( $message !== 'default' ) {
-        return sprintf( self::$messages[ $message ], $this->message );
-      }
-    }
-
-    return false;
-  }
-
 
 }
 

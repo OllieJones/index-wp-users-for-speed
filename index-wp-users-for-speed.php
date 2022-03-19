@@ -40,7 +40,7 @@ if ( ! defined( 'WPINC' ) ) {
 define ('INDEX_WP_USERS_FOR_SPEED_NAME', 'index-wp-users-for-speed');
 define ('INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename ( __FILE__ ));
 define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
-define( 'INDEX_WP_USERS_FOR_SPEED_PREFIX', 'index_wp_users_' );
+define( 'INDEX_WP_USERS_FOR_SPEED_PREFIX', 'index-wp-users-for-speed_' );
 define( 'INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME', 60 );
 define( 'INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME', 300 );
 

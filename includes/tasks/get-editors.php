@@ -16,8 +16,6 @@ class GetEditors extends Task {
   public function __construct( $siteId = null, $timeout = 0 ) {
 
     parent::__construct( $siteId, $timeout );
-    $this->taskName = __CLASS__;
-
   }
 
   public function needsDoing() {
@@ -58,6 +56,11 @@ class GetEditors extends Task {
   public function getResult () {
     return get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors");
   }
+
+  public function reset() {
+    delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
+  }
+
 }
 
 

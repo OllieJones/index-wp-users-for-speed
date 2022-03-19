@@ -14,8 +14,6 @@ class CountUsers extends Task {
   public function __construct( $siteId = null, $timeout = 0 ) {
 
     parent::__construct( $siteId, $timeout );
-    $this->taskName = __CLASS__;
-
   }
 
   /** Retrieve the user counts and update the transient
@@ -35,6 +33,10 @@ class CountUsers extends Task {
 
   public function getResult () {
     get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
+  }
+
+  public function reset() {
+    delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
   }
 }
 

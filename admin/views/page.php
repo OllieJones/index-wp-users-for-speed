@@ -12,6 +12,8 @@
  * @subpackage Index_Wp_Users_For_Speed/admin/views
  */
 
+use OllieJones\index_wp_users_for_speed\Indexer;
+
 settings_errors($this->options_name);
 ?>
 
@@ -19,7 +21,7 @@ settings_errors($this->options_name);
     <h2 class="wp-heading-inline"><?= get_admin_page_title(); ?></h2>
     <p>
         <span><?= esc_html__( 'Approximate number of users on this entire site', 'index-wp-users-for-speed' ) ?>: </span>
-        <span><?= number_format_i18n( $this->indexer->getNetworkUserCount(), 0 ) ?></span>
+        <span><?= number_format_i18n( Indexer::getNetworkUserCount(), 0 ) ?></span>
     </p>
     <form id="index-users-form" method="post" action="options.php">
       <?php

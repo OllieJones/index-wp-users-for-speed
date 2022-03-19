@@ -7,6 +7,7 @@ use Exception;
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/task.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/count-users.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/get-editors.php';
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/reindex.php';
 
 class Indexer {
 
@@ -15,20 +16,50 @@ class Indexer {
   private static $sentinelCount;
   private $userCounts = false;
   private $editors = false;
-  private $networkUserCount;
 
   protected function __construct() {
 
     /* a magic count of users to indicate "don't know yet" */
     self::$sentinelCount = 1024 * 1024 * 1024 * 2 - 7;
 
-    $this->maybeIndexEverything();
+    //  TODO automatic first-time-in indexing ????
 
   }
 
-  public function maybeIndexEverything() {
+  /** Write out a log (to a transient).
+   *
+   * @param string $msg Log entry.
+   * @param int $maxlength Optional. Maximum number of entries in log. Default 32.
+   * @param string $name Optional. Optional. The suffix of the transient name. Default "log".
+   *
+   * @return void
+   */
+  public static function writeLog( $msg, $maxlength = 32, $name = 'log' ) {
+    $log      = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name );
+    $log      = is_string( $log ) ? $log : null;
+    $logarray = explode( PHP_EOL, $log );
+    $logarray = array_slice( $logarray, 0, $maxlength );
+    array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
+    $log      = implode( PHP_EOL, $logarray );
+    set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name, $log, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+  }
+
+  public
+  static function getInstance() {
+    if ( ! isset( self::$singleInstance ) ) {
+      self::$singleInstance = new self();
+    }
+
+    return self::$singleInstance;
+  }
+
+  public function rebuildNow() {
+    $this->maybeIndexEverything( true );
+  }
+
+  public function maybeIndexEverything( $force = false ) {
     $this->userCounts = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
-    if ( $this->userCounts === false || ( isset( $this->userCounts['complete'] ) && ! $this->userCounts['complete'] ) ) {
+    if ( $force || $this->userCounts === false || ( isset( $this->userCounts['complete'] ) && ! $this->userCounts['complete'] ) ) {
       $this->setUserCounts();
       $task = new CountUsers();
       $task->schedule();
@@ -36,18 +67,57 @@ class Indexer {
     }
 
     $this->editors = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
-    if ( ! is_array( $this->editors ) ) {
+    if ( $force || ! is_array( $this->editors ) ) {
       $task = new GetEditors();
       $task->schedule();
     }
   }
 
-  public static function getInstance() {
-    if ( ! isset( self::$singleInstance ) ) {
-      self::$singleInstance = new self();
+  public function removeNow() {
+    $task = new CountUsers();
+    $task->reset();
+    $task = new GetEditors();
+    $task->reset();
+  }
+
+  public function enableAutoRebuild( $seconds ) {
+    $task = new Reindex ();
+    $task->cancel();
+    $whenToRun = $this->nextDailyTimestamp( $seconds );
+    $task->schedule( $whenToRun, 'daily' );
+  }
+
+  private function nextDailyTimestamp( $secondsAfterMidnight, $buffer = 30 ) {
+    $midnight = $this->getTodayMidnightTimestamp();
+    $when     = $secondsAfterMidnight + $midnight;
+    if ( $when + $buffer >= time() ) {
+      /* time already passed today, do it tomorrow */
+      $when += DAY_IN_SECONDS;
     }
 
-    return self::$singleInstance;
+    return $when;
+  }
+
+  /** Get the UNIX timestamp for midnight today, in local time.
+   *
+   * This is a miserable hack involving the DBMS
+   *
+   * @return int
+   */
+  private function getTodayMidnightTimestamp() {
+    global $wpdb;
+    $zone        = get_option( 'timezone_string', 'UTC' );
+    $restoreZone = $wpdb->get_var( "SELECT @@TIME_ZONE" );
+    $wpdb->query( $wpdb->prepare( "SET time_zone = '%s'", $zone ) );
+    $midnightLocal = $wpdb->get_var( "SELECT UNIX_TIMESTAMP(CURDATE())" );
+    $wpdb->query( $wpdb->prepare( "SET time_zone = '%s'", $restoreZone ) );
+
+    return 0 + $midnightLocal;
+  }
+
+  public function disableAutoRebuild() {
+    $task = new Reindex ();
+    $task->cancel();
   }
 
   /**
@@ -80,6 +150,7 @@ class Indexer {
    */
   public function updateEditors( $user_id, $removingUser = false ) {
 
+    //TODO this line croaks when user count not done
     $canEdit = ! $removingUser && ( get_userdata( $user_id ) )->has_cap( 'edit_post' );
     $editors = $this->editors;
     if ( is_array( $editors ) ) {
@@ -90,12 +161,12 @@ class Indexer {
         $result = [];
         foreach ( $editors as $editor ) {
           if ( $editor !== $user_id ) {
-            $result = $editor;
+            $result[] = $editor;
           }
         }
         $editors = $result;
       }
-      $this->editors = $result;
+      $this->editors = $editors;
       set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors", $editors, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
     }
   }
@@ -149,7 +220,7 @@ class Indexer {
    */
   private function fakeUserCounts() {
     $roles       = wp_roles()->get_names();
-    $total_users = is_multisite() ? self::$sentinelCount : $this->getNetworkUserCount();
+    $total_users = is_multisite() ? self::$sentinelCount : self::getNetworkUserCount();
     $avail_roles = [];
     foreach ( $roles as $role => $name ) {
       $avail_roles[ $role ] = self::$sentinelCount;
@@ -167,11 +238,8 @@ class Indexer {
     return $result;
   }
 
-  public function getNetworkUserCount() {
+  public static function getNetworkUserCount() {
     global $wpdb;
-    if ( isset ( $this->networkUserCount ) ) {
-      return $this->networkUserCount;
-    }
     $q = "SELECT t.TABLE_ROWS row_count
                  FROM information_schema.TABLES t
                  WHERE t.TABLE_SCHEMA = DATABASE()
@@ -179,9 +247,8 @@ class Indexer {
                    AND t.ENGINE IS NOT NULL
                    AND t.TABLE_NAME = %s";
 
-    $this->networkUserCount = $wpdb->get_var( $wpdb->prepare( $q, $wpdb->users ) );
+    return $wpdb->get_var( $wpdb->prepare( $q, $wpdb->users ) );
 
-    return $this->networkUserCount;
   }
 
   /** Update the user count for a particular role.
