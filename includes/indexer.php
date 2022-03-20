@@ -40,7 +40,7 @@ class Indexer {
     $logarray = explode( PHP_EOL, $log );
     $logarray = array_slice( $logarray, 0, $maxlength );
     array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
-    $log      = implode( PHP_EOL, $logarray );
+    $log = implode( PHP_EOL, $logarray );
     set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name, $log, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
   }
 
@@ -90,7 +90,7 @@ class Indexer {
   private function nextDailyTimestamp( $secondsAfterMidnight, $buffer = 30 ) {
     $midnight = $this->getTodayMidnightTimestamp();
     $when     = $secondsAfterMidnight + $midnight;
-    if ( $when + $buffer >= time() ) {
+    if ( $when + $buffer < time() ) {
       /* time already passed today, do it tomorrow */
       $when += DAY_IN_SECONDS;
     }
@@ -105,14 +105,14 @@ class Indexer {
    * @return int
    */
   private function getTodayMidnightTimestamp() {
-    global $wpdb;
     $zone        = get_option( 'timezone_string', 'UTC' );
-    $restoreZone = $wpdb->get_var( "SELECT @@TIME_ZONE" );
-    $wpdb->query( $wpdb->prepare( "SET time_zone = '%s'", $zone ) );
-    $midnightLocal = $wpdb->get_var( "SELECT UNIX_TIMESTAMP(CURDATE())" );
-    $wpdb->query( $wpdb->prepare( "SET time_zone = '%s'", $restoreZone ) );
+    $currentZone = date_default_timezone_get();
+    date_default_timezone_set( $zone );
+    $midnightLocal = new \DateTimeImmutable( 'today' );
+    $midnightLocal = $midnightLocal->getTimestamp();
+    date_default_timezone_set( $currentZone );
 
-    return 0 + $midnightLocal;
+    return $midnightLocal;
   }
 
   public function disableAutoRebuild() {
@@ -238,6 +238,7 @@ class Indexer {
     return $result;
   }
 
+  /** @noinspection SqlNoDataSourceInspection */
   public static function getNetworkUserCount() {
     global $wpdb;
     $q = "SELECT t.TABLE_ROWS row_count

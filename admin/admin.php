@@ -39,9 +39,6 @@ class Admin
     $this->pluginPath   = plugin_dir_path( dirname( __FILE__ ) );
     $this->options_name = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options';
 
-    add_action( 'admin_post_index-wp-users-for-speed-action', [ $this, 'post_action_unverified' ] );
-    add_action( 'index-wp-users-for-speed-post-filter', [ $this, 'post_filter' ] );
-
     /* action link for plugins page */
     add_filter( 'plugin_action_links_' . INDEX_WP_USERS_FOR_SPEED_FILENAME, [ $this, 'action_link' ] );
 
@@ -50,13 +47,6 @@ class Admin
 
   /** @noinspection PhpUnused */
   public function action__admin_menu() {
-    /* first arg: same as page slug (last arg to settings_section, second-to-last in settings field).
-     * second arg: becomes wp_options.option_name value.
-     * sanitize_callback: gets called with wp_options.option_value value, deserialized */
-    register_setting( $this->options_name,
-      $this->options_name,
-      [ 'sanitize_callback' => [ $this, 'sanitize_settings' ] ] );
-
     add_users_page(
       esc_html__( 'Index WP Users For Speed', 'index-wp-users-for-speed' ),
       esc_html__( 'Index For Speed', 'index-wp-users-for-speed' ),
@@ -65,35 +55,99 @@ class Admin
       [ $this, 'render_admin_page' ],
       12 );
 
-    add_settings_section( 'timing',
+    $this->addTimingSection();
+    $this->addRebuildNowSection();
+    $this->addRemoveNowSection();
+
+  }
+
+  private function addTimingSection() {
+
+    $sectionId = 'timing';
+    $page      = $this->plugin_name;
+    add_settings_section( $sectionId,
       esc_html__( 'Rebuilding user indexes', 'index-wp-users-for-speed' ),
       [ $this, 'render_timing_section' ],
-      $this->plugin_name );
+      $page );
 
     add_settings_field( 'auto_rebuild',
       esc_html__( 'Rebuild indexes', 'index-wp-users-for-speed' ),
       [ $this, 'render_auto_rebuild_field' ],
-      $this->plugin_name,
-      'timing' );
+
+      $page,
+      $sectionId );
 
     add_settings_field( 'rebuild_time',
       esc_html__( '...at this time', 'index-wp-users-for-speed' ),
       [ $this, 'render_rebuild_time_field' ],
-      $this->plugin_name,
-      'timing' );
+      $page,
+      $sectionId );
 
-    add_settings_field( 'now_rebuild',
-      esc_html__( 'Rebuild indexes immediately', 'index-wp-users-for-speed' ),
-      [ $this, 'render_now_rebuild_field' ],
-      $this->plugin_name,
-      'timing' );
+    $option = get_option($this->options_name);
 
-    add_settings_field( 'now_remove',
-      esc_html__( 'Remove indexes immediately', 'index-wp-users-for-speed' ),
-      [ $this, 'render_now_remove_field' ],
-      $this->plugin_name,
-      'timing' );
+    /* make sure default option is in place, to avoid double santize call */
+    if ($option === false) {
+        add_option ( $this->options_name, [
+          'auto_rebuild' => 'on',
+          'rebuild_time' => '00:25'
+        ]);
+    }
 
+    register_setting(
+      $this->options_name,
+      $this->options_name,
+      [ 'sanitize_callback' => [ $this, 'sanitize_settings' ] ] );
+  }
+
+  /**
+   * @return void
+   */
+  private function addRebuildNowSection() {
+
+    $sectionId = 'rebuild-now';
+    $page      = $this->plugin_name . '-rebuild-now';
+    add_settings_section( $sectionId,
+      esc_html__( 'Rebuild indexes', 'index-wp-users-for-speed' ),
+      [ $this, 'render_empty' ],
+      $page );
+
+    $optionGroup = $this->options_name . '-rebuild';
+    $optionName = $this->options_name . '-rebuild';
+    $option = get_option($optionName);
+    /* make sure default option is in place, to avoid double santize call */
+    if ($option === false) {
+      add_option ( $optionName, []);
+    }
+
+    register_setting( $optionGroup, $optionName );
+  }
+
+  /**
+   * @return void
+   */
+  private function addRemoveNowSection() {
+
+    $sectionId = 'remove-now';
+    $page      = $this->plugin_name . '-remove-now';
+    add_settings_section( $sectionId,
+      esc_html__( 'Remove indexes', 'index-wp-users-for-speed' ),
+      [ $this, 'render_empty' ],
+      $page );
+
+
+    $optionGroup = $this->options_name . '-remove';
+    $optionName = $this->options_name . '-remove';
+    $option = get_option($optionName);
+    /* make sure default option is in place, to avoid double santize call */
+    if ($option === false) {
+      add_option ( $optionName, []);
+    }
+
+    register_setting( $optionGroup, $optionName );
+  }
+
+  public function render_empty() {
+    echo '';
   }
 
   public function sanitize_settings( $input ) {
@@ -173,13 +227,14 @@ class Admin
   }
 
   /**
-   * @param string $time  like '16:42'
+   * @param string $time like '16:42'
    *
    * @return string  time string or false if input was bogus.
    */
   private function formatTime( $time ) {
-    $ts = $this->timeToSeconds( $time );
-    $utc = new DateTimeZone ('UTC');
+    $ts  = $this->timeToSeconds( $time );
+    $utc = new DateTimeZone ( 'UTC' );
+
     return $ts === false ? $time : wp_date( get_option( 'time_format' ), $ts, $utc );
   }
 
@@ -194,7 +249,7 @@ class Admin
         $ts = intval( substr( $time, 0, 2 ) ) * HOUR_IN_SECONDS;
         $ts += intval( substr( $time, 3, 2 ) ) * MINUTE_IN_SECONDS;
         if ( $ts >= 0 && $ts < DAY_IN_SECONDS ) {
-          return intval($ts);
+          return intval( $ts );
         }
       }
     } catch ( Exception $ex ) {
@@ -254,6 +309,7 @@ class Admin
     $rebuildTime = isset( $options['rebuild_time'] ) ? $options['rebuild_time'] : '00:25';
     ?>
       <div>
+          <!--suppress HtmlFormInputWithoutLabel -->
           <input type="time"
                  id="rebuild_time"
                  name="<?= $this->options_name ?>[rebuild_time]"
@@ -268,6 +324,7 @@ class Admin
   public function render_now_rebuild_field() {
     ?>
       <div>
+          <!--suppress HtmlFormInputWithoutLabel -->
           <input type="checkbox"
                  id="rebuild_now"
                  name="<?= $this->options_name ?>[now_rebuild]">
@@ -278,13 +335,13 @@ class Admin
   public function render_now_remove_field() {
     ?>
       <div>
+          <!--suppress HtmlFormInputWithoutLabel -->
           <input type="checkbox"
                  id="rebuild_now"
                  name="<?= $this->options_name ?>[now_remove]">
       </div>
     <?php
   }
-
 
   /**
    * Register the stylesheets for the admin area.
@@ -326,6 +383,7 @@ class Admin
 
     return array_merge( $mylinks, $actions );
   }
+
 
 }
 

@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Provide a admin area view for the plugin
+ * Provide an admin area view for the plugin
  *
- * This file is used to markup the admin-facing aspects of the plugin.
+ * This file is used to present the admin-facing aspects of the plugin.
  *
  * @link       https://github.com/OllieJones
  * @since      1.0.0
@@ -28,6 +28,20 @@ settings_errors($this->options_name);
       settings_fields( $this->options_name );
       do_settings_sections( $this->plugin_name );
       submit_button( 'Save Changes', 'primary' );
+      ?>
+    </form>
+    <form id="reindex-users-form" method="post" action="options.php">
+      <?php
+      settings_fields( $this->options_name . '-rebuild' );
+      do_settings_sections( $this->plugin_name . '-rebuild-now' );
+      submit_button( 'Reindex Now', 'primary' );
+      ?>
+    </form>
+    <form id="remove-users-form" method="post" action="options.php">
+      <?php
+      settings_fields( $this->options_name . '-remove' );
+      do_settings_sections( $this->plugin_name . '-remove-now' );
+      submit_button( 'Remove Now', 'primary' );
       ?>
     </form>
 </div>
