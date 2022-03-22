@@ -2,7 +2,7 @@
 
 /**  */
 
-namespace OllieJones\index_wp_users_for_speed;
+namespace IndexWpUsersForSpeed;
 
 use DateTimeZone;
 use Exception;
@@ -30,7 +30,6 @@ class Admin
   /**
    * Initialize the class and set its properties.
    *
-   * @since    1.0.0
    */
   public function __construct() {
 
@@ -346,12 +345,10 @@ class Admin
   /**
    * Register the stylesheets for the admin area.
    *
-   * @since    1.0.0
    * @noinspection PhpUnused
    */
   public function action__admin_enqueue_scripts() {
     wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/admin.css', [], $this->version, 'all' );
-    //TODO wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-admin.js', [ 'jquery' ], $this->version, false );
   }
 
   /**

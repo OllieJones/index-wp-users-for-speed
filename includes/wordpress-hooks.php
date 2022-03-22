@@ -1,6 +1,6 @@
 <?php
 
-namespace OllieJones\index_wp_users_for_speed;
+namespace IndexWpUsersForSpeed;
 
 use ReflectionClass;
 use ReflectionMethod;

@@ -1,6 +1,6 @@
 <?php
 
-namespace OllieJones\index_wp_users_for_speed;
+namespace IndexWpUsersForSpeed;
 
 use WP_REST_Request;
 use WP_REST_Response;
@@ -22,7 +22,6 @@ class UserHandler extends WordPressHooks {
   /**
    * The ID of this plugin.
    *
-   * @since    1.0.0
    * @access   private
    * @var      string $plugin_name The ID of this plugin.
    */
@@ -30,7 +29,6 @@ class UserHandler extends WordPressHooks {
   /**
    * The version of this plugin.
    *
-   * @since    1.0.0
    * @access   private
    * @var      string $version The current version of this plugin.
    */

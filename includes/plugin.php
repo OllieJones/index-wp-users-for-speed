@@ -1,6 +1,6 @@
 <?php
 
-namespace OllieJones\index_wp_users_for_speed;
+namespace IndexWpUsersForSpeed;
 
 /**
  * The file that defines the core plugin class
@@ -9,7 +9,6 @@ namespace OllieJones\index_wp_users_for_speed;
  * public-facing side of the site and the admin area.
  *
  * @link       https://github.com/OllieJones
- * @since      1.0.0
  *
  * @package    Index_Wp_Users_For_Speed
  * @subpackage Index_Wp_Users_For_Speed/includes
@@ -24,7 +23,6 @@ namespace OllieJones\index_wp_users_for_speed;
  * Also maintains the unique identifier of this plugin as well as the current
  * version of the plugin.
  *
- * @since      1.0.0
  * @package    Index_Wp_Users_For_Speed
  * @subpackage Index_Wp_Users_For_Speed/includes
  * @author     Ollie Jones <oj@plumislandmedia.net>
@@ -34,7 +32,6 @@ class Index_Wp_Users_For_Speed {
   /**
    * The unique identifier of this plugin.
    *
-   * @since    1.0.0
    * @access   protected
    * @var      string $plugin_name The string used to uniquely identify this plugin.
    */
@@ -43,7 +40,6 @@ class Index_Wp_Users_For_Speed {
   /**
    * The current version of the plugin.
    *
-   * @since    1.0.0
    * @access   protected
    * @var      string $version The current version of the plugin.
    */
@@ -56,7 +52,6 @@ class Index_Wp_Users_For_Speed {
    * Load the dependencies, define the locale, and set the hooks for the admin area and
    * the public-facing side of the site.
    *
-   * @since    1.0.0
    */
   public function __construct() {
     $this->version     = INDEX_WP_USERS_FOR_SPEED_VERSION;
@@ -83,7 +78,6 @@ class Index_Wp_Users_For_Speed {
    * WordPress and to define internationalization functionality.
    *
    * @return    string    The name of the plugin.
-   * @since     1.0.0
    */
   public function get_plugin_name() {
     return $this->plugin_name;
@@ -93,7 +87,6 @@ class Index_Wp_Users_For_Speed {
    * Retrieve the version number of the plugin.
    *
    * @return    string    The version number of the plugin.
-   * @since     1.0.0
    */
   public function get_version() {
     return $this->version;

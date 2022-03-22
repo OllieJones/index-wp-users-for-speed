@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpUnused */
 
-namespace OllieJones\index_wp_users_for_speed;
+namespace IndexWpUsersForSpeed;
 
 use WP_User_Query;
 

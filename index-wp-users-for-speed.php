@@ -11,9 +11,8 @@
  * Plugin Name: Index WP Users For Speed
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with many users.
- * Version:           1.0.0
  * Requires at least: 5.2
- * Tested up to:      5.9.1
+ * Tested up to:      5.9.2
  * Requires PHP:      5.6
  * Author:       OllieJones
  * Author URI:   https://github.com/OllieJones
@@ -24,33 +23,30 @@
  * Network:      true
  * Tags:         users, performance
  */
-use OllieJones\index_wp_users_for_speed\Activator;
-use OllieJones\index_wp_users_for_speed\Deactivator;
+
+use IndexWpUsersForSpeed\Activator;
+use IndexWpUsersForSpeed\Deactivator;
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
   die;
 }
 
-/**
- * Currently plugin version.
- * Start at version 1.0.0 and use SemVer - https://semver.org
- * Rename this for your plugin and update it as you release new versions.
- */
-define ('INDEX_WP_USERS_FOR_SPEED_NAME', 'index-wp-users-for-speed');
-define ('INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename ( __FILE__ ));
+define( 'INDEX_WP_USERS_FOR_SPEED_NAME', 'index-wp-users-for-speed' );
+define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
 define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
 define( 'INDEX_WP_USERS_FOR_SPEED_PREFIX', 'index-wp-users-for-speed-' );
 define( 'INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME', 60 );
 define( 'INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME', 300 );
 
 /** Error logging, useful for caught errors in cronjobs.
+ *
  * @param $msg
  *
  * @return void
  */
-function index_wp_users_for_speed_error_log ($msg) {
-    error_log ($msg);
+function index_wp_users_for_speed_error_log( $msg ) {
+  error_log( $msg );
 }
 
 /**
@@ -86,9 +82,7 @@ require plugin_dir_path( __FILE__ ) . 'includes/plugin.php';
  * Since everything within the plugin is registered via hooks,
  * then kicking off the plugin from this point in the file does
  * not affect the page life cycle.
- *
- * @since    1.0.0
  */
 
-$plugin = new OllieJones\index_wp_users_for_speed\Index_Wp_Users_For_Speed();
+$plugin = new IndexWpUsersForSpeed\Index_Wp_Users_For_Speed();
 $plugin->run();
