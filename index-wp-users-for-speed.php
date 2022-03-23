@@ -32,18 +32,20 @@ if ( ! defined( 'WPINC' ) ) {
   die;
 }
 
-define( 'INDEX_WP_USERS_FOR_SPEED_NAME', 'index-wp-users-for-speed' );
+const INDEX_WP_USERS_FOR_SPEED_NAME = 'index-wp-users-for-speed';
 define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
-define( 'INDEX_WP_USERS_FOR_SPEED_VERSION', '1.0.0' );
-define( 'INDEX_WP_USERS_FOR_SPEED_PREFIX', 'index-wp-users-for-speed-' );
-define( 'INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME', 60 );
-define( 'INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME', 300 );
+const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.0.0';
+const INDEX_WP_USERS_FOR_SPEED_PREFIX         = 'index-wp-users-for-speed-';
+const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME = 60;
+const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME  = 300;
+const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE      = 50;   //TODO make it bigger.
 
 /** Error logging, useful for caught errors in cronjobs.
  *
  * @param $msg
  *
  * @return void
+ * @noinspection PhpUnused
  */
 function index_wp_users_for_speed_error_log( $msg ) {
   error_log( $msg );
@@ -52,6 +54,7 @@ function index_wp_users_for_speed_error_log( $msg ) {
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/activator.php
+ * @noinspection PhpIncludeInspection
  */
 function activate_index_wp_users_for_speed() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/activator.php';
@@ -61,6 +64,7 @@ function activate_index_wp_users_for_speed() {
 /**
  * The code that runs during plugin deactivation.
  * This action is documented in includes/deactivator.php
+ * @noinspection PhpIncludeInspection
  */
 function deactivate_index_wp_users_for_speed() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/deactivator.php';
@@ -74,6 +78,7 @@ register_deactivation_hook( __FILE__, 'deactivate_index_wp_users_for_speed' );
  * The core plugin class that is used to define internationalization,
  * admin-specific hooks, and public-facing site hooks.
  */
+/** @noinspection PhpIncludeInspection */
 require plugin_dir_path( __FILE__ ) . 'includes/plugin.php';
 
 /**

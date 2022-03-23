@@ -23,21 +23,13 @@ class CountUsers extends Task {
     $this->startChunk();
 
     $userCounts             = count_users();
-    $userCounts['complete'] = true;
-    set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts", $userCounts, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+    $this->setStatus($userCounts, true, 1);
 
     $this->endChunk();
 
     return true;
   }
 
-  public function getResult () {
-    get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
-  }
-
-  public function reset() {
-    delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
-  }
 }
 
 

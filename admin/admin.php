@@ -46,6 +46,10 @@ class Admin
 
   /** @noinspection PhpUnused */
   public function action__admin_menu() {
+
+    //$indexer = Indexer::getInstance();
+    //$indexer->hackHackHack();
+
     add_users_page(
       esc_html__( 'Index WP Users For Speed', 'index-wp-users-for-speed' ),
       esc_html__( 'Index For Speed', 'index-wp-users-for-speed' ),
@@ -82,14 +86,14 @@ class Admin
       $page,
       $sectionId );
 
-    $option = get_option($this->options_name);
+    $option = get_option( $this->options_name );
 
     /* make sure default option is in place, to avoid double santize call */
-    if ($option === false) {
-        add_option ( $this->options_name, [
-          'auto_rebuild' => 'on',
-          'rebuild_time' => '00:25'
-        ]);
+    if ( $option === false ) {
+      add_option( $this->options_name, [
+        'auto_rebuild' => 'on',
+        'rebuild_time' => '00:25',
+      ] );
     }
 
     register_setting(
@@ -111,11 +115,11 @@ class Admin
       $page );
 
     $optionGroup = $this->options_name . '-rebuild';
-    $optionName = $this->options_name . '-rebuild';
-    $option = get_option($optionName);
+    $optionName  = $this->options_name . '-rebuild';
+    $option      = get_option( $optionName );
     /* make sure default option is in place, to avoid double santize call */
-    if ($option === false) {
-      add_option ( $optionName, []);
+    if ( $option === false ) {
+      add_option( $optionName, [] );
     }
 
     register_setting( $optionGroup, $optionName );
@@ -135,11 +139,11 @@ class Admin
 
 
     $optionGroup = $this->options_name . '-remove';
-    $optionName = $this->options_name . '-remove';
-    $option = get_option($optionName);
+    $optionName  = $this->options_name . '-remove';
+    $option      = get_option( $optionName );
     /* make sure default option is in place, to avoid double santize call */
-    if ($option === false) {
-      add_option ( $optionName, []);
+    if ( $option === false ) {
+      add_option( $optionName, [] );
     }
 
     register_setting( $optionGroup, $optionName );
@@ -149,6 +153,9 @@ class Admin
     echo '';
   }
 
+  /** @noinspection PhpRedundantOptionalArgumentInspection
+   * @noinspection PhpIncludeInspection
+   */
   public function sanitize_settings( $input ) {
 
     require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
@@ -208,11 +215,11 @@ class Admin
         }
 
       } else {
-        $display = esc_html( 'Automatic index rebuilding disabled', 'index-wp-users-for-speed' );
+        $display = esc_html__( 'Automatic index rebuilding disabled', 'index-wp-users-for-speed' );
         add_settings_error( $this->options_name, 'rebuild', $display, 'success' );
         if ( ! $this->didAnyOperations ) {
           $didAnOperation = true;
-          $this->indexer->disableAutoRebuild( $time );
+          $this->indexer->disableAutoRebuild();
         }
       }
     } catch ( Exception $ex ) {
@@ -228,7 +235,7 @@ class Admin
   /**
    * @param string $time like '16:42'
    *
-   * @return string  time string or false if input was bogus.
+   * @return string|false  time string or false if input was bogus.
    */
   private function formatTime( $time ) {
     $ts  = $this->timeToSeconds( $time );
@@ -258,6 +265,7 @@ class Admin
     return false;
   }
 
+  /** @noinspection PhpIncludeInspection */
   public function render_admin_page() {
     /* avoid this overhead unless we actually USE the admin page */
     require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
@@ -346,6 +354,7 @@ class Admin
    * Register the stylesheets for the admin area.
    *
    * @noinspection PhpUnused
+   * @noinspection PhpRedundantOptionalArgumentInspection
    */
   public function action__admin_enqueue_scripts() {
     wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/admin.css', [], $this->version, 'all' );
@@ -357,7 +366,7 @@ class Admin
    * The dynamic portion of the hook name, `$plugin_file`, refers to the path
    * to the plugin file, relative to the plugins directory.
    *
-   * @param string[] $actions An array of plugin action links. By default this can include
+   * @param string[] $actions An array of plugin action links. By default, this can include
    *                              'activate', 'deactivate', and 'delete'. With Multisite active
    *                              this can also include 'network_active' and 'network_only' items.
    * @param string $plugin_file Path to the plugin file relative to the plugins directory.
@@ -372,6 +381,7 @@ class Admin
    * @since 4.9.0 The 'Edit' link was removed from the list of action links.
    *
    * @noinspection PhpDocSignatureInspection
+   * @noinspection GrazieInspection
    */
   public function action_link( $actions ) {
     $mylinks = [

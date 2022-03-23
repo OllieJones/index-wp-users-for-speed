@@ -2,8 +2,6 @@
 
 namespace IndexWpUsersForSpeed;
 
-use WP_User_Query;
-
 /**
  * Task to reindex everything. Can be scheduled daily, etc.
  */
@@ -31,8 +29,13 @@ class Reindex extends Task {
     $this->startChunk();
 
     $task = new CountUsers();
+    $task->init();
     $task->schedule();
     $task = new GetEditors();
+    $task->init();
+    $task->schedule();
+    $task = new PopulateMetaIndexRoles();
+    $task->init();
     $task->schedule();
 
     $this->endChunk();

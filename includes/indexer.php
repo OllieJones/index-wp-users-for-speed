@@ -2,12 +2,15 @@
 
 namespace IndexWpUsersForSpeed;
 
+use DateTimeImmutable;
 use Exception;
 
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/task.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/count-users.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/get-editors.php';
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/reindex.php';
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/populate-meta-index-roles.php';
+require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/depopulate-meta-indexes.php';
 
 class Indexer {
 
@@ -16,13 +19,12 @@ class Indexer {
   private static $sentinelCount;
   private $userCounts = false;
   private $editors = false;
+  private $populated = false;
 
   protected function __construct() {
 
     /* a magic count of users to indicate "don't know yet" */
     self::$sentinelCount = 1024 * 1024 * 1024 * 2 - 7;
-
-    //  TODO automatic first-time-in indexing ????
 
   }
 
@@ -44,49 +46,95 @@ class Indexer {
     set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name, $log, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
   }
 
-  public
-  static function getInstance() {
+  public static function getInstance() {
     if ( ! isset( self::$singleInstance ) ) {
       self::$singleInstance = new self();
+      // TODO want this here???
+      self::$singleInstance->maybeIndexEverything();
     }
 
+
     return self::$singleInstance;
+  }
+
+  public function maybeIndexEverything( $force = false ) {
+    $task             = new CountUsers();
+    $this->userCounts = $task->getStatus();
+    if ( $task->isIncomplete( $this->userCounts ) ) {
+      $task->init();
+      $task->schedule();
+      $this->userCounts = false;
+    }
+
+    $task          = new GetEditors();
+    $editors       = $task->getStatus();
+    $this->editors = $editors;
+    if ( $force || $task->isIncomplete( $editors ) ) {
+      $task->init();
+      $task->schedule();
+    }
+    $task            = new PopulateMetaIndexRoles();
+    $populated       = $task->getStatus();
+    $this->populated = $populated;
+    if ( $force || $task->isIncomplete( $populated ) ) {
+      $task->init();
+      $task->schedule();
+    }
+  }
+
+  public function hackHackHack() {
+    //TODO hack hack.
+    $pop = new PopulateMetaIndexRoles( 10 );
+    $pop->init();
+    /** @noinspection PhpStatementHasEmptyBodyInspection */
+    while ( ! $pop->doChunk() ) {
+    }
+  }
+
+  public function cleanupNow() {
+    $pop = new DepopulateMetaIndexes();
+    $pop->init();
+    /** @noinspection PhpStatementHasEmptyBodyInspection */
+    while ( ! $pop->doChunk() ) {
+    }
+
   }
 
   public function rebuildNow() {
     $this->maybeIndexEverything( true );
   }
 
-  public function maybeIndexEverything( $force = false ) {
-    $this->userCounts = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
-    if ( $force || $this->userCounts === false || ( isset( $this->userCounts['complete'] ) && ! $this->userCounts['complete'] ) ) {
-      $this->setUserCounts();
-      $task = new CountUsers();
-      $task->schedule();
-      $this->userCounts = false;
-    }
+  public function getMaxUserId() {
+    global $wpdb;
 
-    $this->editors = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
-    if ( $force || ! is_array( $this->editors ) ) {
-      $task = new GetEditors();
-      $task->schedule();
-    }
+    return $wpdb->get_var( "SELECT MAX(ID) FROM $wpdb->users" );
   }
 
+  /** Remove all indexing.
+   * @return void
+   */
   public function removeNow() {
+    $task = new DepopulateMetaIndexes();
+    $task->init();
+    /** @noinspection PhpStatementHasEmptyBodyInspection */
+    while ( ! $task->doChunk() ) {
+    }
+    $task->clearStatus();
     $task = new CountUsers();
-    $task->reset();
+    $task->clearStatus();
     $task = new GetEditors();
-    $task->reset();
+    $task->clearStatus();
   }
 
   public function enableAutoRebuild( $seconds ) {
     $task = new Reindex ();
+    $task->init();
     $task->cancel();
     $whenToRun = $this->nextDailyTimestamp( $seconds );
     $task->schedule( $whenToRun, 'daily' );
   }
 
+  /** @noinspection PhpSameParameterValueInspection */
   private function nextDailyTimestamp( $secondsAfterMidnight, $buffer = 30 ) {
     $midnight = $this->getTodayMidnightTimestamp();
     $when     = $secondsAfterMidnight + $midnight;
@@ -108,7 +156,7 @@ class Indexer {
     $zone        = get_option( 'timezone_string', 'UTC' );
     $currentZone = date_default_timezone_get();
     date_default_timezone_set( $zone );
-    $midnightLocal = new \DateTimeImmutable( 'today' );
+    $midnightLocal = new DateTimeImmutable( 'today' );
     $midnightLocal = $midnightLocal->getTimestamp();
     date_default_timezone_set( $currentZone );
 
@@ -117,6 +165,7 @@ class Indexer {
 
   public function disableAutoRebuild() {
     $task = new Reindex ();
+    $task->init();
     $task->cancel();
   }
 
@@ -151,28 +200,34 @@ class Indexer {
   public function updateEditors( $user_id, $removingUser = false ) {
 
     //TODO this line croaks when user count not done
-    $canEdit = ! $removingUser && ( get_userdata( $user_id ) )->has_cap( 'edit_post' );
-    $editors = $this->editors;
-    if ( is_array( $editors ) ) {
+    $canEdit       = ! $removingUser && ( get_userdata( $user_id ) )->has_cap( 'edit_post' );
+    $task          = new GetEditors();
+    $editors       = $task->getStatus();
+    $this->editors = $editors;
+
+    if ( ! $task->isIncomplete( $editors ) ) {
+      $editorList = &$editors['editors'];
       if ( $canEdit ) {
-        $editors[] = $user_id;
-        $editors   = array_unique( $editors, SORT_NUMERIC );
+        $editorList[]       = $user_id;
+        $editorList         = array_unique( $editorList, SORT_NUMERIC );
+        $editors['editors'] = $editorList;
       } else {
         $result = [];
-        foreach ( $editors as $editor ) {
+        foreach ( $editorList as $editor ) {
           if ( $editor !== $user_id ) {
             $result[] = $editor;
           }
         }
-        $editors = $result;
+        $editors['editors'] = $result;
       }
       $this->editors = $editors;
-      set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors", $editors, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+      $task          = new GetEditors();
+      $task->setStatus( $editors, true, 1 );
     }
   }
 
   public function getEditors() {
-    return $this->editors;
+    return $this->editors['editors'];
   }
 
   /** WHen a user changes roles, update the user counts.
@@ -193,21 +248,21 @@ class Indexer {
     if ( $this->userCounts !== false ) {
       return $this->userCounts;
     }
-    $this->userCounts = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
-    if ( $this->userCounts === false || ( isset( $this->userCounts['complete'] ) && ! $this->userCounts['complete'] ) ) {
+    $task = new CountUsers();
+
+    $this->userCounts = $task->getStatus();
+    if ( $task->isIncomplete( $this->userCounts ) ) {
       /* no user counts yet. We will fake them until they're available */
       $this->userCounts = $this->fakeUserCounts();
-      $this->setUserCounts();
     }
 
     return $this->userCounts;
   }
 
   public function setUserCounts( $userCounts = null ) {
+    $task       = new CountUsers();
     $userCounts = $userCounts === null ? $this->userCounts : $userCounts;
-    set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts",
-      $userCounts,
-      INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+    $task->setStatus( $userCounts, true, 1 );
     $this->userCounts = $userCounts;
   }
 
@@ -234,6 +289,10 @@ class Indexer {
 
 
     add_filter( 'views_users', [ $this, 'fake_views_users' ] );
+
+    $task = new CountUsers();
+    $task->init();
+    $task->schedule();
 
     return $result;
   }

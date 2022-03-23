@@ -19,8 +19,8 @@ class GetEditors extends Task {
   }
 
   public function needsDoing() {
-    $this->editors = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors");
-    return (!is_array($this->editors));
+    $editors = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors");
+    return (!is_array( $editors ));
   }
 
   /** Retrieve the user counts and update the transient
