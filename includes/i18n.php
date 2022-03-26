@@ -32,18 +32,19 @@ class i18n extends WordPressHooks {
   }
 
   /**
-	 * Load the plugin text domain for translation.
-	 *
-	 */
-	public function action__plugins_loaded() {
+   * Load the plugin text domain for translation.
+   *
+   */
+  public function action__plugins_loaded() {
 
-		load_plugin_textdomain(
-			'index-wp-users-for-speed',
-			false,
-			dirname( dirname( plugin_basename( __FILE__ ) ) ) . '/languages/'
-		);
+    load_plugin_textdomain(
+      'index-wp-users-for-speed',
+      false,
+      dirname( dirname( plugin_basename( __FILE__ ) ) ) . '/languages/'
+    );
 
-	}
+  }
 
 }
+
 new i18n();

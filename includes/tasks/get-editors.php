@@ -18,11 +18,6 @@ class GetEditors extends Task {
     parent::__construct( $siteId, $timeout );
   }
 
-  public function needsDoing() {
-    $editors = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors");
-    return (!is_array( $editors ));
-  }
-
   /** Retrieve the user counts and update the transient
    * @return boolean  done When this is false, schedule another chunk.
    */
@@ -45,16 +40,19 @@ class GetEditors extends Task {
     /* there's some chance that a long IN(1,2,3) clause
      * will run slightly more efficiently in MySQL
      * if it is presorted for them. */
-    sort($editors, SORT_NUMERIC);
-    set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors", $editors, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+    sort( $editors, SORT_NUMERIC );
+
+    $this->setStatus( [ 'editors' => $editors ], true, 1 );
+
     $this->endChunk();
 
     /* done in one chunk */
+
     return true;
   }
 
-  public function getResult () {
-    return get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors");
+  public function getResult() {
+    return get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
   }
 
   public function reset() {

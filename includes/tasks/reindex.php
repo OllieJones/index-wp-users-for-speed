@@ -36,6 +36,7 @@ class Reindex extends Task {
     $task->schedule();
     $task = new PopulateMetaIndexRoles();
     $task->init();
+    $task->log( 'from Reindex' );
     $task->schedule();
 
     $this->endChunk();

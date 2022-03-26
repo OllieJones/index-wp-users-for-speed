@@ -43,9 +43,12 @@ class PopulateMetaIndexRoles extends Task {
     global $wpdb;
     $this->startChunk();
 
+    $this->log( "phase $this->phase  start $this->currentStart" );
+
     /* First phase: Collect any extra capabilities from usermeta. */
     if ( $this->phase === 0 ) {
-      $currentEnd    = $this->currentStart + $this->batchSize;
+      $currentEnd = $this->currentStart + $this->batchSize;
+      $this->log( "phase $this->phase  start $this->currentStart  end $currentEnd" );
       $queryTemplate = /** @lang text */
         'SELECT DISTINCT meta_value caps FROM %1$s WHERE meta_key = \'%2$s\' AND user_id >= %3$d AND user_id < %4$d';
       $query         = sprintf( $queryTemplate, $wpdb->usermeta, $wpdb->prefix . 'capabilities', $this->currentStart, $currentEnd );
@@ -61,9 +64,10 @@ class PopulateMetaIndexRoles extends Task {
         }
       }
       $this->currentStart = $currentEnd;
-      if ( ! $this->needsDoing() ) {
+      if ( $this->currentStart >= $this->maxUserId ) {
         $this->currentStart = - 1;
         $this->phase        = 1;
+        $this->log( 'phase 0 complete' );
       }
 
       $this->fractionComplete = max( 0, min( 1, $this->currentStart / $this->maxUserId ) * 0.5 );
@@ -86,15 +90,12 @@ class PopulateMetaIndexRoles extends Task {
       }
       $this->currentStart = $currentEnd;
 
-      $done                   = ! $this->needsDoing();
+      $done                   = $this->currentStart >= $this->maxUserId;
       $this->fractionComplete = max( 0, 0.5 + min( 1, $this->currentStart / $this->maxUserId ) * 0.5 );
-
 
       $this->setStatus( [], $done, $this->fractionComplete );
 
       $this->endChunk();
-
-      /* done in one chunk */
 
       return $done;
     }
@@ -102,10 +103,6 @@ class PopulateMetaIndexRoles extends Task {
     $this->log( 'unknown phase ' . $this->phase );
 
     return true;
-  }
-
-  public function needsDoing() {
-    return ( $this->currentStart < $this->maxUserId );
   }
 
   private function makeIndexerQueries( $roles ) {

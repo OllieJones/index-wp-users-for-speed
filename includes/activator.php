@@ -1,4 +1,5 @@
 <?php
+
 namespace IndexWpUsersForSpeed;
 
 /**
@@ -29,7 +30,6 @@ class Activator {
 
     Activator::startIndexing();
   }
-
 
 
   /**

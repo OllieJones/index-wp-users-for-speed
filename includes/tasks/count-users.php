@@ -22,8 +22,8 @@ class CountUsers extends Task {
   public function doChunk() {
     $this->startChunk();
 
-    $userCounts             = count_users();
-    $this->setStatus($userCounts, true, 1);
+    $userCounts = count_users();
+    $this->setStatus( $userCounts, true, 1 );
 
     $this->endChunk();
 

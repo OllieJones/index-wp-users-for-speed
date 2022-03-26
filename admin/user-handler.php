@@ -7,6 +7,7 @@ use WP_REST_Response;
 use WP_User;
 use WP_User_Query;
 
+/** @noinspection PhpIncludeInspection */
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
 
 /**
@@ -174,16 +175,199 @@ class UserHandler extends WordPressHooks {
    * Fires before the WP_User_Query has been parsed.
    *
    * The passed WP_User_Query object contains the query variables,
-   * not yet passed into SQL.
+   * not yet passed into SQL. We can change them here.
    *
    * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
    *
-   * @noinspection PhpUnused*
+   * @noinspection PhpUnused
    * @since 4.0.0
    *
    */
   public function action__pre_get_users( $query ) {
-    $a = $query;
+
+    /* the order of these is important: mungCountTotal won't work after mungRoleFilters */
+    $this->mungCountTotal( $query );
+    $this->mungRoleFilters( $query );
+  }
+
+  /**
+   * Here we figure out whether we already know the total users, and
+   * switch off 'count_total' if we do.
+   *
+   * Do this before mungRoleFilters.
+   *
+   * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
+   *
+   */
+  private function mungCountTotal( $query ) {
+    /* we will bash $qv in place, so take it by ref */
+    $qv = &$query->query_vars;
+    if ( ! isset( $qv['count_total'] ) || $qv['count_total'] === false ) {
+      /* not trying to count total, no intervention needed */
+      return;
+    }
+
+    /* look for filters other than role filters, if present we can't intervene in user count */
+    $filterList = [
+      'meta_key',
+      'meta_value',
+      'meta_compare',
+      'meta_compare_key',
+      'meta_type',
+      'meta_type_key',
+      'meta_query',
+      'capability',
+      'capability__in',
+      'capability__not_in',
+      'include',
+      'exclude',
+      'search',
+      'search_columns',
+      'has_published_posts',
+      'nicename',
+      'nicename__in',
+      'nicename__not_in',
+      'login',
+      'login__in',
+      'login__not_in',
+    ];
+    foreach ( $filterList as $filter ) {
+      if ( array_key_exists( $filter, $qv ) &&
+           ( ( is_string( $qv[ $filter ] ) && strlen( $qv[ $filter ] ) > 0 ) ||
+             ( is_array( $qv[ $filter ] ) && count( $qv[ $filter ] ) > 0 ) ) ) {
+        return;
+      }
+    }
+
+    /* we can't handle any complex role filtering. One included role only. */
+    list( $roleSet, $roleExclude ) = $this->getRoleFilterSets( $qv );
+    if ( count( $roleSet ) > 1 && count( $roleExclude ) > 0 ) {
+      return;
+    }
+
+    /* OK, let's see if we have the counts */
+    $task   = new  CountUsers();
+    $counts = $task->getStatus();
+    if ( ! $task->isComplete( $counts ) ) {
+      return;
+    }
+    $count = - 1;
+    if ( count( $roleSet ) === 0 && isset( $counts['total_users'] ) ) {
+      $count = $counts['total_users'];
+    } else if ( is_array( $counts['avail_roles'] ) ) {
+      $availRoles = $counts['avail_roles'];
+      $role       = $roleSet[0];
+      if ( isset( $availRoles[ $role ] ) ) {
+        $count = $availRoles[ $role ];
+      }
+    }
+    if ( $count >= 0 ) {
+      $qv['count_total']  = false;
+      $query->total_users = $count;
+    }
+  }
+
+  /**
+   * @param array $qv
+   *
+   * @return array
+   */
+  private function getRoleFilterSets( array $qv ) {
+    /* make a set of roles to include */
+    $roleSet = [];
+    if ( isset( $qv['role'] ) && $qv['role'] !== '' ) {
+      $roleSet [] = $qv['role'];
+    }
+    if ( isset( $qv['role__in'] ) ) {
+      $roleSet = array_merge( $roleSet, $qv['role__in'] );
+    }
+    $roleSet = array_unique( $roleSet );
+    /* make a set of roles to exclude */
+    $roleExclude = [];
+    if ( isset( $qv['role__not_in'] ) ) {
+      $roleExclude = array_merge( $roleExclude, $qv['role__not_in'] );
+    }
+    $roleExclude = array_unique( $roleExclude );
+
+    return [ $roleSet, $roleExclude ];
+  }
+
+  /**
+   * Here we look at the query object to see whether it filters by role.
+   * If it does, we add meta filters to filter by our
+   * 'wp_index-wp-users-for-speed-role-ROLENAME' meta_key items
+   * and remove the role filters. This gets us away from
+   * the nasty and inefficient
+   *     meta_value LIKE '%ROLENAME%'
+   * query pattern and into a more sargable pattern.
+   *
+   * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
+   *
+   */
+  private function mungRoleFilters( $query ) {
+    /* we will bash $qv in place, so take it by ref */
+    $qv = &$query->query_vars;
+    list( $roleSet, $roleExclude ) = $this->getRoleFilterSets( $qv );
+
+    /* if the present query doesn't filter by any roles, don't do anything extra */
+    if ( count( $roleSet ) === 0 && count( $roleExclude ) === 0 ) {
+      return;
+    }
+
+    /* Do 'wp_index-wp-users-for-speed-role-ROLENAME' meta_key items exist?
+     * If not, we have nothing extra to do. */
+    $task = new PopulateMetaIndexRoles();
+    if ( ! $task->isComplete() ) {
+      return;
+    }
+
+    /* assemble some meta query args per
+     * https://developer.wordpress.org/reference/classes/wp_meta_query/__construct/
+     */
+    $includes = [];
+    foreach ( $roleSet as $role ) {
+      $includes[] = $this->makeRoleQueryArgs( $role );
+    }
+    if ( count( $includes ) > 1 ) {
+      $includes = [ 'relation' => 'OR', $includes ];
+    }
+    $excludes = [];
+    foreach ( $roleExclude as $role ) {
+      $excludes[] = $this->makeRoleQueryArgs( $role, 'NOT EXISTS' );
+    }
+    if ( count( $excludes ) > 1 ) {
+      $excludes = [ 'relation' => 'AND', $excludes ];
+    }
+    if ( count( $includes ) > 0 && count( $excludes ) > 0 ) {
+      $meta = [ 'relation' => 'AND', $includes, $excludes ];
+    } else if ( count( $includes ) > 0 ) {
+      $meta = $includes;
+    } else if ( count( $excludes ) > 0 ) {
+      $meta = $excludes;
+    } else {
+      $meta = false;
+    }
+    /* stash those meta query args in the query variables we got */
+    $qv ['meta_query'] = $meta;
+    /* and erase the role filters they replace */
+    $qv['role']         = '';
+    $qv['role__in']     = [];
+    $qv['role__not_in'] = [];
+  }
+
+  /** Create a meta arg for looking for an exsisting role tag
+   *
+   * @param string $role
+   * @param string $compare 'NOT EXISTS' or 'EXISTS' (the default).
+   *
+   * @return array meta query arg array
+   */
+  private function makeRoleQueryArgs( $role, $compare = 'EXISTS' ) {
+    global $wpdb;
+    $roleMetaPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_PREFIX . 'role-';
+    $roleMetaKey    = $roleMetaPrefix . $role;
+
+    return [ 'key' => $roleMetaKey, 'compare' => $compare ];
   }
 
   /**
@@ -240,9 +424,9 @@ class UserHandler extends WordPressHooks {
    */
   public function filter__rest_user_query( $query_args, $request ) {
 
-    /* Notice that the JSON ajax requests for lists of users have the deprecated who=authors
-     * query syntax. This code allows both that and the new capability=[edit_posts] syntax */
     if ( ! is_array( $query_args['include'] ) || count( $query_args['include'] ) === 0 ) {
+      /* Notice that the JSON ajax requests for lists of users have the deprecated who=authors
+       * query syntax. This code allows both that and the new capability=[edit_posts] syntax */
       if ( ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' )
            || ( isset ( $query_args ['capability'] ) && in_array( 'edit_posts', $query_args['capability'] ) ) ) {
         $editors = $this->indexer->getEditors();
@@ -271,7 +455,6 @@ class UserHandler extends WordPressHooks {
     // TODO
     $a = $user;
   }
-
 
   /**
    * Fires after a user is completely created or updated via the REST API.
@@ -328,26 +511,6 @@ class UserHandler extends WordPressHooks {
     }
 
     return $results;  /* unmodified, this is null */
-  }
-
-  /**
-   * Filters SELECT FOUND_ROWS() query for the current WP_User_Query instance.
-   *
-   * @param string $sql The SELECT FOUND_ROWS() query for the current WP_User_Query.
-   * @param WP_User_Query $query The current WP_User_Query instance.
-   *
-   * @return string
-   * @since 3.2.0
-   * @since 5.1.0 Added the `$this` parameter.
-   *
-   * @noinspection PhpUnused
-   */
-  public function filter__found_users_query( $sql, $query ) {
-    if ( wp_doing_cron() ) {
-      return $sql;
-    }
-
-    return $sql;
   }
 
 }

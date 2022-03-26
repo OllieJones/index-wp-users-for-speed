@@ -31,12 +31,14 @@ class Indexer {
   /** Write out a log (to a transient).
    *
    * @param string $msg Log entry.
-   * @param int $maxlength Optional. Maximum number of entries in log. Default 32.
+   * @param int $maxlength Optional. Maximum number of entries in log. Default 256.
    * @param string $name Optional. Optional. The suffix of the transient name. Default "log".
    *
    * @return void
    */
-  public static function writeLog( $msg, $maxlength = 32, $name = 'log' ) {
+  public static function writeLog( $msg, $maxlength = 256, $name = 'log' ) {
+    global $wpdb;
+    $wpdb->query( "LOCK TABLES $wpdb->options WRITE" );
     $log      = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name );
     $log      = is_string( $log ) ? $log : null;
     $logarray = explode( PHP_EOL, $log );
@@ -44,6 +46,7 @@ class Indexer {
     array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
     $log = implode( PHP_EOL, $logarray );
     set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name, $log, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+    $wpdb->query( "UNLOCK TABLES" );
   }
 
   public static function getInstance() {
@@ -60,7 +63,7 @@ class Indexer {
   public function maybeIndexEverything( $force = false ) {
     $task             = new CountUsers();
     $this->userCounts = $task->getStatus();
-    if ( $task->isIncomplete( $this->userCounts ) ) {
+    if ( $force || $task->isMissing( $this->userCounts ) ) {
       $task->init();
       $task->schedule();
       $this->userCounts = false;
@@ -69,22 +72,24 @@ class Indexer {
     $task          = new GetEditors();
     $editors       = $task->getStatus();
     $this->editors = $editors;
-    if ( $force || $task->isIncomplete( $editors ) ) {
+    if ( $force || $task->isMissing( $editors ) ) {
       $task->init();
       $task->schedule();
     }
     $task            = new PopulateMetaIndexRoles();
     $populated       = $task->getStatus();
     $this->populated = $populated;
-    if ( $force || $task->isIncomplete( $populated ) ) {
+    if ( $force || $task->isMissing( $populated ) ) {
       $task->init();
+      $task->log( 'from maybeIndexEverything' );
       $task->schedule();
     }
   }
 
   public function hackHackHack() {
     //TODO hack hack.
-    $pop = new PopulateMetaIndexRoles( 10 );
+    $pop = new PopulateMetaIndexRoles(  );
+    $pop->log( 'from hackhackhack' );
     $pop->init();
     /** @noinspection PhpStatementHasEmptyBodyInspection */
     while ( ! $pop->doChunk() ) {
@@ -205,7 +210,7 @@ class Indexer {
     $editors       = $task->getStatus();
     $this->editors = $editors;
 
-    if ( ! $task->isIncomplete( $editors ) ) {
+    if ( ! $task->isMissing( $editors ) ) {
       $editorList = &$editors['editors'];
       if ( $canEdit ) {
         $editorList[]       = $user_id;
@@ -251,7 +256,7 @@ class Indexer {
     $task = new CountUsers();
 
     $this->userCounts = $task->getStatus();
-    if ( $task->isIncomplete( $this->userCounts ) ) {
+    if ( ! $task->isComplete( $this->userCounts ) ) {
       /* no user counts yet. We will fake them until they're available */
       $this->userCounts = $this->fakeUserCounts();
     }

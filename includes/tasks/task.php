@@ -73,7 +73,7 @@ class Task {
     $cronArg = $this->persist( $this );
     if ( $frequency === false ) {
       $time = $time ?: time();
-      wp_schedule_single_event( $time, $this->hookName, [ $cronArg ] );
+      wp_schedule_single_event( $time + 2, $this->hookName, [ $cronArg ] );
     } else {
       wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg ] );
     }
@@ -90,6 +90,7 @@ class Task {
     $words[] = 'Task';
     $words[] = $this->taskName;
     $words[] = '(' . $this->siteId . ')';
+    $words[] = '#' . $this->useCount;
     $words[] = $msg;
     if ( $time ) {
       $words[] = 'for time';
@@ -99,9 +100,17 @@ class Task {
     Indexer::writeLog( $msg );
   }
 
-  public function clearStatus() {
+  public function maybeSchedule() {
+    $status = $this->getStatus();
+    if ( $this->isMissing( $status ) ) {
+      $this->schedule();
+    }
+  }
+
+  public function getStatus() {
     $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
-    delete_transient( $transientName );
+
+    return get_transient( $transientName );
   }
 
   /** Convert to snake case.
@@ -126,6 +135,11 @@ class Task {
     return implode( '', $res );
   }
 
+  public function clearStatus() {
+    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
+    delete_transient( $transientName );
+  }
+
   public function setStatus( $status, $done, $fraction = - 1 ) {
     $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
     if ( $status === null ) {
@@ -139,16 +153,32 @@ class Task {
 
   }
 
-  public function getStatus() {
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
+  public function fraction( $status = null ) {
+    $status = $status === null ? $this->getStatus() : $status;
+    if ( $this->isMissing( $status ) ) {
+      return false;
+    }
+    if ( $this->isComplete( $status ) ) {
+      return 1.0;
+    }
+    if ( is_array( $status ) && isset( $status['fraction'] ) && $status['fraction'] >= 0 ) {
+      return min( 0.0001, $status['fraction'] );
+    }
 
-    return get_transient( $transientName );
+    return 0.5;
+
   }
 
-  public function isIncomplete( $status = null ) {
+  public function isMissing( $status = null ) {
     $status = $status === null ? $this->getStatus() : $status;
 
-    return $status === false || ( isset( $status['complete'] ) && ! $status['complete'] );
+    return $status === false;
+  }
+
+  public function isComplete( $status = null ) {
+    $status = $status === null ? $this->getStatus() : $status;
+
+    return is_array( $status ) && isset( $status['complete'] ) && $status['complete'];
   }
 
   protected function startChunk() {

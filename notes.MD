@@ -1,5 +1,6 @@
 wp_usermeta.meta_key = 'wp_capabilities'
 ---
+
 | COUNT(*) | meta_value |
 | ---: | --- |
 | 167 | a:1:{s:10:"subscriber";b:1;} |
@@ -9,7 +10,6 @@ wp_usermeta.meta_key = 'wp_capabilities'
 | 34 | a:1:{s:15:"css_js_designer";b:1;} |
 | 29 | a:1:{s:10:"translator";b:1;} |
 | 1 | a:2:{s:13:"administrator";b:1;s:14:"backwpup_admin";b:1;} |
-
 
 ## Hooks....
 
@@ -213,8 +213,8 @@ wp_usermeta.meta_key = 'wp_capabilities'
 ```
 
 ## Gets users for Gutenberg editor.
-http://ubu2010.plumislandmedia.local/wp-json/wp/v2/users?context=view&who=authors&per_page=50&_fields=id,name&_locale=user
 
+http://ubu2010.plumislandmedia.local/wp-json/wp/v2/users?context=view&who=authors&per_page=50&_fields=id,name&_locale=user
 
 Here's a query to populate the easily readable caps meta
 
