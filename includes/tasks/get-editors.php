@@ -42,7 +42,7 @@ class GetEditors extends Task {
      * if it is presorted for them. */
     sort( $editors, SORT_NUMERIC );
 
-    $this->setStatus( [ 'editors' => $editors ], true, 1 );
+    $this->setStatus( [ 'editors' => $editors ], true, false, 1 );
 
     $this->endChunk();
 

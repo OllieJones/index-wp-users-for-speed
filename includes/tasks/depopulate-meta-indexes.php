@@ -27,7 +27,7 @@ class DepopulateMetaIndexes extends Task {
 
     $this->batchSize = $batchSize;
     $this->setBlog();
-    $this->maxUserId = max( 1, $indexer->getMaxUserId() + 1 );
+    $this->maxUserId = $indexer->getMaxUserId();
     $this->restoreBlog();
   }
 
@@ -36,7 +36,6 @@ class DepopulateMetaIndexes extends Task {
     $indexer = Indexer::getInstance();
     $this->setBlog();
     $this->setStatus( [], false, $this->fractionComplete );
-    $this->maxUserId = max( 1, $indexer->getMaxUserId() + 1 );
     foreach ( wp_roles()->get_names() as $role => $name ) {
       $this->roles[] = $role;
     }
@@ -57,9 +56,10 @@ class DepopulateMetaIndexes extends Task {
     }
 
     $currentEnd    = $this->currentStart + $this->batchSize;
+    $keyPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
     $queryTemplate = /** @lang text */
       'DELETE FROM %1$s WHERE meta_key LIKE \'%2$s%\' AND user_id >= %3$d AND user_id < %4$d';
-    $query         = sprintf( $queryTemplate, $wpdb->usermeta, $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_PREFIX, $this->currentStart, $currentEnd );
+    $query         = sprintf( $queryTemplate, $wpdb->usermeta, $keyPrefix, $this->currentStart, $currentEnd );
     $wpdb->query( $query );
     $this->currentStart = $currentEnd;
     $done               = ! $this->needsDoing();

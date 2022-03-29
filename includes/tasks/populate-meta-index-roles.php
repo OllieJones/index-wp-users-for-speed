@@ -31,8 +31,8 @@ class PopulateMetaIndexRoles extends Task {
     parent::init();
     $indexer = Indexer::getInstance();
     $this->setBlog();
-    $this->setStatus( [], false, $this->fractionComplete );
-    $this->maxUserId = max( 1, $indexer->getMaxUserId() + 1 );
+    $this->setStatus( null, null, true, $this->fractionComplete );
+    $this->maxUserId = $indexer->getMaxUserId();
     $this->restoreBlog();
   }
 
@@ -71,7 +71,8 @@ class PopulateMetaIndexRoles extends Task {
       }
 
       $this->fractionComplete = max( 0, min( 1, $this->currentStart / $this->maxUserId ) * 0.5 );
-      $this->setStatus( [], false, $this->fractionComplete );
+      $this->setStatus( null, null, true, $this->fractionComplete );
+
       $this->endChunk();
 
       return false;
@@ -93,7 +94,7 @@ class PopulateMetaIndexRoles extends Task {
       $done                   = $this->currentStart >= $this->maxUserId;
       $this->fractionComplete = max( 0, 0.5 + min( 1, $this->currentStart / $this->maxUserId ) * 0.5 );
 
-      $this->setStatus( [], $done, $this->fractionComplete );
+      $this->setStatus( null, null, ! $done, $this->fractionComplete );
 
       $this->endChunk();
 
@@ -110,7 +111,7 @@ class PopulateMetaIndexRoles extends Task {
 
     $results = [];
 
-    $prefix          = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_PREFIX . 'role-';
+    $prefix          = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $capabilitiesKey = $wpdb->prefix . 'capabilities';
     $insertUnions    = [];
     $deleteUnions    = [];

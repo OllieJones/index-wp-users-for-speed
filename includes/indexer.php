@@ -17,9 +17,6 @@ class Indexer {
   /* a simple singleton class */
   protected static $singleInstance;
   private static $sentinelCount;
-  private $userCounts = false;
-  private $editors = false;
-  private $populated = false;
 
   protected function __construct() {
 
@@ -62,37 +59,25 @@ class Indexer {
 
   public function maybeIndexEverything( $force = false ) {
     $task             = new CountUsers();
-    $this->userCounts = $task->getStatus();
-    if ( $force || $task->isMissing( $this->userCounts ) ) {
+    $userCounts = $task->getStatus();
+    if ( $force || $task->isMissing( $userCounts ) ) {
       $task->init();
-      $task->schedule();
-      $this->userCounts = false;
+      $task->maybeSchedule($userCounts);
     }
 
-    $task          = new GetEditors();
-    $editors       = $task->getStatus();
-    $this->editors = $editors;
+    $task    = new GetEditors();
+    $editors = $task->getStatus();
     if ( $force || $task->isMissing( $editors ) ) {
       $task->init();
-      $task->schedule();
+      $task->maybeSchedule($editors);
     }
-    $task            = new PopulateMetaIndexRoles();
-    $populated       = $task->getStatus();
-    $this->populated = $populated;
+
+    $task      = new PopulateMetaIndexRoles();
+    $populated = $task->getStatus();
     if ( $force || $task->isMissing( $populated ) ) {
       $task->init();
       $task->log( 'from maybeIndexEverything' );
-      $task->schedule();
-    }
-  }
-
-  public function hackHackHack() {
-    //TODO hack hack.
-    $pop = new PopulateMetaIndexRoles(  );
-    $pop->log( 'from hackhackhack' );
-    $pop->init();
-    /** @noinspection PhpStatementHasEmptyBodyInspection */
-    while ( ! $pop->doChunk() ) {
+      $task->maybeSchedule();
     }
   }
 
@@ -109,10 +94,13 @@ class Indexer {
     $this->maybeIndexEverything( true );
   }
 
+  /**
+   * @return int one higher than the maximum user ID, irrespective of site in multisite.
+   */
   public function getMaxUserId() {
     global $wpdb;
 
-    return $wpdb->get_var( "SELECT MAX(ID) FROM $wpdb->users" );
+    return 1 + max( 1, intval( $wpdb->get_var( "SELECT MAX(ID) FROM $wpdb->users" ) ) );
   }
 
   /** Remove all indexing.
@@ -204,13 +192,10 @@ class Indexer {
    */
   public function updateEditors( $user_id, $removingUser = false ) {
 
-    //TODO this line croaks when user count not done
     $canEdit       = ! $removingUser && ( get_userdata( $user_id ) )->has_cap( 'edit_post' );
     $task          = new GetEditors();
     $editors       = $task->getStatus();
-    $this->editors = $editors;
-
-    if ( ! $task->isMissing( $editors ) ) {
+    if ( $task->isAvailable( $editors ) ) {
       $editorList = &$editors['editors'];
       if ( $canEdit ) {
         $editorList[]       = $user_id;
@@ -225,14 +210,17 @@ class Indexer {
         }
         $editors['editors'] = $result;
       }
-      $this->editors = $editors;
-      $task          = new GetEditors();
-      $task->setStatus( $editors, true, 1 );
+      $task->setStatus( $editors );
     }
   }
 
   public function getEditors() {
-    return $this->editors['editors'];
+    $task = new GetEditors();
+    $status = $task->getStatus();
+    if ($task->isAvailable($status)) {
+      return $status['editors'];
+    }
+    return false;
   }
 
   /** WHen a user changes roles, update the user counts.
@@ -243,32 +231,25 @@ class Indexer {
    * @return void
    */
   public function updateUserCountsForRoleChange( $newRole, array $oldRoles ) {
-    $this->getUserCounts();
     $this->updateUserCounts( $newRole, + 1 );
     $this->updateUserCounts( $oldRoles, - 1 );
-    $this->setUserCounts();
   }
 
   public function getUserCounts() {
-    if ( $this->userCounts !== false ) {
-      return $this->userCounts;
-    }
     $task = new CountUsers();
 
-    $this->userCounts = $task->getStatus();
-    if ( ! $task->isComplete( $this->userCounts ) ) {
+    $userCounts = $task->getStatus();
+    if ( ! $task->isAvailable( $userCounts ) ) {
       /* no user counts yet. We will fake them until they're available */
-      $this->userCounts = $this->fakeUserCounts();
+      $userCounts = $this->fakeUserCounts();
+
+      if ( $task->isMissing($userCounts)) {
+        $task->init();
+        $task->maybeSchedule($userCounts);
+      }
     }
 
-    return $this->userCounts;
-  }
-
-  public function setUserCounts( $userCounts = null ) {
-    $task       = new CountUsers();
-    $userCounts = $userCounts === null ? $this->userCounts : $userCounts;
-    $task->setStatus( $userCounts, true, 1 );
-    $this->userCounts = $userCounts;
+    return $userCounts;
   }
 
   /** Generate fake user counts for the views list on the users page.
@@ -292,12 +273,7 @@ class Indexer {
       'complete'    => false,
     ];
 
-
     add_filter( 'views_users', [ $this, 'fake_views_users' ] );
-
-    $task = new CountUsers();
-    $task->init();
-    $task->schedule();
 
     return $result;
   }
@@ -327,19 +303,20 @@ class Indexer {
     if ( is_string( $roles ) ) {
       $roles = [ $roles ];
     }
-    if ( is_array( $this->userCounts['avail_roles'] ) ) {
+    $task = new CountUsers();
+    $userCounts = $task->getStatus();
+    if ($task->isAvailable($userCounts)) {
       foreach ( $roles as $role ) {
-        if ( ! array_key_exists( $role, $this->userCounts['avail_roles'] ) ) {
-          $this->userCounts['avail_roles'][ $role ] = 0;
+        if ( ! array_key_exists( $role, $userCounts['avail_roles'] ) ) {
+          $userCounts['avail_roles'][ $role ] = 0;
         }
-        $this->userCounts['avail_roles'][ $role ] += $value;
-        if ( $this->userCounts['avail_roles'][ $role ] === 0 ) {
-          unset ( $this->userCounts['avail_roles'][ $role ] );
-        }
+        $userCounts['avail_roles'][ $role ] += $value;
       }
-    }
-    if ( is_numeric( $this->userCounts['total_users'] ) ) {
-      $this->userCounts['total_users'] += $value;
+
+      if ( is_numeric( $userCounts['total_users'] ) ) {
+        $userCounts['total_users'] += $value;
+      }
+      $task->setStatus($userCounts);
     }
   }
 

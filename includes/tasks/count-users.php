@@ -23,7 +23,7 @@ class CountUsers extends Task {
     $this->startChunk();
 
     $userCounts = count_users();
-    $this->setStatus( $userCounts, true, 1 );
+    $this->setStatus( $userCounts, true, false, 1 );
 
     $this->endChunk();
 

@@ -59,9 +59,7 @@ class UserHandler extends WordPressHooks {
    *
    */
   public function action__add_user_to_blog( $user_id, $role, $blog_id ) {
-    $this->indexer->getUserCounts();
     $this->indexer->updateUserCounts( $role, + 1 );
-    $this->indexer->setUserCounts();
     $this->indexer->updateEditors( $user_id );
   }
 
@@ -81,9 +79,7 @@ class UserHandler extends WordPressHooks {
   public function action__remove_user_from_blog( $user_id, $blog_id, $reassign ) {
     $user  = get_userdata( $user_id );
     $roles = $user->roles;
-    $this->indexer->getUserCounts();
     $this->indexer->updateUserCounts( $roles, - 1 );
-    $this->indexer->setUserCounts();
     $this->indexer->updateEditors( $user_id, true );
   }
 
@@ -248,7 +244,7 @@ class UserHandler extends WordPressHooks {
     /* OK, let's see if we have the counts */
     $task   = new  CountUsers();
     $counts = $task->getStatus();
-    if ( ! $task->isComplete( $counts ) ) {
+    if ( ! $task->isAvailable( $counts ) ) {
       return;
     }
     $count = - 1;
@@ -314,10 +310,8 @@ class UserHandler extends WordPressHooks {
       return;
     }
 
-    /* Do 'wp_index-wp-users-for-speed-role-ROLENAME' meta_key items exist?
-     * If not, we have nothing extra to do. */
     $task = new PopulateMetaIndexRoles();
-    if ( ! $task->isComplete() ) {
+    if ( ! $task->isAvailable() ) {
       return;
     }
 
@@ -364,7 +358,7 @@ class UserHandler extends WordPressHooks {
    */
   private function makeRoleQueryArgs( $role, $compare = 'EXISTS' ) {
     global $wpdb;
-    $roleMetaPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_PREFIX . 'role-';
+    $roleMetaPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $roleMetaKey    = $roleMetaPrefix . $role;
 
     return [ 'key' => $roleMetaKey, 'compare' => $compare ];
@@ -485,32 +479,6 @@ class UserHandler extends WordPressHooks {
   public function action__rest_delete_user( $user, $response, $request ) {
     //TODO
     $a = $user;
-  }
-
-  /**
-   * Filters the users array before the query takes place.
-   *
-   * Return a non-null value to bypass WordPress' default user queries.
-   *
-   * Filtering functions that require pagination information are encouraged to set
-   * the `total_users` property of the WP_User_Query object, passed to the filter
-   * by reference. If WP_User_Query does not perform a database query, it will not
-   * have enough information to generate these values itself.
-   *
-   * @param array|null $results Return an array of user data to short-circuit WP's user query
-   *                               or null to allow WP to run its normal queries.
-   * @param WP_User_Query $query The WP_User_Query instance (passed by reference).
-   *
-   * @since 5.1.0
-   *
-   * @noinspection PhpUnused
-   */
-  public function filter__users_pre_query( $results, $query ) {
-    if ( wp_doing_cron() ) {
-      return $results;
-    }
-
-    return $results;  /* unmodified, this is null */
   }
 
 }

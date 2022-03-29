@@ -24,6 +24,7 @@ function index_wp_users_for_speed_do_task( $serializedTask ) {
     } else {
       $task->log( 'completed' );
       $task->fractionComplete = 1;
+      $task->setStatus (null, true, false, 1);
     }
   } catch ( Exception $ex ) {
     $taskName = ( $task && $task->taskName ) ? $task->taskName : 'unknown task';
@@ -69,48 +70,20 @@ class Task {
     wp_unschedule_hook( $this->hookName );
   }
 
-  public function schedule( $time = 0, $frequency = false ) {
-    $cronArg = $this->persist( $this );
-    if ( $frequency === false ) {
-      $time = $time ?: time();
-      wp_schedule_single_event( $time + 2, $this->hookName, [ $cronArg ] );
-    } else {
-      wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg ] );
+  public function maybeSchedule( $status = null ) {
+    if ( !isset($status) || $status === false ) {
+      $status = $this->getStatus();
     }
-    $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
-    $this->log( $msg, $time );
-  }
-
-  public function persist( $item ) {
-    return serialize( $item );
-  }
-
-  public function log( $msg, $time = 0 ) {
-    $words   = [];
-    $words[] = 'Task';
-    $words[] = $this->taskName;
-    $words[] = '(' . $this->siteId . ')';
-    $words[] = '#' . $this->useCount;
-    $words[] = $msg;
-    if ( $time ) {
-      $words[] = 'for time';
-      $words[] = date( 'Y-m-d H:i:s', $time );
-    }
-    $msg = implode( ' ', $words );
-    Indexer::writeLog( $msg );
-  }
-
-  public function maybeSchedule() {
-    $status = $this->getStatus();
-    if ( $this->isMissing( $status ) ) {
+    if ( ! $this->isActive( $status ) ) {
       $this->schedule();
     }
   }
 
   public function getStatus() {
     $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
-
-    return get_transient( $transientName );
+    $result = get_transient( $transientName );
+    $this->log ('get status ' . serialize($result));
+    return $result;
   }
 
   /** Convert to snake case.
@@ -135,53 +108,113 @@ class Task {
     return implode( '', $res );
   }
 
+  /** Is a task active.
+   *
+   * This is true when a task is running, either
+   * for the first time or in a way that updates it.
+   * running in a way that updates it.
+   *
+   * Don't start the task again if this is true.
+   *
+   * @param array $status optional status.
+   *
+   * @return bool ready to use.
+   */
+  public function isActive( $status = null ) {
+    $status = $status === null ? $this->getStatus() : $status;
+
+    return is_array( $status ) && isset( $status['active'] ) && $status['active'];
+  }
+
+  public function schedule( $time = 0, $frequency = false ) {
+    $cronArg = $this->persist( $this );
+    if ( $frequency === false ) {
+      $time = $time ?: time();
+      wp_schedule_single_event( $time + 2, $this->hookName, [ $cronArg ] );
+    } else {
+      wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg ] );
+    }
+    $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
+    $this->log( $msg, $time );
+  }
+
+  protected function persist( $item ) {
+    return serialize( $item );
+  }
+
+  public function log( $msg, $time = 0 ) {
+    $words   = [];
+    $words[] = 'Task';
+    $words[] = $this->taskName;
+    $words[] = '(' . $this->siteId . ')';
+    $words[] = '#' . $this->useCount;
+    $words[] = $msg;
+    if ( $time ) {
+      $words[] = 'for time';
+      $words[] = date( 'Y-m-d H:i:s', $time );
+    }
+    $msg = implode( ' ', $words );
+    Indexer::writeLog( $msg );
+  }
+
   public function clearStatus() {
     $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
     delete_transient( $transientName );
   }
 
-  public function setStatus( $status, $done, $fraction = - 1 ) {
+  public function setStatus( $status, $available = null, $active = null, $fraction = null ) {
     $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
     if ( $status === null ) {
       $status = $this->getStatus();
     }
-    $status['complete'] = $done;
-    if ( $fraction >= 0 ) {
+    if (!isset ($status) || $status === false ) {
+      $status = [];
+    }
+    if ( isset( $available ) ) {
+      $status['available'] = $available;
+    }
+    if ( isset( $active) ) {
+      $status['active'] = $active;
+    }
+    if ( isset( $fraction ) ) {
       $status['fraction'] = $fraction;
     }
     set_transient( $transientName, $status, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+    $this->log('set status ' . serialize($status));
 
   }
 
-  public function fraction( $status = null ) {
-    $status = $status === null ? $this->getStatus() : $status;
-    if ( $this->isMissing( $status ) ) {
-      return false;
-    }
-    if ( $this->isComplete( $status ) ) {
-      return 1.0;
-    }
-    if ( is_array( $status ) && isset( $status['fraction'] ) && $status['fraction'] >= 0 ) {
-      return min( 0.0001, $status['fraction'] );
-    }
-
-    return 0.5;
-
-  }
-
+  /** Is a task's output completely missing.
+   *
+   * @param array $status optional status
+   *
+   * @return bool  true means it's missing.
+   */
   public function isMissing( $status = null ) {
     $status = $status === null ? $this->getStatus() : $status;
 
     return $status === false;
   }
 
-  public function isComplete( $status = null ) {
+  /** Is a task's output ready to use.
+   *
+   * This can be true if the task has been run, and if it is actively
+   * running in a way that updates it.
+   *
+   * @param array $status optional status.
+   *
+   * @return bool ready to use.
+   */
+  public function isAvailable( $status = null ) {
     $status = $status === null ? $this->getStatus() : $status;
 
-    return is_array( $status ) && isset( $status['complete'] ) && $status['complete'];
+    return is_array( $status ) && isset( $status['available'] ) && $status['available'];
   }
 
   protected function startChunk() {
+    if ($this->useCount === 0 ) {
+      $this->setStatus(null, null, true, 0.001);
+    }
     set_time_limit( $this->timeout );
     $this->lastTouch = time();
     $this->setBlog();
