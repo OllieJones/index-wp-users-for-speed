@@ -37,8 +37,8 @@ define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
 const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.0.0';
 const INDEX_WP_USERS_FOR_SPEED_PREFIX         = 'index-wp-users-for-speed-';
 const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX     = 'iufs';
-const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME = 60;
-const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME  = 300;
+const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME = HOUR_IN_SECONDS * 4;
+const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME  = DAY_IN_SECONDS * 2;
 const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE      = 50;   //TODO make it bigger.
 
 /** Error logging, useful for caught errors in cronjobs.

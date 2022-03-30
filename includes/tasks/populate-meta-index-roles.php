@@ -31,7 +31,6 @@ class PopulateMetaIndexRoles extends Task {
     parent::init();
     $indexer = Indexer::getInstance();
     $this->setBlog();
-    $this->setStatus( null, null, true, $this->fractionComplete );
     $this->maxUserId = $indexer->getMaxUserId();
     $this->restoreBlog();
   }
@@ -42,8 +41,6 @@ class PopulateMetaIndexRoles extends Task {
   public function doChunk() {
     global $wpdb;
     $this->startChunk();
-
-    $this->log( "phase $this->phase  start $this->currentStart" );
 
     /* First phase: Collect any extra capabilities from usermeta. */
     if ( $this->phase === 0 ) {

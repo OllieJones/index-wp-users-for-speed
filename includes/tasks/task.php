@@ -12,31 +12,22 @@ use ReflectionClass;
  * @return void
  * @noinspection PhpUnused
  */
-function index_wp_users_for_speed_do_task( $serializedTask ) {
+function index_wp_users_for_speed_do_task( $taskName, $step ) {
   $task = null;
   try {
-    $task = Task::restore( $serializedTask );
-    $task->log( 'started' );
-    $done = $task->doChunk();
-    if ( ! $done ) {
-      $task->schedule();
-      $task->log( 'rescheduled' );
-    } else {
-      $task->log( 'completed' );
-      $task->fractionComplete = 1;
-      $task->setStatus (null, true, false, 1);
-    }
+    $task = Task::restorePersisted( $taskName );
+    $task->doTaskStep();
   } catch ( Exception $ex ) {
     $taskName = ( $task && $task->taskName ) ? $task->taskName : 'unknown task';
     error_log( 'index_wp_users_for_speed_task: cron hook exception: ' . $taskName . ' ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
   }
 }
 
-add_action( 'index_wp_users_for_speed_task', __NAMESPACE__ . '\index_wp_users_for_speed_do_task' );
-add_action( 'index_wp_users_for_speed_repeating_task', __NAMESPACE__ . '\index_wp_users_for_speed_do_task' );
+add_action( 'index_wp_users_for_speed_task', __NAMESPACE__ . '\index_wp_users_for_speed_do_task', 10, 2 );
+add_action( 'index_wp_users_for_speed_repeating_task', __NAMESPACE__ . '\index_wp_users_for_speed_do_task', 10, 2 );
 
 
-class Task {
+abstract class Task {
   public $taskName;
   public $lastTouch;
   public $fractionComplete = 0;
@@ -58,32 +49,49 @@ class Task {
     $this->taskName  = ( new ReflectionClass( $this ) )->getShortName();
   }
 
-  public static function restore( $persisted ) {
-    return unserialize( $persisted );
+  public static function restorePersisted( $taskName ) {
+    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . $taskName;
+
+    return get_transient( $transientName );
   }
 
   public function init() {
 
   }
 
-  public function cancel() {
-    wp_unschedule_hook( $this->hookName );
-  }
-
-  public function maybeSchedule( $status = null ) {
-    if ( !isset($status) || $status === false ) {
-      $status = $this->getStatus();
-    }
-    if ( ! $this->isActive( $status ) ) {
+  public function doTaskStep() {
+    $done = $this->doChunk();
+    if ( ! $done ) {
       $this->schedule();
+      error_log( 'just rescheduled a ' . $this->taskName );
+    } else {
+      $this->log( 'completed' );
+      $this->fractionComplete = 1;
+      $this->setStatus( null, true, false, 1 );
+      $this->clearPersisted( $this );
     }
   }
 
-  public function getStatus() {
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
-    $result = get_transient( $transientName );
-    $this->log ('get status ' . serialize($result));
-    return $result;
+  public abstract function doChunk();
+
+  public function schedule( $time = 0, $frequency = false ) {
+    $cronArg = $this->persist();
+    if ( $frequency === false ) {
+      $time = $time ?: time();
+      wp_schedule_single_event( $time, $this->hookName, [ $cronArg, $this->useCount ] );
+    } else {
+      wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg, $this->useCount ] );
+    }
+    $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
+    $this->log( $msg, $time );
+  }
+
+  protected function persist() {
+    $jobName       = self::toSnake( $this->taskName );
+    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . $jobName;
+    set_transient( $transientName, $this, INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME );
+
+    return $jobName;
   }
 
   /** Convert to snake case.
@@ -108,6 +116,82 @@ class Task {
     return implode( '', $res );
   }
 
+  public function log( $msg, $time = 0 ) {
+    $words   = [];
+    $words[] = 'Task';
+    $words[] = $this->taskName;
+    $words[] = '(' . $this->siteId . ')';
+    $words[] = '#' . $this->useCount;
+    $words[] = $msg;
+    if ( $time ) {
+      $words[] = 'for time';
+      $words[] = date( 'Y-m-d H:i:s', $time );
+    }
+    $msg = implode( ' ', $words );
+    Indexer::writeLog( $msg );
+  }
+
+  public function setStatus( $status, $available = null, $active = null, $fraction = null ) {
+    if ( $status === null ) {
+      $status = $this->getStatus();
+    }
+    if ( ! isset ( $status ) || $status === false ) {
+      $status = [];
+    }
+    if ( isset( $available ) ) {
+      $status['available'] = $available;
+    }
+    if ( isset( $active ) ) {
+      $status['active'] = $active;
+    }
+    if ( isset( $fraction ) ) {
+      $status['fraction'] = $fraction;
+    }
+    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
+    set_transient( $jobResultName, $status, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+
+  }
+
+  public function getStatus() {
+    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
+
+    return get_transient( $jobResultName );
+  }
+
+  protected function clearPersisted() {
+    $jobStatusName = self::toSnake( $this->taskName );
+    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . $jobStatusName;
+    delete_transient( $transientName );
+  }
+
+  public function cancel() {
+    wp_unschedule_hook( $this->hookName );
+
+  }
+
+  public function maybeSchedule( $status = null ) {
+    if ( ! isset( $status ) || $status === false ) {
+      $status = $this->getStatus();
+    }
+    if ( ! $this->isActive( $status ) ) {
+      $this->schedule();
+    }
+  }
+
+  public function needsRunning( $status = null ) {
+    if ( ! isset( $status ) || $status === false ) {
+      $status = $this->getStatus();
+    }
+    if ( $this->isMissing( $status ) ) {
+      return true;
+    }
+    if ( ! $this->isActive( $status ) ) {
+      return true;
+    }
+
+    return false;
+  }
+
   /** Is a task active.
    *
    * This is true when a task is running, either
@@ -126,62 +210,9 @@ class Task {
     return is_array( $status ) && isset( $status['active'] ) && $status['active'];
   }
 
-  public function schedule( $time = 0, $frequency = false ) {
-    $cronArg = $this->persist( $this );
-    if ( $frequency === false ) {
-      $time = $time ?: time();
-      wp_schedule_single_event( $time + 2, $this->hookName, [ $cronArg ] );
-    } else {
-      wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg ] );
-    }
-    $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
-    $this->log( $msg, $time );
-  }
-
-  protected function persist( $item ) {
-    return serialize( $item );
-  }
-
-  public function log( $msg, $time = 0 ) {
-    $words   = [];
-    $words[] = 'Task';
-    $words[] = $this->taskName;
-    $words[] = '(' . $this->siteId . ')';
-    $words[] = '#' . $this->useCount;
-    $words[] = $msg;
-    if ( $time ) {
-      $words[] = 'for time';
-      $words[] = date( 'Y-m-d H:i:s', $time );
-    }
-    $msg = implode( ' ', $words );
-    Indexer::writeLog( $msg );
-  }
-
   public function clearStatus() {
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
-    delete_transient( $transientName );
-  }
-
-  public function setStatus( $status, $available = null, $active = null, $fraction = null ) {
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . self::toSnake( $this->taskName );
-    if ( $status === null ) {
-      $status = $this->getStatus();
-    }
-    if (!isset ($status) || $status === false ) {
-      $status = [];
-    }
-    if ( isset( $available ) ) {
-      $status['available'] = $available;
-    }
-    if ( isset( $active) ) {
-      $status['active'] = $active;
-    }
-    if ( isset( $fraction ) ) {
-      $status['fraction'] = $fraction;
-    }
-    set_transient( $transientName, $status, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
-    $this->log('set status ' . serialize($status));
-
+    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
+    delete_transient( $jobResultName );
   }
 
   /** Is a task's output completely missing.
@@ -212,8 +243,8 @@ class Task {
   }
 
   protected function startChunk() {
-    if ($this->useCount === 0 ) {
-      $this->setStatus(null, null, true, 0.001);
+    if ( $this->useCount === 0 ) {
+      $this->setStatus( null, null, true, 0.001 );
     }
     set_time_limit( $this->timeout );
     $this->lastTouch = time();

@@ -58,23 +58,23 @@ class Indexer {
   }
 
   public function maybeIndexEverything( $force = false ) {
-    $task             = new CountUsers();
+    $task       = new CountUsers();
     $userCounts = $task->getStatus();
-    if ( $force || $task->isMissing( $userCounts ) ) {
+    if ( $force || $task->needsRunning( $userCounts ) ) {
       $task->init();
-      $task->maybeSchedule($userCounts);
+      $task->maybeSchedule( $userCounts );
     }
 
     $task    = new GetEditors();
     $editors = $task->getStatus();
-    if ( $force || $task->isMissing( $editors ) ) {
+    if ( $force || $task->needsRunning( $editors ) ) {
       $task->init();
-      $task->maybeSchedule($editors);
+      $task->maybeSchedule( $editors );
     }
 
     $task      = new PopulateMetaIndexRoles();
     $populated = $task->getStatus();
-    if ( $force || $task->isMissing( $populated ) ) {
+    if ( $force || $task->needsRunning( $populated ) ) {
       $task->init();
       $task->log( 'from maybeIndexEverything' );
       $task->maybeSchedule();
@@ -87,7 +87,6 @@ class Indexer {
     /** @noinspection PhpStatementHasEmptyBodyInspection */
     while ( ! $pop->doChunk() ) {
     }
-
   }
 
   public function rebuildNow() {
@@ -192,9 +191,9 @@ class Indexer {
    */
   public function updateEditors( $user_id, $removingUser = false ) {
 
-    $canEdit       = ! $removingUser && ( get_userdata( $user_id ) )->has_cap( 'edit_post' );
-    $task          = new GetEditors();
-    $editors       = $task->getStatus();
+    $canEdit = ! $removingUser && ( get_userdata( $user_id ) )->has_cap( 'edit_post' );
+    $task    = new GetEditors();
+    $editors = $task->getStatus();
     if ( $task->isAvailable( $editors ) ) {
       $editorList = &$editors['editors'];
       if ( $canEdit ) {
@@ -215,11 +214,12 @@ class Indexer {
   }
 
   public function getEditors() {
-    $task = new GetEditors();
+    $task   = new GetEditors();
     $status = $task->getStatus();
-    if ($task->isAvailable($status)) {
+    if ( $task->isAvailable( $status ) ) {
       return $status['editors'];
     }
+
     return false;
   }
 
@@ -235,6 +235,34 @@ class Indexer {
     $this->updateUserCounts( $oldRoles, - 1 );
   }
 
+  /** Update the user count for a particular role.
+   *
+   * @param string[]|string $roles rolename or names to change
+   * @param integer $value number of users to add or subtract
+   *
+   * @return void
+   */
+  public function updateUserCounts( $roles, $value ) {
+    if ( is_string( $roles ) ) {
+      $roles = [ $roles ];
+    }
+    $task       = new CountUsers();
+    $userCounts = $task->getStatus();
+    if ( $task->isAvailable( $userCounts ) ) {
+      foreach ( $roles as $role ) {
+        if ( ! array_key_exists( $role, $userCounts['avail_roles'] ) ) {
+          $userCounts['avail_roles'][ $role ] = 0;
+        }
+        $userCounts['avail_roles'][ $role ] += $value;
+      }
+
+      if ( is_numeric( $userCounts['total_users'] ) ) {
+        $userCounts['total_users'] += $value;
+      }
+      $task->setStatus( $userCounts );
+    }
+  }
+
   public function getUserCounts() {
     $task = new CountUsers();
 
@@ -243,14 +271,16 @@ class Indexer {
       /* no user counts yet. We will fake them until they're available */
       $userCounts = $this->fakeUserCounts();
 
-      if ( $task->isMissing($userCounts)) {
+      if ( $task->needsRunning( $userCounts ) ) {
         $task->init();
-        $task->maybeSchedule($userCounts);
+        $task->maybeSchedule( $userCounts );
       }
     }
 
     return $userCounts;
   }
+
+  /** @noinspection SqlNoDataSourceInspection */
 
   /** Generate fake user counts for the views list on the users page.
    * This is compatible with the structure handled by 'pre_count_users'.
@@ -278,7 +308,6 @@ class Indexer {
     return $result;
   }
 
-  /** @noinspection SqlNoDataSourceInspection */
   public static function getNetworkUserCount() {
     global $wpdb;
     $q = "SELECT t.TABLE_ROWS row_count
@@ -290,34 +319,6 @@ class Indexer {
 
     return $wpdb->get_var( $wpdb->prepare( $q, $wpdb->users ) );
 
-  }
-
-  /** Update the user count for a particular role.
-   *
-   * @param string[]|string $roles rolename or names to change
-   * @param integer $value number of users to add or subtract
-   *
-   * @return void
-   */
-  public function updateUserCounts( $roles, $value ) {
-    if ( is_string( $roles ) ) {
-      $roles = [ $roles ];
-    }
-    $task = new CountUsers();
-    $userCounts = $task->getStatus();
-    if ($task->isAvailable($userCounts)) {
-      foreach ( $roles as $role ) {
-        if ( ! array_key_exists( $role, $userCounts['avail_roles'] ) ) {
-          $userCounts['avail_roles'][ $role ] = 0;
-        }
-        $userCounts['avail_roles'][ $role ] += $value;
-      }
-
-      if ( is_numeric( $userCounts['total_users'] ) ) {
-        $userCounts['total_users'] += $value;
-      }
-      $task->setStatus($userCounts);
-    }
   }
 
   protected function __clone() {

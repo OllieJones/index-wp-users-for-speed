@@ -12,7 +12,7 @@ use ReflectionMethod;
  * are automatically registered with WordPress on instantiation,
  * and deregistered upon destruction.
  */
-class WordPressHooks {
+abstract class WordPressHooks {
 
   private $actionPrefix;
   private $filterPrefix;

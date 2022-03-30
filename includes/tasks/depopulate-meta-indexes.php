@@ -56,7 +56,7 @@ class DepopulateMetaIndexes extends Task {
     }
 
     $currentEnd    = $this->currentStart + $this->batchSize;
-    $keyPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
+    $keyPrefix     = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
     $queryTemplate = /** @lang text */
       'DELETE FROM %1$s WHERE meta_key LIKE \'%2$s%\' AND user_id >= %3$d AND user_id < %4$d';
     $query         = sprintf( $queryTemplate, $wpdb->usermeta, $keyPrefix, $this->currentStart, $currentEnd );
