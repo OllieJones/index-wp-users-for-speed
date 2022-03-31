@@ -59,9 +59,6 @@ class Admin
       12 );
 
     $this->addTimingSection();
-    $this->addRebuildNowSection();
-    $this->addRemoveNowSection();
-
   }
 
   private function addTimingSection() {
@@ -88,7 +85,7 @@ class Admin
 
     $option = get_option( $this->options_name );
 
-    /* make sure default option is in place, to avoid double santize call */
+    /* make sure default option is in place, to avoid double sanitize call */
     if ( $option === false ) {
       add_option( $this->options_name, [
         'auto_rebuild' => 'on',
@@ -100,53 +97,6 @@ class Admin
       $this->options_name,
       $this->options_name,
       [ 'sanitize_callback' => [ $this, 'sanitize_settings' ] ] );
-  }
-
-  /**
-   * @return void
-   */
-  private function addRebuildNowSection() {
-
-    $sectionId = 'rebuild-now';
-    $page      = $this->plugin_name . '-rebuild-now';
-    add_settings_section( $sectionId,
-      esc_html__( 'Rebuild indexes', 'index-wp-users-for-speed' ),
-      [ $this, 'render_empty' ],
-      $page );
-
-    $optionGroup = $this->options_name . '-rebuild';
-    $optionName  = $this->options_name . '-rebuild';
-    $option      = get_option( $optionName );
-    /* make sure default option is in place, to avoid double santize call */
-    if ( $option === false ) {
-      add_option( $optionName, [] );
-    }
-
-    register_setting( $optionGroup, $optionName );
-  }
-
-  /**
-   * @return void
-   */
-  private function addRemoveNowSection() {
-
-    $sectionId = 'remove-now';
-    $page      = $this->plugin_name . '-remove-now';
-    add_settings_section( $sectionId,
-      esc_html__( 'Remove indexes', 'index-wp-users-for-speed' ),
-      [ $this, 'render_empty' ],
-      $page );
-
-
-    $optionGroup = $this->options_name . '-remove';
-    $optionName  = $this->options_name . '-remove';
-    $option      = get_option( $optionName );
-    /* make sure default option is in place, to avoid double santize call */
-    if ( $option === false ) {
-      add_option( $optionName, [] );
-    }
-
-    register_setting( $optionGroup, $optionName );
   }
 
   public function render_empty() {
@@ -164,43 +114,28 @@ class Admin
     $didAnOperation = false;
 
     try {
-      $autoRebuild = isset( $input['auto_rebuild'] ) && $input['auto_rebuild'] === 'on';
+      $autoRebuild = isset( $input['auto_rebuild'] ) && ( $input['auto_rebuild'] === 'on' || $input['auto_rebuild'] === 'nowon' );
+      $nowRebuild  = isset( $input['auto_rebuild'] ) && ( $input['auto_rebuild'] === 'nowoff' || $input['auto_rebuild'] === 'nowon' );
       $time        = isset( $input['rebuild_time'] ) ? $input['rebuild_time'] : '';
       $timeString  = $this->formatTime( $time );
 
       if ( $timeString === false ) {
-        add_settings_error( $this->options_name, 'rebuild',
+        add_settings_error(
+          $this->options_name, 'rebuild',
           esc_html__( 'Incorrect time.', 'index-wp-users-for-speed' ),
           'error' );
 
         return $input;
       }
 
-      $rebuildNow = isset( $input['now_rebuild'] ) && $input['now_rebuild'] === 'on';
-      $removeNow  = isset( $input['now_remove'] ) && $input['now_remove'] === 'on';
-
-
-      if ( $rebuildNow && $removeNow ) {
-        add_settings_error( $this->options_name, 'rebuild',
-          esc_html__( 'You may rebuild or remove indexes immediately, but not both. Please choose just one.', 'index-wp-users-for-speed' ),
-          'error' );
-
-        return $input;
-      } else if ( $rebuildNow ) {
-        add_settings_error( $this->options_name, 'rebuild',
+      if ( $nowRebuild ) {
+        add_settings_error(
+          $this->options_name, 'rebuild',
           esc_html__( 'Index rebuilding process starting', 'index-wp-users-for-speed' ),
           'info' );
         if ( ! $this->didAnyOperations ) {
           $didAnOperation = true;
           $this->indexer->rebuildNow();
-        }
-      } else if ( $removeNow ) {
-        add_settings_error( $this->options_name, 'rebuild',
-          esc_html__( 'Index removing process starting', 'index-wp-users-for-speed' ),
-          'info' );
-        if ( ! $this->didAnyOperations ) {
-          $didAnOperation = true;
-          $this->indexer->removeNow();
         }
       }
 
@@ -229,6 +164,13 @@ class Admin
       $this->didAnyOperations = true;
     }
 
+    /* persist only on and off */
+    if( isset( $input['auto_rebuild'] )) {
+      $i = $input['auto_rebuild'];
+      $i = $i === 'nowon' ? 'on' : $i;
+      $i = $i === 'nowoff' ? 'off' : $i;
+      $input['auto_rebuild'] = $i;
+    }
     return $input;
   }
 
@@ -284,29 +226,41 @@ class Admin
 
   public function render_auto_rebuild_field() {
     $options     = get_option( $this->options_name );
-    $autoRebuild = isset( $options['auto_rebuild'] ) ? $options['auto_rebuild'] : "on";
+    $autoRebuild = isset( $options['auto_rebuild'] ) ? $options['auto_rebuild'] : 'on';
     ?>
       <div>
-      <span class="radioitem">
-          <input type="radio"
-                 id="auto_rebuild_yes"
-                 name="<?= $this->options_name ?>[auto_rebuild]"
-                 value="on"
-                 <?= $autoRebuild === 'on' ? 'checked' : '' ?> >
-            <label for="auto_rebuild_yes">
-                <?= esc_html__( 'daily', 'index-wp-users-for-speed' ) ?>
-            </label>
-      </span>
           <span class="radioitem">
-          <input type="radio"
-                 id="auto_rebuild_no"
-                 name="<?= $this->options_name ?>[auto_rebuild]"
-                 value="off"
-                 <?= $autoRebuild !== 'on' ? 'checked' : '' ?> >
-            <label for="auto_rebuild_no">
-                <?= esc_html__( 'never', 'index-wp-users-for-speed' ) ?>
-            </label>
-      </span>
+              <input type="radio"
+                     id="auto_rebuild_yes"
+                     name="<?= $this->options_name ?>[auto_rebuild]"
+                     value="on"
+                     <?= $autoRebuild === 'on' ? 'checked' : '' ?> />
+                <label for="auto_rebuild_yes"><?= esc_html__( 'daily', 'index-wp-users-for-speed' ) ?></label>
+          </span>
+          <span class="radioitem">
+              <input type="radio"
+                     id="auto_rebuild_no"
+                     name="<?= $this->options_name ?>[auto_rebuild]"
+                     value="off"
+                     <?= $autoRebuild === 'off' ? 'checked' : '' ?> />
+                <label for="auto_rebuild_no"><?= esc_html__( 'never', 'index-wp-users-for-speed' ) ?></label>
+          </span>
+          <span class="radioitem">
+              <input type="radio"
+                     id="auto_rebuild_now_daily"
+                     name="<?= $this->options_name ?>[auto_rebuild]"
+                     value="nowon"
+                     <?= $autoRebuild === 'nowon' ? 'checked' : '' ?> />
+                <label for="auto_rebuild_now_daily"><?= esc_html__( 'immediately, then daily', 'index-wp-users-for-speed' ) ?></label>
+          </span>
+          <span class="radioitem">
+              <input type="radio"
+                     id="auto_rebuild_now_only"
+                     name="<?= $this->options_name ?>[auto_rebuild]"
+                     value="nowoff"
+                     <?= $autoRebuild === 'nowoff' ? 'checked' : '' ?> />
+                <label for="auto_rebuild_now_only"><?= esc_html__( 'immediately, but not daily', 'index-wp-users-for-speed' ) ?></label>
+          </span>
       </div>
     <?php
   }

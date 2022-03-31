@@ -30,22 +30,6 @@ settings_errors( $this->options_name );
       submit_button( 'Save Changes', 'primary' );
       ?>
     </form>
-    <!--suppress HtmlUnknownTarget -->
-    <form id="reindex-users-form" method="post" action="options.php">
-      <?php
-      settings_fields( $this->options_name . '-rebuild' );
-      do_settings_sections( $this->plugin_name . '-rebuild-now' );
-      submit_button( 'Reindex Now', 'primary' );
-      ?>
-    </form>
-    <!--suppress HtmlUnknownTarget -->
-    <form id="remove-users-form" method="post" action="options.php">
-      <?php
-      settings_fields( $this->options_name . '-remove' );
-      do_settings_sections( $this->plugin_name . '-remove-now' );
-      submit_button( 'Remove Now', 'primary' );
-      ?>
-    </form>
 </div>
 
 

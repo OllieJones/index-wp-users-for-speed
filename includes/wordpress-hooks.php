@@ -19,7 +19,7 @@ abstract class WordPressHooks {
   private $priority;
   private $methods;
 
-  protected function __construct( $actionPrefix = 'action__', $filterPrefix = 'filter__', $priority = 10 ) {
+  public function __construct( $actionPrefix = 'action__', $filterPrefix = 'filter__', $priority = 10 ) {
     $this->actionPrefix = $actionPrefix;
     $this->filterPrefix = $filterPrefix;
     $this->priority     = $priority;
