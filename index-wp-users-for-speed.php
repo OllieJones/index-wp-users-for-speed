@@ -39,18 +39,13 @@ const INDEX_WP_USERS_FOR_SPEED_PREFIX         = 'index-wp-users-for-speed-';
 const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX     = 'iufs';
 const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME = HOUR_IN_SECONDS * 4;
 const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME  = DAY_IN_SECONDS * 2;
-const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE      = 50;   //TODO make it bigger.
-
-/** Error logging, useful for caught errors in cronjobs.
+/**
+ * The number of users we process at a time when creating index entries in wp_usermeta.
  *
- * @param $msg
- *
- * @return void
- * @noinspection PhpUnused
+ * This number is limited to avoid swamping MariaDB / MySQL with vast transactions
+ * when manipulating large numbers of users.
  */
-function index_wp_users_for_speed_error_log( $msg ) {
-  error_log( $msg );
-}
+const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE      = 500;
 
 /**
  * The code that runs during plugin activation.

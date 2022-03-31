@@ -5,12 +5,12 @@ namespace IndexWpUsersForSpeed;
 use Exception;
 use ReflectionClass;
 
-/** WP Cron hook to handle a task and reschedule it if need be
- *
- * @param $serializedTask
- *
+/** WP Cron hook to handle a task and reschedule it if need be.
+ * @param string $taskName Name of persisted task
+ * @param int    $step     Step number
  * @return void
  * @noinspection PhpUnused
+ * @noinspection PhpUnusedParameterInspection
  */
 function index_wp_users_for_speed_do_task( $taskName, $step ) {
   $task = null;
@@ -68,7 +68,7 @@ abstract class Task {
       $this->log( 'completed' );
       $this->fractionComplete = 1;
       $this->setStatus( null, true, false, 1 );
-      $this->clearPersisted( $this );
+      $this->clearPersisted();
     }
   }
 
@@ -131,6 +131,13 @@ abstract class Task {
     Indexer::writeLog( $msg );
   }
 
+  /** Update a task's status transient.
+   * @param null|array $status    If the status is known give it here, otherwise give null
+   * @param null|bool  $available Set the available flag, or ignore it if null
+   * @param null|bool  $active    Set the active flag, or ignore it if null
+   * @param null|float $fraction  Set the fraction-complete flag, or ignore it if null.
+   * @return void
+   */
   public function setStatus( $status, $available = null, $active = null, $fraction = null ) {
     if ( $status === null ) {
       $status = $this->getStatus();
@@ -151,6 +158,17 @@ abstract class Task {
     set_transient( $jobResultName, $status, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
 
   }
+
+  /** Escape the wildcards in string to be used in a SQL LIKE operation
+   * @param string $s Text string, e.g. wp_2_foobar
+   * @return string Modified for use in LIKE, e.g. wp\_2\_foobor
+   */
+  public function likeEscape( $s ) {
+    $escapedRole = str_replace( '%', '\\%', $s );
+
+    return str_replace( '_', '\\_', $escapedRole );
+  }
+
 
   public function getStatus() {
     $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
@@ -185,11 +203,11 @@ abstract class Task {
     if ( $this->isMissing( $status ) ) {
       return true;
     }
-    if ( ! $this->isActive( $status ) ) {
-      return true;
+    if ( $this->isAvailable( $status ) ) {
+      return false;
     }
 
-    return false;
+    return true;
   }
 
   /** Is a task active.
@@ -251,20 +269,20 @@ abstract class Task {
     $this->setBlog();
   }
 
-  protected function setBlog() {
-    if ( is_multisite() && get_current_blog_id() != $this->siteId ) {
-      switch_to_blog( $this->siteId );
-    }
-  }
-
   protected function endChunk() {
     $this->restoreBlog();
     $this->useCount ++;
   }
 
-  protected function restoreBlog() {
-    if ( is_multisite() && get_current_blog_id() != $this->siteId ) {
+  protected function setBlog() {
+    if ( is_multisite() ) {
       switch_to_blog( $this->siteId );
+    }
+  }
+
+  protected function restoreBlog() {
+    if ( is_multisite() ) {
+      restore_current_blog();
     }
   }
 

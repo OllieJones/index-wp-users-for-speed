@@ -12,7 +12,6 @@ class PopulateMetaIndexRoles extends Task {
   public $currentStart = - 1;
   public $roles;
   public $maxUserId;
-  public $phase = 0;
 
   /**
    * @param int $batchSize number of users per batch (per chunk)
@@ -32,6 +31,9 @@ class PopulateMetaIndexRoles extends Task {
     $indexer = Indexer::getInstance();
     $this->setBlog();
     $this->maxUserId = $indexer->getMaxUserId();
+    foreach ( wp_roles()->get_names() as $role => $name ) {
+      $this->roles[] = $role;
+    }
     $this->restoreBlog();
   }
 
@@ -42,65 +44,26 @@ class PopulateMetaIndexRoles extends Task {
     global $wpdb;
     $this->startChunk();
 
-    /* First phase: Collect any extra capabilities from usermeta. */
-    if ( $this->phase === 0 ) {
-      $currentEnd = $this->currentStart + $this->batchSize;
-      $this->log( "phase $this->phase  start $this->currentStart  end $currentEnd" );
-      $queryTemplate = /** @lang text */
-        'SELECT DISTINCT meta_value caps FROM %1$s WHERE meta_key = \'%2$s\' AND user_id >= %3$d AND user_id < %4$d';
-      $query         = sprintf( $queryTemplate, $wpdb->usermeta, $wpdb->prefix . 'capabilities', $this->currentStart, $currentEnd );
-      $results       = $wpdb->get_results( $query );
-      foreach ( $results as $result ) {
-        $caps = unserialize( $result->caps );
-        foreach ( $caps as $cap => $val ) {
-          if ( $val ) {
-            if ( ! in_array( $cap, $this->roles ) ) {
-              $this->roles[] = $cap;
-            }
-          }
-        }
-      }
-      $this->currentStart = $currentEnd;
-      if ( $this->currentStart >= $this->maxUserId ) {
-        $this->currentStart = - 1;
-        $this->phase        = 1;
-        $this->log( 'phase 0 complete' );
-      }
+    $queries    = $this->makeIndexerQueries( $this->roles );
+    $currentEnd = $this->currentStart + $this->batchSize;
+    $this->log( "index from $this->currentStart to $currentEnd" );
 
-      $this->fractionComplete = max( 0, min( 1, $this->currentStart / $this->maxUserId ) * 0.5 );
-      $this->setStatus( null, null, true, $this->fractionComplete );
-
-      $this->endChunk();
-
-      return false;
+    foreach ( $queries as $query ) {
+      $this->log($query);
+      $query .= ' WHERE a.user_id >= %d AND a.user_id < %d';
+      $q     = $wpdb->prepare( $query, $this->currentStart, $currentEnd );
+      $wpdb->query( $q );
     }
+    $this->currentStart = $currentEnd;
 
-    /* Second phase: set up the usermeta index entries */
-    if ( $this->phase === 1 ) {
-      $queries    = $this->makeIndexerQueries( $this->roles );
-      $currentEnd = $this->currentStart + $this->batchSize;
+    $done                   = $this->currentStart >= $this->maxUserId;
+    $this->fractionComplete = min( 1, $this->currentStart / $this->maxUserId );
 
-      foreach ( $queries as $query ) {
-        $query .= ' WHERE a.user_id >= %d AND a.user_id < %d';
-        $q     = $wpdb->prepare( $query, $this->currentStart, $currentEnd );
+    $this->setStatus( null, null, ! $done, $this->fractionComplete );
 
-        $wpdb->query( $q );
-      }
-      $this->currentStart = $currentEnd;
+    $this->endChunk();
 
-      $done                   = $this->currentStart >= $this->maxUserId;
-      $this->fractionComplete = max( 0, 0.5 + min( 1, $this->currentStart / $this->maxUserId ) * 0.5 );
-
-      $this->setStatus( null, null, ! $done, $this->fractionComplete );
-
-      $this->endChunk();
-
-      return $done;
-    }
-
-    $this->log( 'unknown phase ' . $this->phase );
-
-    return true;
+    return $done;
   }
 
   private function makeIndexerQueries( $roles ) {
@@ -137,8 +100,7 @@ class PopulateMetaIndexRoles extends Task {
           AND a.meta_value LIKE \'%%"%4$s"%%\'
           AND b.user_id IS NULL';
     foreach ( $roles as $role ) {
-      $escapedRole    = str_replace( '%', '\\%', $role );
-      $escapedRole    = str_replace( '_', '\\_', $escapedRole );
+      $escapedRole    = $this->likeEscape( $role );
       $insertUnions[] = sprintf( $insertTemplate, $prefix . $role, $wpdb->usermeta, $capabilitiesKey, $escapedRole );
       $deleteUnions[] = sprintf( $deleteTemplate, $prefix . $role, $wpdb->usermeta, $capabilitiesKey, $escapedRole );
     }

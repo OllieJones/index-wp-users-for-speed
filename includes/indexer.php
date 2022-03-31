@@ -43,7 +43,7 @@ class Indexer {
     array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
     $log = implode( PHP_EOL, $logarray );
     set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name, $log, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
-    $wpdb->query( "UNLOCK TABLES" );
+    $wpdb->query( 'UNLOCK TABLES' );
   }
 
   public static function getInstance() {
@@ -52,7 +52,6 @@ class Indexer {
       // TODO want this here???
       self::$singleInstance->maybeIndexEverything();
     }
-
 
     return self::$singleInstance;
   }
@@ -321,6 +320,78 @@ class Indexer {
 
   }
 
+  public function removeIndexRole( $user_id, $blog_id ) {
+    global $wpdb;
+
+    if (is_multisite()) {
+      switch_to_blog( $blog_id );
+    }
+    $prefix = $this->likeEscape( $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:' );
+    $q      = "DELETE FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') ";
+    $q      = $wpdb->prepare( $q, $user_id, $prefix );
+    $wpdb->query( $q );
+    if (is_multisite()) {
+      restore_current_blog();
+    }
+  }
+
+  public function updateIndexRole( $user_id, $role, $blog_id ) {
+    global $wpdb;
+
+    if (is_multisite()) {
+      switch_to_blog( $blog_id );
+    }
+    $prefix    = $this->likeEscape( $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:' );
+    $indexRole = $prefix . $role;
+
+    try {
+      $wpdb->query( 'START TRANSACTION' );
+      $q       = "SELECT umeta_id FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') FOR UPDATE";
+      $q       = $wpdb->prepare( $q, $user_id, $prefix );
+      $results = $wpdb->get_results( $q );
+      $count   = 0;
+      foreach ( $results as $result ) {
+        $count ++;
+        if ( $count === 1 ) {
+          /* update the first role item we found */
+          $q1 = "UPDATE $wpdb->usermeta m SET meta_key = '%s' WHERE m.umeta_id = %d";
+          $q1 = $wpdb->prepare( $q1, $indexRole, $result->umeta_id );
+          $wpdb->query( $q1 );
+        } else {
+          /* clear out any duplicate role items, one per user only */
+          $q2 = "DELETE FROM $wpdb->usermeta m WHERE m.umeta_id = %d";
+          $q2 = $wpdb->prepare( $q2, $result->umeta_id );
+          $wpdb->query( $q2 );
+        }
+      }
+      if ( $count === 0 ) {
+        /* no rows to update, insert one */
+        $q3 = "INSERT INTO $wpdb->usermeta (user_id, meta_key) VALUES (%d, %s);";
+        $q3 = $wpdb->prepare( $q3, $user_id, $indexRole );
+        $wpdb->query( $q3 );
+      }
+      $wpdb->query( 'COMMIT' );
+    } catch ( Exception $ex ) {
+      $wpdb->query( 'ROLLBACK' );
+      error_log( 'index_wp_users_for_speed: updateIndexRole exception: ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
+    } finally {
+      if ( is_multisite() ) {
+        restore_current_blog();
+      }
+    }
+  }
+
+  /** Escape the wildcards in string to be used in a SQL LIKE operation
+   * @param string $s Text string, e.g. wp_2_foobar
+   * @return string Modified for use in LIKE, e.g. wp\_2\_foobor
+   */
+  public function likeEscape( $s ) {
+    $escapedRole = str_replace( '%', '\\%', $s );
+
+    return str_replace( '_', '\\_', $escapedRole );
+  }
+
+
   protected function __clone() {
 
   }
@@ -329,7 +400,7 @@ class Indexer {
    * @throws Exception
    */
   protected function __wakeup() {
-    throw new Exception( "cannot unserialize this singleton" );
+    throw new Exception( 'cannot unserialize this singleton' );
   }
 
 }

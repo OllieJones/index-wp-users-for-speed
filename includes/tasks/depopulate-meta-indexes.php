@@ -11,7 +11,6 @@ class DepopulateMetaIndexes extends Task {
   public $batchSize;
   public $currentStart = - 1;
   public $maxUserId;
-  public $oneOffsNeedDoing = true;
   public $roles = [];
 
   /**
@@ -33,9 +32,8 @@ class DepopulateMetaIndexes extends Task {
 
   public function init() {
     parent::init();
-    $indexer = Indexer::getInstance();
     $this->setBlog();
-    $this->setStatus( [], false, $this->fractionComplete );
+    $this->setStatus( null, false, true, $this->fractionComplete );
     foreach ( wp_roles()->get_names() as $role => $name ) {
       $this->roles[] = $role;
     }
@@ -49,33 +47,20 @@ class DepopulateMetaIndexes extends Task {
     global $wpdb;
     $this->startChunk();
 
-    if ( $this->oneOffsNeedDoing ) {
-      delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
-      delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
-      $this->oneOffsNeedDoing = false;
-    }
-
     $currentEnd    = $this->currentStart + $this->batchSize;
-    $keyPrefix     = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
+    $keyPrefix     = $this->likeEscape( $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX );
     $queryTemplate = /** @lang text */
       'DELETE FROM %1$s WHERE meta_key LIKE \'%2$s%\' AND user_id >= %3$d AND user_id < %4$d';
     $query         = sprintf( $queryTemplate, $wpdb->usermeta, $keyPrefix, $this->currentStart, $currentEnd );
     $wpdb->query( $query );
     $this->currentStart = $currentEnd;
-    $done               = ! $this->needsDoing();
+    $done               = $this->currentStart >= $this->maxUserId;
 
-    $this->fractionComplete = max( 0, min( 1, $this->currentStart / $this->maxUserId ) * 0.5 );
+    $this->fractionComplete = max( 0, min( 1, $this->currentStart / $this->maxUserId ) );
     $this->endChunk();
 
     return $done;
-
-
   }
-
-  public function needsDoing() {
-    return ( $this->currentStart < $this->maxUserId );
-  }
-
 
   public function getResult() {
     return null;

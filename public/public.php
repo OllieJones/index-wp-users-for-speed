@@ -68,7 +68,7 @@ class Index_Wp_Users_For_Speed_Public {
      * class.
      */
 
-    wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/public.css', [], $this->version, 'all' );
+    //wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/public.css', [], $this->version, 'all' );
 
   }
 
@@ -90,7 +90,7 @@ class Index_Wp_Users_For_Speed_Public {
      * class.
      */
 
-    wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-public.js', [ 'jquery' ], $this->version, false );
+    //wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/index-wp-users-for-speed-public.js', [ 'jquery' ], $this->version, false );
 
   }
 
