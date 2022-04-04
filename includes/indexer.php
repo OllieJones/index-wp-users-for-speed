@@ -326,9 +326,9 @@ class Indexer {
     if (is_multisite()) {
       switch_to_blog( $blog_id );
     }
-    $prefix = $this->likeEscape( $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:' );
+    $prefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $q      = "DELETE FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') ";
-    $q      = $wpdb->prepare( $q, $user_id, $prefix );
+    $q      = $wpdb->prepare( $q, $user_id, $this->likeEscape( $prefix ) );
     $wpdb->query( $q );
     if (is_multisite()) {
       restore_current_blog();
@@ -341,13 +341,13 @@ class Indexer {
     if (is_multisite()) {
       switch_to_blog( $blog_id );
     }
-    $prefix    = $this->likeEscape( $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:' );
+    $prefix    = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $indexRole = $prefix . $role;
 
     try {
       $wpdb->query( 'START TRANSACTION' );
       $q       = "SELECT umeta_id FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') FOR UPDATE";
-      $q       = $wpdb->prepare( $q, $user_id, $prefix );
+      $q       = $wpdb->prepare( $q, $user_id, $this->likeEscape( $prefix ) );
       $results = $wpdb->get_results( $q );
       $count   = 0;
       foreach ( $results as $result ) {

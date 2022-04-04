@@ -53,7 +53,7 @@ class UserHandler extends WordPressHooks {
   }
 
   /**
-   * Fires before a user is removed from a site.
+   * Fires before a user is removed from a site in multisite
    *
    * @param int $user_id ID of the user being removed.
    * @param int $blog_id ID of the blog the user is being removed from.
@@ -71,6 +71,25 @@ class UserHandler extends WordPressHooks {
     $this->indexer->updateUserCounts( $roles, - 1 );
     $this->indexer->updateEditors( $user_id, true );
     $this->indexer->removeIndexRole( $user_id, $blog_id );
+  }
+
+  /**
+   * Fires immediately after a user is deleted from the database in single-site
+   *
+   * The deleted user's wp_usermeta data is already gone by this action.
+   *
+   * @since 2.9.0
+   * @since 5.5.0 Added the `$user` parameter.
+   *
+   * @param int      $id       ID of the deleted user.
+   * @param int|null $reassign ID of the user to reassign posts and links to.
+   *                           Default null, for no reassignment.
+   * @param WP_User  $user     WP_User object of the deleted user.
+   */
+  public function action__deleted_user($id, $reassign, $user) {
+    $roles = $user->roles;
+    $this->indexer->updateUserCounts( $roles, - 1 );
+    $this->indexer->updateEditors( $id, true );
   }
 
   /**
@@ -165,7 +184,8 @@ class UserHandler extends WordPressHooks {
    * The passed WP_User_Query object contains the query variables,
    * not yet passed into SQL. We change the variables here,
    * if we have the data, to use the index roles and
-   * count. That saves a mess of time.
+   * count. That meanse the query doesn't need
+   * meta_value LIKE '%someting%' or the
    *
    * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
    *
@@ -182,7 +202,10 @@ class UserHandler extends WordPressHooks {
 
   /**
    * Here we figure out whether we already know the total users, and
-   * switch off 'count_total' if we do.
+   * switch off 'count_total' if we do. That saves the performance-killing
+   * and deprecated SELECT SQL_CALC_FOUND_ROWS modifier.
+   *
+   * @see https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_found-rows
    *
    * Do this before mungRoleFilters.
    *
