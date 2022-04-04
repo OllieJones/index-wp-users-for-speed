@@ -122,11 +122,6 @@ class PopulateMetaIndexRoles extends Task {
     return null;
   }
 
-  /** @noinspection SqlNoDataSourceInspection */
-
-  public function reset() {
-    //TODO
-  }
 }
 
 

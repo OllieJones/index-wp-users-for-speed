@@ -65,9 +65,9 @@ class Index_Wp_Users_For_Speed {
     }
 
     /* stuff required for admin page but not for cron, REST */
-    if ( wp_doing_cron() || wp_doing_ajax() || is_admin() || wp_is_json_request() || wp_is_xml_request() ) {
+    if ( is_admin() ) {
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/admin.php';
-    } /** @noinspection PhpStatementHasEmptyBodyInspection */ else {
+    } else {
       /* front-facing: empty for now */
     }
 

@@ -49,7 +49,6 @@ class Indexer {
   public static function getInstance() {
     if ( ! isset( self::$singleInstance ) ) {
       self::$singleInstance = new self();
-      // TODO want this here???
       self::$singleInstance->maybeIndexEverything();
     }
 

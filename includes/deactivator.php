@@ -25,18 +25,36 @@ class Deactivator {
   /**
    * We wipe out stashed indexes on deactivation, not deletion.
    *
-   * It doesn't make sense to keep the indexes when the plugin isn't active
-   * because they don't get maintained.
+   * It doesn't make sense to keep the index metadata when the plugin isn't active
+   * because they don't get maintained. Therefore we delete them on deactivation,
+   * not plugin deletion.
    *
    */
   public static function deactivate() {
 
     wp_unschedule_hook( 'index_wp_users_for_speed_repeating_task' );
-    wp_unschedule_hook( 'index_wp_users_for_speed_task' );  // TODO not until we run all the deletes.
-    delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "user_counts" );
-    delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
+    wp_unschedule_hook( 'index_wp_users_for_speed_task' );
 
+    Deactivator::depopulateIndexMetadata ();
+    Deactivator::deleteTransients();
+  }
 
+  private static function deleteTransients() {
+    global $wpdb;
+    $pattern = '_transient_' . INDEX_WP_USERS_FOR_SPEED_PREFIX . '%';
+    $transients = $wpdb->get_results("SELECT option_name FROM $wpdb->options WHERE option_name LIKE '$pattern'");
+    foreach ($transients as $transient) {
+      $name = str_replace('_transient_', '', $transient->option_name);
+      delete_transient ($name);
+    }
+  }
+
+  private static function depopulateIndexMetadata () {
+    $depop = new DepopulateMetaIndexes();
+    $depop->init();
+    while (!$depop->doChunk()) {
+      /* empty */
+    }
   }
 
 }

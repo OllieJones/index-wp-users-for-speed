@@ -2,13 +2,12 @@
 
 /**
  * Index WP MySQL For Speed
- *
- * @author: Oliver Jones
+ * @author   : Oliver Jones
  * @copyright: 2022 Oliver Jones
- * @license GPL-2.0-or-later
- *
+ * @license  GPL-2.0-or-later
  * @wordpress-plugin0
  * Plugin Name: Index WP Users For Speed
+ * Version: 1.0.0
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with many users.
  * Requires at least: 5.2
