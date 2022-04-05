@@ -31,7 +31,9 @@ class PopulateMetaIndexRoles extends Task {
     $indexer = Indexer::getInstance();
     $this->setBlog();
     $this->maxUserId = $indexer->getMaxUserId();
-    foreach ( wp_roles()->get_names() as $role => $name ) {
+    $roles = wp_roles();
+    $roles = $roles->get_names();
+    foreach ( $roles as $role => $name ) {
       $this->roles[] = $role;
     }
     $this->restoreBlog();
@@ -75,45 +77,45 @@ class PopulateMetaIndexRoles extends Task {
     $capabilitiesKey = $wpdb->prefix . 'capabilities';
     $insertUnions    = [];
     $deleteUnions    = [];
+    /* This one finds the role index metakeys to insert into usermeta. This is idempotent. */
+    $insertTemplate = /** @lang text */
+      "SELECT a.user_id, %s meta_key
+         FROM $wpdb->usermeta a
+         LEFT JOIN $wpdb->usermeta b
+                ON a.user_id = b.user_id 
+               AND b.meta_key = %s
+        WHERE a.meta_key = %s
+          AND a.meta_value LIKE CONCAT('%%', %s, '%%')
+          AND b.user_id IS NULL";
     /* This one finds the usermeta rows with wrong capabilities, to delete.
      * We want these delete and insert operations to be idempotent,
      * doing nothing if the proper row is already present.
      * Hence the antijoins (LEFT JOIN ... IS NULL). */
     $deleteTemplate = /** @lang text */
-      'SELECT a.user_id, a.umeta_id 
-         FROM %2$s a 
-         LEFT JOIN %2$s b
+      "SELECT a.user_id, a.umeta_id 
+         FROM $wpdb->usermeta a 
+         LEFT JOIN $wpdb->usermeta b
                 ON a.user_id = b.user_id 
-               AND b.meta_key = \'%3$s\'
-               AND b.meta_value LIKE \'%%"%4$s"%%\'
-        WHERE a.meta_key = \'%1$s\'
-          AND b.umeta_id IS NULL';
+               AND b.meta_key = %s
+               AND b.meta_value LIKE CONCAT('%%', %s, '%%')
+        WHERE a.meta_key = %s
+          AND b.umeta_id IS NULL";
 
-    /* This one finds the role index metakeys to insert into usermeta. This is idempotent. */
-    $insertTemplate = /** @lang text */
-      'SELECT a.user_id, \'%1$s\' meta_key
-         FROM %2$s a
-         LEFT JOIN %2$s b
-                ON a.user_id = b.user_id 
-               AND b.meta_key = \'%1$s\'
-        WHERE a.meta_key = \'%3$s\'
-          AND a.meta_value LIKE \'%%"%4$s"%%\'
-          AND b.user_id IS NULL';
     foreach ( $roles as $role ) {
-      $escapedRole    = $this->likeEscape( $role );
-      $insertUnions[] = sprintf( $insertTemplate, $prefix . $role, $wpdb->usermeta, $capabilitiesKey, $escapedRole );
-      $deleteUnions[] = sprintf( $deleteTemplate, $prefix . $role, $wpdb->usermeta, $capabilitiesKey, $escapedRole );
+      $prefixedRole   = $prefix . $role;
+      $insertUnions[] = $wpdb->prepare( $insertTemplate, $prefixedRole, $prefixedRole, $capabilitiesKey, $wpdb->esc_like( $role ) );
+      $deleteUnions[] = $wpdb->prepare( $deleteTemplate, $capabilitiesKey, $wpdb->esc_like( $role ), $prefixedRole );
     }
 
-    $deleteQueryTemplate = /** @lang text */
-      'DELETE a FROM %1$s a JOIN (%2$s) b ON a.umeta_id = b.umeta_id';
-    $union               = implode( ' UNION ALL ', $deleteUnions );
-    $results[]           = sprintf( $deleteQueryTemplate, $wpdb->usermeta, $union );
+    $union = implode( ' UNION ALL ', $deleteUnions );
+    /** @noinspection SqlResolve */
+    $query     = "DELETE a FROM $wpdb->usermeta a JOIN ($union) b ON a.umeta_id = b.umeta_id";
+    $results[] = $query;
 
-    $insertQueryTemplate = /** @lang text */
-      'INSERT INTO %1$s (user_id, meta_key) SELECT user_id, meta_key FROM (%2$s) a';
-    $union               = implode( ' UNION ', $insertUnions );
-    $results[]           = sprintf( $insertQueryTemplate, $wpdb->usermeta, $union );
+    $union = implode( ' UNION ', $insertUnions );
+    /** @noinspection SqlResolve */
+    $query     = "INSERT INTO $wpdb->usermeta (user_id, meta_key) SELECT user_id, meta_key FROM ($union) a";
+    $results[] = $query;
 
     return $results;
   }

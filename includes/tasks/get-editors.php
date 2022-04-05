@@ -34,7 +34,7 @@ class GetEditors extends Task {
     $qresults  = $userQuery->get_results();
     if ( ! empty ( $qresults ) ) {
       foreach ( $qresults as $qresult ) {
-        $editors[] = $qresult->ID;
+        $editors[] = 0+$qresult->ID;
       }
     }
     /* there's some chance that a long IN(1,2,3) clause

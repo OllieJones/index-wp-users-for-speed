@@ -17,10 +17,10 @@ settings_errors( $this->options_name );
 ?>
 
 <div class="wrap index-users">
-    <h2 class="wp-heading-inline"><?= get_admin_page_title(); ?></h2>
+    <h2 class="wp-heading-inline"><?php echo get_admin_page_title(); ?></h2>
     <p>
-        <span><?= esc_html__( 'Approximate number of users on this entire site', 'index-wp-users-for-speed' ) ?>: </span>
-        <span><?= number_format_i18n( Indexer::getNetworkUserCount(), 0 ) ?></span>
+        <span><?php esc_html_e( 'Approximate number of users on this entire site', 'index-wp-users-for-speed' ) ?>: </span>
+        <span><?php echo number_format_i18n( Indexer::getNetworkUserCount(), 0 ) ?></span>
     </p>
     <!--suppress HtmlUnknownTarget -->
     <form id="index-users-form" method="post" action="options.php">

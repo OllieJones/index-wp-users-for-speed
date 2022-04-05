@@ -46,7 +46,8 @@ abstract class Task {
     $siteId          = $siteId === null ? get_current_blog_id() : $siteId;
     $this->siteId    = $siteId;
     $this->timeout   = $timeout;
-    $this->taskName  = ( new ReflectionClass( $this ) )->getShortName();
+    $reflect         = new ReflectionClass( $this );
+    $this->taskName  = $reflect->getShortName();
   }
 
   public static function restorePersisted( $taskName ) {
@@ -158,17 +159,6 @@ abstract class Task {
     set_transient( $jobResultName, $status, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
 
   }
-
-  /** Escape the wildcards in string to be used in a SQL LIKE operation
-   * @param string $s Text string, e.g. wp_2_foobar
-   * @return string Modified for use in LIKE, e.g. wp\_2\_foobor
-   */
-  public function likeEscape( $s ) {
-    $escapedRole = str_replace( '%', '\\%', $s );
-
-    return str_replace( '_', '\\_', $escapedRole );
-  }
-
 
   public function getStatus() {
     $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );

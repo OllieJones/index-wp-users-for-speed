@@ -9,6 +9,9 @@
 .gitlab-ci.yml
 .travis.yml
 .DS_Store
+notes.md
+notes.MD
+CODE-OF-CONDUCT.md
 Thumbs.db
 behat.yml
 /bin

@@ -41,11 +41,14 @@ class Deactivator {
 
   private static function deleteTransients() {
     global $wpdb;
-    $pattern = '_transient_' . INDEX_WP_USERS_FOR_SPEED_PREFIX . '%';
-    $transients = $wpdb->get_results("SELECT option_name FROM $wpdb->options WHERE option_name LIKE '$pattern'");
-    foreach ($transients as $transient) {
-      $name = str_replace('_transient_', '', $transient->option_name);
-      delete_transient ($name);
+    $transients = $wpdb->get_results(
+      $wpdb->prepare(
+        "SELECT option_name FROM $wpdb->options WHERE option_name LIKE CONCAT(%s, '%%')",
+        $wpdb->esc_like( '_transient_' . INDEX_WP_USERS_FOR_SPEED_PREFIX ) )
+    );
+    foreach ( $transients as $transient ) {
+      $name = str_replace( '_transient_', '', $transient->option_name );
+      delete_transient( $name );
     }
   }
 

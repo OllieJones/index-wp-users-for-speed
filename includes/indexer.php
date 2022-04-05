@@ -3,6 +3,7 @@
 namespace IndexWpUsersForSpeed;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Exception;
 
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/tasks/task.php';
@@ -138,19 +139,20 @@ class Indexer {
 
   /** Get the UNIX timestamp for midnight today, in local time.
    *
-   * This is a miserable hack involving the DBMS
-   *
-   * @return int
+   * @return int timestamp
    */
   private function getTodayMidnightTimestamp() {
-    $zone        = get_option( 'timezone_string', 'UTC' );
-    $currentZone = date_default_timezone_get();
-    date_default_timezone_set( $zone );
-    $midnightLocal = new DateTimeImmutable( 'today' );
-    $midnightLocal = $midnightLocal->getTimestamp();
-    date_default_timezone_set( $currentZone );
+    try {
+      $zone     = new DateTimeZone ( get_option( 'timezone_string', 'UTC' ) );
+      $midnight = new DateTimeImmutable( 'today', $zone );
 
-    return $midnightLocal;
+      return $midnight->getTimestamp();
+    } catch ( Exception $ex ) {
+      /* fallback if tz stuff fails: midnight UTC */
+      $t = time();
+
+      return $t - ( $t % DAY_IN_SECONDS );
+    }
   }
 
   public function disableAutoRebuild() {
@@ -188,10 +190,10 @@ class Indexer {
    * @return void
    */
   public function updateEditors( $user_id, $removingUser = false ) {
-
-    $canEdit = ! $removingUser && ( get_userdata( $user_id ) )->has_cap( 'edit_post' );
-    $task    = new GetEditors();
-    $editors = $task->getStatus();
+    $userdata = get_userdata( $user_id );
+    $canEdit  = ! $removingUser && $userdata->has_cap( 'edit_post' );
+    $task     = new GetEditors();
+    $editors  = $task->getStatus();
     if ( $task->isAvailable( $editors ) ) {
       $editorList = &$editors['editors'];
       if ( $canEdit ) {
@@ -288,9 +290,10 @@ class Indexer {
    * @return array
    */
   private function fakeUserCounts() {
-    $roles       = wp_roles()->get_names();
     $total_users = is_multisite() ? self::$sentinelCount : self::getNetworkUserCount();
     $avail_roles = [];
+    $roles       = wp_roles();
+    $roles       = $roles->get_names();
     foreach ( $roles as $role => $name ) {
       $avail_roles[ $role ] = self::$sentinelCount;
     }
@@ -327,7 +330,7 @@ class Indexer {
     }
     $prefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $q      = "DELETE FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') ";
-    $q      = $wpdb->prepare( $q, $user_id, $this->likeEscape( $prefix ) );
+    $q      = $wpdb->prepare( $q, $user_id, $wpdb->esc_like( $prefix ) );
     $wpdb->query( $q );
     if (is_multisite()) {
       restore_current_blog();
@@ -346,7 +349,7 @@ class Indexer {
     try {
       $wpdb->query( 'START TRANSACTION' );
       $q       = "SELECT umeta_id FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') FOR UPDATE";
-      $q       = $wpdb->prepare( $q, $user_id, $this->likeEscape( $prefix ) );
+      $q       = $wpdb->prepare( $q, $user_id, $wpdb->esc_like( $prefix ) );
       $results = $wpdb->get_results( $q );
       $count   = 0;
       foreach ( $results as $result ) {
@@ -379,17 +382,6 @@ class Indexer {
       }
     }
   }
-
-  /** Escape the wildcards in string to be used in a SQL LIKE operation
-   * @param string $s Text string, e.g. wp_2_foobar
-   * @return string Modified for use in LIKE, e.g. wp\_2\_foobor
-   */
-  public function likeEscape( $s ) {
-    $escapedRole = str_replace( '%', '\\%', $s );
-
-    return str_replace( '_', '\\_', $escapedRole );
-  }
-
 
   protected function __clone() {
 
