@@ -75,7 +75,6 @@ class Indexer {
     $populated = $task->getStatus();
     if ( $force || $task->needsRunning( $populated ) ) {
       $task->init();
-      $task->log( 'from maybeIndexEverything' );
       $task->maybeSchedule();
     }
   }

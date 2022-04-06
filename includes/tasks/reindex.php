@@ -31,12 +31,13 @@ class Reindex extends Task {
     $task = new CountUsers();
     $task->init();
     $task->schedule();
+
     $task = new GetEditors();
     $task->init();
     $task->schedule();
+
     $task = new PopulateMetaIndexRoles();
     $task->init();
-    $task->log( 'from Reindex' );
     $task->schedule();
 
     $this->endChunk();

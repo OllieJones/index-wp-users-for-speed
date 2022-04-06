@@ -64,9 +64,7 @@ abstract class Task {
     $done = $this->doChunk();
     if ( ! $done ) {
       $this->schedule();
-      error_log( 'just rescheduled a ' . $this->taskName );
     } else {
-      $this->log( 'completed' );
       $this->fractionComplete = 1;
       $this->setStatus( null, true, false, 1 );
       $this->clearPersisted();
@@ -84,7 +82,6 @@ abstract class Task {
       wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg, $this->useCount ] );
     }
     $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
-    $this->log( $msg, $time );
   }
 
   protected function persist() {

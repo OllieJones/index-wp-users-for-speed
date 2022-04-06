@@ -48,10 +48,8 @@ class PopulateMetaIndexRoles extends Task {
 
     $queries    = $this->makeIndexerQueries( $this->roles );
     $currentEnd = $this->currentStart + $this->batchSize;
-    $this->log( "index from $this->currentStart to $currentEnd" );
 
     foreach ( $queries as $query ) {
-      $this->log($query);
       $query .= ' WHERE a.user_id >= %d AND a.user_id < %d';
       $q     = $wpdb->prepare( $query, $this->currentStart, $currentEnd );
       $wpdb->query( $q );
