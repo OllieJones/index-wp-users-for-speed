@@ -20,14 +20,14 @@ settings_errors( $this->options_name );
     <h2 class="wp-heading-inline"><?php echo get_admin_page_title(); ?></h2>
     <p>
         <span><?php esc_html_e( 'Approximate number of users on this entire site', 'index-wp-users-for-speed' ) ?>: </span>
-        <span><?php echo number_format_i18n( Indexer::getNetworkUserCount(), 0 ) ?></span>
+        <span><?php echo esc_html(number_format_i18n( Indexer::getNetworkUserCount(), 0 )) ?></span>
     </p>
     <!--suppress HtmlUnknownTarget -->
     <form id="index-users-form" method="post" action="options.php">
       <?php
       settings_fields( $this->options_name );
       do_settings_sections( $this->plugin_name );
-      submit_button( 'Save Changes', 'primary' );
+      submit_button( );
       ?>
     </form>
 </div>

@@ -158,7 +158,7 @@ class Admin
         }
       }
     } catch ( Exception $ex ) {
-      add_settings_error( $this->options_name, 'rebuild', $ex->getMessage(), 'error' );
+      add_settings_error( $this->options_name, 'rebuild', esc_html( $ex->getMessage() ), 'error' );
     }
     if ( $didAnOperation ) {
       $this->didAnyOperations = true;
@@ -232,33 +232,33 @@ class Admin
           <span class="radioitem">
               <input type="radio"
                      id="auto_rebuild_yes"
-                     name="<?php echo $this->options_name ?>[auto_rebuild]"
+                     name="<?php echo esc_attr( $this->options_name ) ?>[auto_rebuild]"
                      value="on"
-                     <?php echo $autoRebuild === 'on' ? 'checked' : '' ?> />
+                     <?php checked( $autoRebuild, 'on' ) ?> />
                 <label for="auto_rebuild_yes"><?php esc_html_e( 'daily', 'index-wp-users-for-speed' ) ?></label>
           </span>
           <span class="radioitem">
               <input type="radio"
                      id="auto_rebuild_no"
-                     name="<?php echo $this->options_name ?>[auto_rebuild]"
+                     name="<?php echo esc_attr( $this->options_name ) ?>[auto_rebuild]"
                      value="off"
-                     <?php echo $autoRebuild === 'off' ? 'checked' : '' ?> />
+                     <?php checked( $autoRebuild, 'off' ) ?> />
                 <label for="auto_rebuild_no"><?php esc_html_e( 'never', 'index-wp-users-for-speed' ) ?></label>
           </span>
           <span class="radioitem">
               <input type="radio"
                      id="auto_rebuild_now_daily"
-                     name="<?php echo $this->options_name ?>[auto_rebuild]"
+                     name="<?php echo esc_attr( $this->options_name ) ?>[auto_rebuild]"
                      value="nowon"
-                     <?php echo $autoRebuild === 'nowon' ? 'checked' : '' ?> />
+                     <?php checked( $autoRebuild, 'nowon' ) ?> />
                 <label for="auto_rebuild_now_daily"><?php esc_html_e( 'immediately, then daily', 'index-wp-users-for-speed' ) ?></label>
           </span>
           <span class="radioitem">
               <input type="radio"
                      id="auto_rebuild_now_only"
-                     name="<?php echo $this->options_name ?>[auto_rebuild]"
+                     name="<?php echo esc_attr( $this->options_name ) ?>[auto_rebuild]"
                      value="nowoff"
-                     <?php echo $autoRebuild === 'nowoff' ? 'checked' : '' ?> />
+                     <?php checked( $autoRebuild, 'nowoff' ) ?> />
                 <label for="auto_rebuild_now_only"><?php esc_html_e( 'immediately, but not daily', 'index-wp-users-for-speed' ) ?></label>
           </span>
       </div>
@@ -273,8 +273,8 @@ class Admin
           <!--suppress HtmlFormInputWithoutLabel -->
           <input type="time"
                  id="rebuild_time"
-                 name="<?php echo $this->options_name ?>[rebuild_time]"
-                 value="<?php echo $rebuildTime ?>">
+                 name="<?php echo esc_attr( $this->options_name ) ?>[rebuild_time]"
+                 value="<?php echo esc_attr( $rebuildTime ) ?>">
       </div>
       <p>
         <?php esc_html_e( 'Avoid rebuilding exactly on the hour to avoid contending with other processing jobs.' ) ?>
@@ -288,7 +288,7 @@ class Admin
           <!--suppress HtmlFormInputWithoutLabel -->
           <input type="checkbox"
                  id="rebuild_now"
-                 name="<?php echo $this->options_name ?>[now_rebuild]">
+                 name="<?php echo esc_attr( $this->options_name ) ?>[now_rebuild]">
       </div>
     <?php
   }
@@ -299,7 +299,7 @@ class Admin
           <!--suppress HtmlFormInputWithoutLabel -->
           <input type="checkbox"
                  id="rebuild_now"
-                 name="<?php echo $this->options_name ?>[now_remove]">
+                 name="<?php echo esc_attr( $this->options_name ) ?>[now_remove]">
       </div>
     <?php
   }
