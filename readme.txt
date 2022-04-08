@@ -2,7 +2,7 @@
 Contributors: OllieJones
 Tags: users, database, index, performance
 Requires at least: 5.2
-Tested up to: 5.9.2
+Tested up to: 5.9.3
 Requires PHP: 5.6
 Stable tag: 1.0.0
 Network: true
@@ -19,7 +19,7 @@ Do you have many users on your WordPress site? Look them up fast by indexing the
 
 == Description ==
 
-WordPress sites with many users slow down drastically, especially on Dashboard pages. It can take many seconds each time you display your Users dashboard panel. It takes just about the same amount of time to display your Posts or Pages panels. While those slow displays are loading, WordPress is hammering on your site's MySQL or MariaDB database server. That means your site serves your visitors slowly too, not just your dashboard users.
+WordPress sites with many users slow down dramatically, especially on Dashboard pages. It can take many seconds each time you display your Users dashboard panel. It takes just about the same amount of time to display your Posts or Pages panels. While those slow displays are loading, WordPress is hammering on your site's MySQL or MariaDB database server. That means your site serves your visitors slowly too, not just your dashboard users.
 
 This plugin helps speed up the handling of those large numbers of users. It does so by indexing your users by adding metadata that's easily optimized by MySQL or MariaDB. For example, when your site must ask the database for your post-author users, the database no longer needs to examine every user on your system. (In database jargon, it no longer needs to do a notoriously slow full table scan.)
 

@@ -40,11 +40,10 @@ const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME = HOUR_IN_SECONDS * 4;
 const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME  = DAY_IN_SECONDS * 2;
 /**
  * The number of users we process at a time when creating index entries in wp_usermeta.
- *
- * This number is limited to avoid swamping MariaDB / MySQL with vast transactions
- * when manipulating large numbers of users.
+ * This number is limited to avoid swamping MariaDB / MySQL with vast
+ * update transactions  when creating index metadata for large numbers of users.
  */
-const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE      = 500;
+const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE      = 2000;
 
 /**
  * The code that runs during plugin activation.
