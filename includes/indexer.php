@@ -190,7 +190,7 @@ class Indexer {
    */
   public function updateEditors( $user_id, $removingUser = false ) {
     $userdata = get_userdata( $user_id );
-    $canEdit  = ! $removingUser && $userdata->has_cap( 'edit_post' );
+    $canEdit  = ! $removingUser && $userdata->has_cap( 'edit_posts' );
     $task     = new GetEditors();
     $editors  = $task->getStatus();
     if ( $task->isAvailable( $editors ) ) {

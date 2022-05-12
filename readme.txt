@@ -1,5 +1,5 @@
 === Index WP MySQL For Speed ===
-Contributors: OllieJones
+Contributors: Ollie Jones
 Tags: users, database, index, performance
 Requires at least: 5.2
 Tested up to: 5.9.2
@@ -76,7 +76,6 @@ Configure it via the Index for Speed menu item under Users.
 * Japreet Sethi for advice, and for testing on his large installation.
 * Rick James for everything.
 
-
 == Screenshots ==
 
 1. Access to this plugin's configuration panel.
@@ -84,11 +83,17 @@ Configure it via the Index for Speed menu item under Users.
 
 == Changelog ==
 
+= 1.0.1 =
+
+* Fix defect when changing user role.
+* Integrate correctly with https://core.trac.wordpress.org/ticket/38741 for large site handling.
+
 = 1.0.0 =
 
 First release
 
 == Upgrade Notice ==
 
-= 1.0 =
-First release.
+= 1.0.1 =
+
+Now allows changing user roles. Supports WordPress 6.0
