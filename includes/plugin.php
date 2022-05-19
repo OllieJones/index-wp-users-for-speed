@@ -62,6 +62,7 @@ class Index_Wp_Users_For_Speed {
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/wordpress-hooks.php';
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/i18n.php';
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/user-handler.php';
+      require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/progressbar.php';
     }
 
     /* stuff required for admin page but not for cron, REST */

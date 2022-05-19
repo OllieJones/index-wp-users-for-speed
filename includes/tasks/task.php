@@ -247,6 +247,11 @@ abstract class Task {
     return is_array( $status ) && isset( $status['available'] ) && $status['available'];
   }
 
+  public function fractionComplete ( $status = null) {
+    $status = $status === null ? $this->getStatus() : $status;
+    return is_array( $status ) && isset( $status['fraction'] ) && is_numeric($status['fraction']) ? $status['fraction'] : 1.0;
+  }
+
   protected function startChunk() {
     if ( $this->useCount === 0 ) {
       $this->setStatus( null, null, true, 0.001 );

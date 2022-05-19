@@ -37,6 +37,7 @@ class Admin
     $this->version      = INDEX_WP_USERS_FOR_SPEED_VERSION;
     $this->pluginPath   = plugin_dir_path( dirname( __FILE__ ) );
     $this->options_name = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options';
+    $this->indexer         = Indexer::getInstance();
 
     /* action link for plugins page */
     add_filter( 'plugin_action_links_' . INDEX_WP_USERS_FOR_SPEED_FILENAME, [ $this, 'action_link' ] );
@@ -46,9 +47,6 @@ class Admin
 
   /** @noinspection PhpUnused */
   public function action__admin_menu() {
-
-    //$indexer = Indexer::getInstance();
-    //$indexer->hackHackHack();
 
     add_users_page(
       esc_html__( 'Index WP Users For Speed', 'index-wp-users-for-speed' ),
@@ -131,7 +129,7 @@ class Admin
       if ( $nowRebuild ) {
         add_settings_error(
           $this->options_name, 'rebuild',
-          esc_html__( 'Index rebuilding process starting', 'index-wp-users-for-speed' ),
+          esc_html__( 'User index rebuilding starting', 'index-wp-users-for-speed' ),
           'info' );
         if ( ! $this->didAnyOperations ) {
           $didAnOperation = true;
@@ -148,7 +146,6 @@ class Admin
           $didAnOperation = true;
           $this->indexer->enableAutoRebuild( $this->timeToSeconds( $time ) );
         }
-
       } else {
         $display = esc_html__( 'Automatic index rebuilding disabled', 'index-wp-users-for-speed' );
         add_settings_error( $this->options_name, 'rebuild', $display, 'success' );
@@ -165,10 +162,10 @@ class Admin
     }
 
     /* persist only on and off */
-    if( isset( $input['auto_rebuild'] )) {
-      $i = $input['auto_rebuild'];
-      $i = $i === 'nowon' ? 'on' : $i;
-      $i = $i === 'nowoff' ? 'off' : $i;
+    if ( isset( $input['auto_rebuild'] ) ) {
+      $i                     = $input['auto_rebuild'];
+      $i                     = $i === 'nowon' ? 'on' : $i;
+      $i                     = $i === 'nowoff' ? 'off' : $i;
       $input['auto_rebuild'] = $i;
     }
     return $input;
@@ -344,7 +341,6 @@ class Admin
 
     return array_merge( $mylinks, $actions );
   }
-
 
 }
 

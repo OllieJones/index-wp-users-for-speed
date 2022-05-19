@@ -85,6 +85,7 @@ Configure it via the Index for Speed menu item under Users.
 
 = 1.0.1 =
 
+* Add notice bar showing progress. Use heartbeat to keep progress going.
 * Fix defect when changing user role.
 * Integrate correctly with https://core.trac.wordpress.org/ticket/38741 for large site handling.
 
@@ -93,6 +94,8 @@ Configure it via the Index for Speed menu item under Users.
 First release
 
 == Upgrade Notice ==
+
+Now we show a notice bar showing progress building or rebuilding the user index metadata.
 
 = 1.0.1 =
 

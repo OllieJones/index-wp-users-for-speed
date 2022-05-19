@@ -222,6 +222,12 @@ class Indexer {
     return false;
   }
 
+  public function metaIndexRoleFraction () {
+    $task   = new PopulateMetaIndexRoles();
+    $status = $task->getStatus();
+    return $task->fractionComplete( $status );
+
+  }
   public function isMetaIndexRoleAvailable() {
     $task   = new PopulateMetaIndexRoles();
     $status = $task->getStatus();
