@@ -25,6 +25,7 @@ class UserHandler extends WordPressHooks {
   private $indexer;
   private $pluginPath;
   private $recursionLevelBySite = [];
+  private $userCount = 0;
 
   public function __construct() {
 
@@ -78,15 +79,16 @@ class UserHandler extends WordPressHooks {
    *
    * The deleted user's wp_usermeta data is already gone by this action.
    *
-   * @since 2.9.0
-   * @since 5.5.0 Added the `$user` parameter.
-   *
-   * @param int      $id       ID of the deleted user.
+   * @param int $id ID of the deleted user.
    * @param int|null $reassign ID of the user to reassign posts and links to.
    *                           Default null, for no reassignment.
-   * @param WP_User  $user     WP_User object of the deleted user.
+   * @param WP_User $user WP_User object of the deleted user.
+   *
+   * @since 5.5.0 Added the `$user` parameter.
+   *
+   * @since 2.9.0
    */
-  public function action__deleted_user($id, $reassign, $user) {
+  public function action__deleted_user( $id, $reassign, $user ) {
     $roles = $user->roles;
     $this->indexer->updateUserCounts( $roles, - 1 );
     $this->indexer->updateEditors( $id, true );
@@ -165,17 +167,128 @@ class UserHandler extends WordPressHooks {
    * @noinspection PhpUnused
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
+    return $this->filtered_query_args( $query_args, $parsed_args );
+  }
 
-    if ( ! is_array( $parsed_args['include'] )
-         && isset( $parsed_args['capability'] ) && in_array( 'edit_posts', $parsed_args['capability'] ) ) {
+  private function filtered_query_args( $query_args, $parsed_args ) {
+    $capFound = null;
+
+    /* if the query is already restricted with an "include" item, do nothing */
+    if ( is_array( $query_args['include'] ) && count( $query_args['include'] ) > 0 ) {
+      return $query_args;
+    }
+    /* Notice that the JSON ajax requests for lists of users have the deprecated who=authors
+     * query syntax. This code allows both that and the new capability=[edit_posts] syntax */
+    if ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' ) {
+      $capFound = 'edit_posts';
+      unset ( $query_args['who'] );
+    } else if ( isset( $parsed_args['capability'] ) ) {
+      /* capability item is set to either edit_posts or edit_pages */
+      foreach ( [ 'edit_posts', 'edit_pages' ] as $capToCheck ) {
+        if ( in_array( $capToCheck, $parsed_args['capability'] ) ) {
+          $capFound = $capToCheck;
+        }
+      }
+    } else {
+      return $query_args;
+    }
+    /* get the pre-stored list of editors */
+    $editors = $this->indexer->getEditors();
+    /* count up the users if we can */
+    $userCounts = $this->indexer->getUserCounts( false );
+    $roleCounts = array_key_exists( 'avail_roles', $userCounts ) ? $userCounts['avail_roles'] : [];
+    if ( $this->indexer->isMetaIndexRoleAvailable() &&
+         is_array ($editors) &&
+         count($editors) >= INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT ) {
+      /* We have many registered editors and the meta indexing is done. Use it. */
+      /* Find the list of roles (administrator, contributor, etc.) with the $capFound capability */
+      global $wp_roles;
+      $wp_roles->for_site( get_current_blog_id() );
+      $metaQuery = [];
+      foreach ( $wp_roles->roles as $name => $role ) {
+        $caps = &$role['capabilities'];
+        if ( array_key_exists( $capFound, $caps ) && $caps[ $capFound ] === true ) {
+          $userCount = array_key_exists( $name, $roleCounts ) ? $roleCounts[ $name ] : 0;
+          if ( $userCount > 0 ) {
+            $metaQuery[]     = $this->makeRoleQueryArgs( $name );
+            $this->userCount += $userCount;
+          }
+        }
+      }
+      if ( count( $metaQuery ) === 0 ) {
+        return $query_args;
+      }
+      if ( count( $metaQuery ) > 1 ) {
+        $metaQuery['relation'] = 'OR';
+      }
+      add_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10, 6 );
+      $query_args ['meta_query'] = $metaQuery;
+      unset ( $query_args['capability'] );
+    } else {
       $editors = $this->indexer->getEditors();
       if ( is_array( $editors ) ) {
         $query_args['include'] = $editors;
       }
     }
-
     return $query_args;
+  }
 
+  /**
+   * Filters the meta query's generated SQL.  'get_meta_sql'
+   * We must intervene in query generation here due to a defect in WP Core's
+   * generation of postmeta key 'a' EXISTS OR key 'b' EXISTS OR key 'c' EXISTS ...
+   *
+   * @param string[] $sql Array containing the query's JOIN and WHERE clauses.
+   * @param array $queries Array of meta queries.
+   * @param string $type Type of meta. Possible values include but are not limited
+   *                                    to 'post', 'comment', 'blog', 'term', and 'user'.
+   * @param string $primary_table Primary table.
+   * @param string $primary_id_column Primary column ID.
+   * @param object $context The main query object that corresponds to the type, for
+   *                                    example a `WP_Query`, `WP_User_Query`, or `WP_Site_Query`.
+   *
+   * @since 3.1.0
+   *
+   */
+
+  public
+  function filter_meta_sql(
+    $sql, $queries, $type, $primary_table, $primary_id_column, $context
+  ) {
+    global $wpdb;
+    if ( $type !== 'user' ) {
+      return $sql;
+    }
+    if ( $queries['relation'] !== 'OR' ) {
+      return $sql;
+    }
+    $keys = [];
+    foreach ( $queries as $query ) {
+      if ( is_array( $query ) ) {
+        if ( ! array_key_exists( 'compare', $query ) || $query ['compare'] !== 'EXISTS' ) {
+          return $sql;
+        }
+        if ( ! array_key_exists( 'key', $query ) || ! is_string( $query['key'] ) ) {
+          return $sql;
+        }
+        $keys[] = $query['key'];
+      }
+    }
+    $joins  = [];
+    $wheres = [];
+    $k      = 1;
+    foreach ( $keys as $key ) {
+      $join      = "wp_usermeta um$k ON $primary_table.$primary_id_column = um$k.user_id AND um$k.meta_key = %s";
+      $join      = $wpdb->prepare( $join, $key );
+      $joins[]   = $join;
+      $wheres [] = "um$k.umeta_id IS NOT NULL";
+      $k ++;
+    }
+    $join  = PHP_EOL . ' LEFT JOIN ' . implode( PHP_EOL . ' LEFT JOIN ', $joins );
+    $where = PHP_EOL . ' AND (' . implode( PHP_EOL . ' OR ', $wheres ) . ')';
+    /* only do this once per invocation of user query with metadata */
+    remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
+    return [ 'join' => $join, 'where' => $where ];
   }
 
   /**
@@ -193,7 +306,10 @@ class UserHandler extends WordPressHooks {
    * @since 4.0.0
    *
    */
-  public function action__pre_get_users( $query ) {
+  public
+  function action__pre_get_users(
+    $query
+  ) {
 
     /* the order of these is important: mungCountTotal won't work after mungRoleFilters */
     $this->mungCountTotal( $query );
@@ -212,14 +328,23 @@ class UserHandler extends WordPressHooks {
    * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
    *
    */
-  private function mungCountTotal( $query ) {
+  private
+  function mungCountTotal(
+    $query
+  ) {
     /* we will bash $qv in place, so take it by ref */
     $qv = &$query->query_vars;
     if ( ! isset( $qv['count_total'] ) || $qv['count_total'] === false ) {
       /* not trying to count total, no intervention needed */
       return;
     }
-
+    /* did we already count up the users ? */
+    if ( $this->userCount > 0 ) {
+      $qv['count_total']  = false;
+      $query->total_users = $this->userCount;
+      $this->userCount    = 0;
+      return;
+    }
     /* look for filters other than role filters, if present we can't intervene in user count */
     $filterList = [
       'meta_key',
@@ -285,7 +410,10 @@ class UserHandler extends WordPressHooks {
    *
    * @return array
    */
-  private function getRoleFilterSets( array $qv ) {
+  private
+  function getRoleFilterSets(
+    array $qv
+  ) {
     /* make a set of roles to include */
     $roleSet = [];
     if ( isset( $qv['role'] ) && $qv['role'] !== '' ) {
@@ -317,7 +445,10 @@ class UserHandler extends WordPressHooks {
    * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
    *
    */
-  private function mungRoleFilters( $query ) {
+  private
+  function mungRoleFilters(
+    $query
+  ) {
     /* we will bash $qv in place, so take it by ref */
     $qv = &$query->query_vars;
     list( $roleSet, $roleExclude ) = $this->getRoleFilterSets( $qv );
@@ -373,7 +504,10 @@ class UserHandler extends WordPressHooks {
    *
    * @return array meta query arg array
    */
-  private function makeRoleQueryArgs( $role, $compare = 'EXISTS' ) {
+  private
+  function makeRoleQueryArgs(
+    $role, $compare = 'EXISTS'
+  ) {
     global $wpdb;
     $roleMetaPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $roleMetaKey    = $roleMetaPrefix . $role;
@@ -394,20 +528,7 @@ class UserHandler extends WordPressHooks {
    * @noinspection PhpUnused
    */
   public function filter__rest_user_query( $query_args, $request ) {
-
-    if ( ! is_array( $query_args['include'] ) || count( $query_args['include'] ) === 0 ) {
-      /* Notice that the JSON ajax requests for lists of users have the deprecated who=authors
-       * query syntax. This code allows both that and the new capability=[edit_posts] syntax */
-      if ( ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' )
-           || ( isset ( $query_args ['capability'] ) && in_array( 'edit_posts', $query_args['capability'] ) ) ) {
-        $editors = $this->indexer->getEditors();
-        if ( is_array( $editors ) ) {
-          $query_args['include'] = $editors;
-        }
-      }
-    }
-
-    return $query_args;
+    return $this->filtered_query_args( $query_args, $query_args );
   }
 
   /**
@@ -438,7 +559,10 @@ class UserHandler extends WordPressHooks {
    * @since 5.0.0
    *
    */
-  public function action__rest_after_insert_user( $user, $request, $creating ) {
+  public
+  function action__rest_after_insert_user(
+    $user, $request, $creating
+  ) {
     $a = $user;
   }
 
@@ -453,11 +577,13 @@ class UserHandler extends WordPressHooks {
    * @since 4.7.0
    *
    */
-  public function action__rest_delete_user( $user, $response, $request ) {
+  public
+  function action__rest_delete_user(
+    $user, $response, $request
+  ) {
     //TODO
     $a = $user;
   }
-
 }
 
 new UserHandler();

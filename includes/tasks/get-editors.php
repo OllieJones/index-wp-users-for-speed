@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpUnused */
+<?php /** @noinspection SpellCheckingInspection */
+
+/** @noinspection PhpUnused */
 
 namespace IndexWpUsersForSpeed;
 
@@ -19,6 +21,8 @@ class GetEditors extends Task {
   }
 
   /** Retrieve the user counts and update the transient
+   * The output of this is used to limit the number of users handled by
+   * user-lookup queries when the role-based lookup isn't yet available.
    * @return boolean  done When this is false, schedule another chunk.
    */
   public function doChunk() {
@@ -28,19 +32,16 @@ class GetEditors extends Task {
 
     $userQuery = new WP_User_Query(
       [
-        'capability' => [ 'edit_posts' ],
-        'fields'     => [ 'ID' ],
+        'capabilities__in' => [ 'edit_posts', 'edit_pages' ],
+        'fields'           => 'ID',
+        'orderby'          => 'ID',
+        'number'           => INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT,
+        'count_total'      => false,
       ] );
     $qresults  = $userQuery->get_results();
     if ( ! empty ( $qresults ) ) {
-      foreach ( $qresults as $qresult ) {
-        $editors[] = 0+$qresult->ID;
-      }
+      $editors = array_map( 'intval', $qresults );
     }
-    /* there's some chance that a long IN(1,2,3) clause
-     * will run slightly more efficiently in MySQL
-     * if it is presorted for them. */
-    sort( $editors, SORT_NUMERIC );
 
     $this->setStatus( [ 'editors' => $editors ], true, false, 1 );
 

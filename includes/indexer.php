@@ -222,6 +222,12 @@ class Indexer {
     return false;
   }
 
+  public function isMetaIndexRoleAvailable() {
+    $task   = new PopulateMetaIndexRoles();
+    $status = $task->getStatus();
+    return $task->isAvailable( $status );
+  }
+
   /** WHen a user changes roles, update the user counts.
    *
    * @param $newRole
@@ -262,14 +268,15 @@ class Indexer {
     }
   }
 
-  public function getUserCounts() {
+  public function getUserCounts( $allowFakes = true) {
     $task = new CountUsers();
 
     $userCounts = $task->getStatus();
     if ( ! $task->isAvailable( $userCounts ) ) {
-      /* no user counts yet. We will fake them until they're available */
-      $userCounts = $this->fakeUserCounts();
-
+      if ($allowFakes) {
+        /* no user counts yet. We will fake them until they're available */
+        $userCounts = $this->fakeUserCounts();
+      }
       if ( $task->needsRunning( $userCounts ) ) {
         $task->init();
         $task->maybeSchedule( $userCounts );

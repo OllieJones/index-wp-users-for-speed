@@ -33,18 +33,19 @@ if ( ! defined( 'WPINC' ) ) {
 
 const INDEX_WP_USERS_FOR_SPEED_NAME = 'index-wp-users-for-speed';
 define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
-const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.0.1';
-const INDEX_WP_USERS_FOR_SPEED_PREFIX         = 'index-wp-users-for-speed-';
-const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX     = 'iufs';
-const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME = HOUR_IN_SECONDS * 4;
-const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME  = DAY_IN_SECONDS * 2;
+const INDEX_WP_USERS_FOR_SPEED_VERSION          = '1.0.1';
+const INDEX_WP_USERS_FOR_SPEED_PREFIX           = 'index-wp-users-for-speed-';
+const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX       = 'iufs';
+const INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT = 200;
+const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME   = HOUR_IN_SECONDS * 4;
+const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME    = DAY_IN_SECONDS * 2;
 /**
  * The number of users we process at a time when creating index entries in wp_usermeta.
  *
  * This number is limited to avoid swamping MariaDB / MySQL with vast transactions
- * when manipulating large numbers of users.
+ * when manipulating large numbers of users. The batches run with wpcron.
  */
-const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE      = 500;
+const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 1000;
 
 /**
  * The code that runs during plugin activation.
