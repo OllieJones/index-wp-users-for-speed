@@ -7,11 +7,12 @@
  * @license  GPL-2.0-or-later
  * @wordpress-plugin0
  * Plugin Name: Index WP Users For Speed
- * Version: 1.0.1
+ * Version:     1.0.1
+ * Stable tag:  1.0.1
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with many users.
  * Requires at least: 5.2
- * Tested up to:      5.9.2
+ * Tested up to:      6.0
  * Requires PHP:      5.6
  * Author:       OllieJones
  * Author URI:   https://github.com/OllieJones
@@ -20,7 +21,7 @@
  * Text Domain:  index-wp-users-for-speed
  * Domain Path:  /languages
  * Network:      true
- * Tags:         users, performance
+ * Tags:         users, database, index, performance, largesite
  */
 
 use IndexWpUsersForSpeed\Activator;

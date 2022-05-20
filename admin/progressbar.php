@@ -48,9 +48,10 @@ class ProgressBar {
     if ( $this->percentComplete < 1.0 ) {
       wp_enqueue_script( $this->plugin_name . '_percent', plugin_dir_url( __FILE__ ) . 'js/percent.js', [], $this->version );
       $prefix  = esc_html__( 'User index rebuilding in progress:', 'index-wp-users-for-speed' );
-      $suffix  = esc_html__( '% complete', 'index-wp-users-for-speed' );
+      $suffix  = esc_html__( '% complete.', 'index-wp-users-for-speed' );
+      $sentence  = esc_html__( 'You may use your site during rebuilding.', 'index-wp-users-for-speed' );
       $percent = esc_html( number_format( $this->percentComplete * 100.0, 0 ) );
-      $percent = "$prefix <span class=\"percent\">$percent</span>$suffix";
+      $percent = "$prefix <span class=\"percent\">$percent</span>$suffix $sentence";
       ?>
         <div class="notice notice-info index-wp-users-for-speed is-dismissible">
             <p><?php echo $percent ?></p>
