@@ -19,19 +19,19 @@ Do you have many users on your WordPress site? Look them up fast by indexing the
 
 == Description ==
 
-WordPress sites with many users slow down drastically, especially on Dashboard pages. It can take many seconds each time you display your Users dashboard panel. It takes just about the same amount of time to display your Posts or Pages panels. While those slow displays are loading, WordPress is hammering on your site's MySQL or MariaDB database server. That means your site serves your visitors slowly too, not just your dashboard users.
+WordPress sites with many users slow down drastically, especially on Dashboard pages. It can take many seconds each time you display your Users dashboard panel. It takes just about the same large amount of time to display your Posts or Pages panels. While those slow displays are loading, WordPress is hammering on your site's MySQL or MariaDB database server. That means your site serves your visitors slowly too, not just your dashboard users.
 
 This plugin helps speed up the handling of those large numbers of users. It does so by indexing your users by adding metadata that's easily optimized by MySQL or MariaDB. For example, when your site must ask the database for your post-author users, the database no longer needs to examine every user on your system. (In database jargon, it no longer needs to do a notoriously slow full table scan.)
 
 When slow queries are required to make sure the metadata indexes are up to date, this plugin does them in the background so nobody has to wait for them to complete. You can set the plugin to do this background work at a particular time each day. Many people prefer to do them overnight or at some other off-peak time.
 
-This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/plugins/index-wp-mysql-for-speed/). But they are in no way dependent on one another; you may use either, both, or of course neither.
+This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/plugins/index-wp-mysql-for-speed/). If that plugin is in use, this plugin will perform better. But they are in no way dependent on one another; you may use either, both, or of course neither.
 
 == Frequently Asked Questions ==
 
 = Should I back up my site before using this? =
 
-**Yes.** Backups are good practice. Still, this plugin makes no extensive changes to your site or database.
+**Yes.** Backups are good practice. Still, this plugin makes no changes to your site or database layout. It adds some transients, and adds rows to wp_usermeta.
 
 = My WordPress host offers MariaDB, not MySQL. Can I use this plugin?
 
@@ -40,6 +40,10 @@ This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/p
 = I have a multi-site WordPress installation. Can I use this plugin?
 
 **Yes.**
+
+= I see high CPU usage (load average) on my MariaDB / MySQL database server during user index building or refresh. Is that normal?
+
+**Yes.** Indexing your registered users requires us to insert a row in wp_usermeta for each of them. We do this work in batches of 1000 users to avoid locking up your MariaDB / MySQL server. Each batch takes server time. Once all the batches of index building or refresh are complete, your CPU usage will return to normal.
 
 = How does it work? (Geeky!) =
 
