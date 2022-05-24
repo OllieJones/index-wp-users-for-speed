@@ -15,7 +15,7 @@ Primary Branch: main
 Text Domain: index-wp-users-for-speed
 Domain Path: /languages
 
-Do you have many users on your WordPress site? Look them up fast by indexing them in your metadata.
+Do you have many users on your WordPress site? Look them up fast by indexing them in your metadata. Eliminate slow loading on Users, Posts, and Pages panels in your dashboard.
 
 == Description ==
 
