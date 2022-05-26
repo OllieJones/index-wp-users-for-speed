@@ -1,4 +1,4 @@
-=== Index WP MySQL For Speed ===
+=== Index WP Users For Speed ===
 Contributors: Ollie Jones
 Tags: users, database, index, performance, largesite
 Requires at least: 5.2
