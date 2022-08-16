@@ -26,14 +26,35 @@ class UserHandler extends WordPressHooks {
   private $pluginPath;
   private $recursionLevelBySite = [];
   private $userCount = 0;
+  private $options_name;
 
   public function __construct() {
 
-    $this->plugin_name = INDEX_WP_USERS_FOR_SPEED_NAME;
-    $this->version     = INDEX_WP_USERS_FOR_SPEED_VERSION;
-    $this->indexer     = Indexer::getInstance();
-    $this->pluginPath  = plugin_dir_path( dirname( __FILE__ ) );
+    $this->plugin_name  = INDEX_WP_USERS_FOR_SPEED_NAME;
+    $this->version      = INDEX_WP_USERS_FOR_SPEED_VERSION;
+    $this->indexer      = Indexer::getInstance();
+    $this->pluginPath   = plugin_dir_path( dirname( __FILE__ ) );
+    $this->options_name = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options';
+
     parent::__construct();
+  }
+
+  /**
+   * Filters whether the site is considered large, based on its number of users.
+   *
+   * Here we declare that it's not large.
+   *
+   * @param bool $is_large_user_count Whether the site has a large number of users.
+   * @param int $count The total number of users.
+   * @param int|null $network_id ID of the network. `null` represents the current network.
+   *
+   * @noinspection PhpUnused
+   *
+   * @since 6.0.0
+   *
+   */
+  public function filter__wp_is_large_user_count( $is_large_user_count, $count, $network_id ) {
+    return false;
   }
 
   /**
@@ -84,8 +105,9 @@ class UserHandler extends WordPressHooks {
    *                           Default null, for no reassignment.
    * @param WP_User $user WP_User object of the deleted user.
    *
-   * @since 5.5.0 Added the `$user` parameter.
+   * @noinspection PhpUnused
    *
+   * @since 5.5.0 Added the `$user` parameter.
    * @since 2.9.0
    */
   public function action__deleted_user( $id, $reassign, $user ) {
@@ -167,7 +189,17 @@ class UserHandler extends WordPressHooks {
    * @noinspection PhpUnused
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
-    return $this->filtered_query_args( $query_args, $parsed_args );
+    $options    = get_option( $this->options_name );
+    $fixed_args = $this->filtered_query_args( $query_args, $parsed_args );
+
+    $fixed_args['fields'][] = 'post_count';
+    if ( isset ( $options ['quickedit_threshold_on'] ) && 'on' === $options ['quickedit_threshold_on'] ) {
+      $fixed_args ['number']              = $options ['quickedit_threshold_limit'];
+    }
+    if ( isset ( $options ['quickedit_mostposts_on'] ) && 'on' === $options ['quickedit_mostposts_on'] ) {
+      $fixed_args ['orderby'] = [ 'post_count' => 'DESC' , 'display_name' => 'ASC' ];
+    }
+    return $fixed_args;
   }
 
   private function filtered_query_args( $query_args, $parsed_args ) {
@@ -198,8 +230,8 @@ class UserHandler extends WordPressHooks {
     $userCounts = $this->indexer->getUserCounts( false );
     $roleCounts = array_key_exists( 'avail_roles', $userCounts ) ? $userCounts['avail_roles'] : [];
     if ( $this->indexer->isMetaIndexRoleAvailable() &&
-         is_array ($editors) &&
-         count($editors) >= INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT ) {
+         is_array( $editors ) &&
+         count( $editors ) >= INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT ) {
       /* We have many registered editors and the meta indexing is done. Use it. */
       /* Find the list of roles (administrator, contributor, etc.) with the $capFound capability */
       global $wp_roles;

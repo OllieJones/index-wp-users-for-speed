@@ -37,7 +37,7 @@ class Admin
     $this->version      = INDEX_WP_USERS_FOR_SPEED_VERSION;
     $this->pluginPath   = plugin_dir_path( dirname( __FILE__ ) );
     $this->options_name = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options';
-    $this->indexer         = Indexer::getInstance();
+    $this->indexer      = Indexer::getInstance();
 
     /* action link for plugins page */
     add_filter( 'plugin_action_links_' . INDEX_WP_USERS_FOR_SPEED_FILENAME, [ $this, 'action_link' ] );
@@ -61,11 +61,10 @@ class Admin
 
   private function addTimingSection() {
 
-    $sectionId = 'timing';
     $page      = $this->plugin_name;
-    add_settings_section( $sectionId,
+    add_settings_section( 'indexing',
       esc_html__( 'Rebuilding user indexes', 'index-wp-users-for-speed' ),
-      [ $this, 'render_timing_section' ],
+      [ $this, 'render_indexing_section' ],
       $page );
 
     add_settings_field( 'auto_rebuild',
@@ -73,21 +72,35 @@ class Admin
       [ $this, 'render_auto_rebuild_field' ],
 
       $page,
-      $sectionId );
+      'indexing' );
 
     add_settings_field( 'rebuild_time',
       esc_html__( '...at this time', 'index-wp-users-for-speed' ),
       [ $this, 'render_rebuild_time_field' ],
       $page,
-      $sectionId );
+      'indexing' );
+
+    add_settings_section( 'quickedit',
+      esc_html__( 'Controlling choice of users', 'index-wp-users-for-speed' ),
+      [ $this, 'render_quickedit_section' ],
+      $page );
+
+    add_settings_field( 'quickedit_threshold',
+      esc_html__( 'For Posts and Pages', 'index-wp-users-for-speed' ),
+      [ $this, 'render_quickedit_threshold_field' ],
+      $page,
+      'quickedit' );
 
     $option = get_option( $this->options_name );
 
     /* make sure default option is in place, to avoid double sanitize call */
     if ( $option === false ) {
       add_option( $this->options_name, [
-        'auto_rebuild' => 'on',
-        'rebuild_time' => '00:25',
+        'auto_rebuild'              => 'on',
+        'rebuild_time'              => '00:25',
+        'quickedit_threshold_on'    => 'off',
+        'quickedit_threshold_limit' => 50,
+        'quickedit_mostposts_on'    => 'on',
       ] );
     }
 
@@ -161,13 +174,14 @@ class Admin
       $this->didAnyOperations = true;
     }
 
-    /* persist only on and off */
+    /* persist on and off */
     if ( isset( $input['auto_rebuild'] ) ) {
       $i                     = $input['auto_rebuild'];
       $i                     = $i === 'nowon' ? 'on' : $i;
       $i                     = $i === 'nowoff' ? 'off' : $i;
       $input['auto_rebuild'] = $i;
     }
+
     return $input;
   }
 
@@ -212,11 +226,19 @@ class Admin
     include_once $this->pluginPath . 'admin/views/page.php';
   }
 
-  public function render_timing_section() {
+  public function render_indexing_section() {
     ?>
       <p>
         <?php esc_html_e( 'You may rebuild your user indexes each day, or immediately.', 'index-wp-users-for-speed' ) ?>
         <?php esc_html_e( '(It is possible for them to become out-of-date.)', 'index-wp-users-for-speed' ) ?>
+      </p>
+    <?php
+  }
+
+  public function render_quickedit_section() {
+    ?>
+      <p>
+        <?php esc_html_e( 'The author-choice menu on Posts and Pages can be unwieldy when your site has many authors. You can limit the number of choices, and you can show your most active authors first.', 'index-wp-users-for-speed' ) ?>
       </p>
     <?php
   }
@@ -274,7 +296,7 @@ class Admin
                  value="<?php echo esc_attr( $rebuildTime ) ?>">
       </div>
       <p>
-        <?php esc_html_e( 'Avoid rebuilding exactly on the hour to avoid contending with other processing jobs.' ) ?>
+        <?php esc_html_e( 'Avoid rebuilding exactly on the hour to avoid contending with other processing jobs.', 'index-wp-users-for-speed' ) ?>
       </p>
     <?php
   }
@@ -298,6 +320,43 @@ class Admin
                  id="rebuild_now"
                  name="<?php echo esc_attr( $this->options_name ) ?>[now_remove]">
       </div>
+    <?php
+  }
+
+  public function render_quickedit_threshold_field() {
+    $options = get_option( $this->options_name );
+    $on      = isset( $options['quickedit_threshold_on']) && 'on' === $options['quickedit_threshold_on'] ? 'on' : 'off';
+    $limit   = isset( $options['quickedit_threshold_limit'] ) ? $options['quickedit_threshold_limit'] : 50;
+    $mostPosts = isset( $options['quickedit_mostposts_on']) && 'on' === $options['quickedit_mostposts_on'] ? 'on' : 'off';
+    ?>
+      <div>
+          <label for="quickedit_threshold_on"><span><?php esc_html_e( 'Enable', 'index-wp-users-for-speed' ) ?></span></label>
+          <!--suppress HtmlFormInputWithoutLabel -->
+          <input type="checkbox"
+                 id="quickedit_threshold_on"
+                 name="<?php echo esc_attr( $this->options_name ) ?>[quickedit_threshold_on]"
+        <?php checked( $on, 'on' ) ?>"><label
+                  for="quickedit_threshold_limit"><span><?php esc_html_e( 'showing only', 'index-wp-users-for-speed' ) ?></span><input
+                      type="number"
+                      id="quickedit_threshold_limit"
+                      name="<?php echo esc_attr( $this->options_name ) ?>[quickedit_threshold_limit]"
+                      min="2"
+                      value="<?php echo esc_attr( $limit ) ?>">
+              <span><?php esc_html_e( 'choices in the Quick Edit author menu.', 'index-wp-users-for-speed' ) ?></span>
+          </label></div>
+      <p class="menu-note">
+        <?php esc_html_e( 'If you disable this option, your author menu will let you choose any registered author.', 'index-wp-users-for-speed' ) ?>
+      </p>
+      <div>
+          <label for="quickedit_mostposts_on"><span><?php esc_html_e( 'Enable', 'index-wp-users-for-speed' ) ?></span></label>
+          <!--suppress HtmlFormInputWithoutLabel -->
+          <input type="checkbox"
+                 id="quickedit_mostposts_on"
+                 name="<?php echo esc_attr( $this->options_name ) ?>[quickedit_mostposts_on]"
+        <?php checked( $mostPosts, 'on' ) ?>"><span><?php
+          esc_html_e( 'showing authors with the most posts first in the Quick Edit author menu.', 'index-wp-users-for-speed' )
+          ?></span>
+          </label></div>
     <?php
   }
 

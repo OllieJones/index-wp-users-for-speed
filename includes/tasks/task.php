@@ -74,12 +74,20 @@ abstract class Task {
   public abstract function doChunk();
 
   public function schedule( $time = 0, $frequency = false ) {
+    // TODO this is where we work around a missing cron.
+    // fast repeating jobs get called here with zero $time.
+    $gotCron = ! ( true === DISABLE_WP_CRON );
     $cronArg = $this->persist();
     if ( $frequency === false ) {
-      $time = $time ?: time();
-      wp_schedule_single_event( $time, $this->hookName, [ $cronArg, $this->useCount ] );
-    } else {
-      wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg, $this->useCount ] );
+      $now  = time();
+      $time = $time ?: $now;
+
+      if ( $gotCron || ( $time - $now > 60 ) ) { // TODO
+        /* more than 60 minutes out? use cron anyway, rely on an external cron op */
+        wp_schedule_single_event( $time, $this->hookName, [ $cronArg, $this->useCount ] );
+      } else {
+        wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg, $this->useCount ] );
+      }
     }
     $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
   }

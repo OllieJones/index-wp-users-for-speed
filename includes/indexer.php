@@ -395,14 +395,14 @@ class Indexer {
     }
   }
 
-  protected function __clone() {
+  public function __clone() {
 
   }
 
   /**
    * @throws Exception
    */
-  protected function __wakeup() {
+  public function __wakeup() {
     throw new Exception( 'cannot unserialize this singleton' );
   }
 
