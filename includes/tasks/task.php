@@ -6,13 +6,13 @@ use Exception;
 use ReflectionClass;
 
 /** WP Cron hook to handle a task and reschedule it if need be.
+ *
  * @param string $taskName Name of persisted task
- * @param int    $step     Step number
+ *
  * @return void
  * @noinspection PhpUnused
- * @noinspection PhpUnusedParameterInspection
  */
-function index_wp_users_for_speed_do_task( $taskName, $step ) {
+function index_wp_users_for_speed_do_task( $taskName ) {
   $task = null;
   try {
     $task = Task::restorePersisted( $taskName );
@@ -25,7 +25,6 @@ function index_wp_users_for_speed_do_task( $taskName, $step ) {
 
 add_action( 'index_wp_users_for_speed_task', __NAMESPACE__ . '\index_wp_users_for_speed_do_task', 10, 2 );
 add_action( 'index_wp_users_for_speed_repeating_task', __NAMESPACE__ . '\index_wp_users_for_speed_do_task', 10, 2 );
-
 
 abstract class Task {
   public $taskName;
@@ -74,22 +73,22 @@ abstract class Task {
   public abstract function doChunk();
 
   public function schedule( $time = 0, $frequency = false ) {
-    // TODO this is where we work around a missing cron.
-    // fast repeating jobs get called here with zero $time.
-    $gotCron = ! ( true === DISABLE_WP_CRON );
-    $cronArg = $this->persist();
-    if ( $frequency === false ) {
-      $now  = time();
-      $time = $time ?: $now;
-
-      if ( $gotCron || ( $time - $now > 60 ) ) { // TODO
-        /* more than 60 minutes out? use cron anyway, rely on an external cron op */
-        wp_schedule_single_event( $time, $this->hookName, [ $cronArg, $this->useCount ] );
-      } else {
-        wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg, $this->useCount ] );
-      }
+    $cronDisabled = defined( 'DISABLE_WP_CRON' ) && true === DISABLE_WP_CRON;
+    $useCron      = ( ! $cronDisabled ) || ( 0 !== $time );
+    if ( $useCron ) {
+      $this->scheduleCron( $time, $frequency );
+    } else {
     }
     $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
+  }
+
+  protected function scheduleCron( $time, $frequency ) {
+    $cronArg = $this->persist();
+    if ( $frequency === false ) {
+      wp_schedule_single_event( $time, $this->hookName, [ $cronArg, $this->useCount ] );
+    } else {
+      wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg, $this->useCount ] );
+    }
   }
 
   protected function persist() {
@@ -107,7 +106,9 @@ abstract class Task {
    *
    * @return string
    */
-  public static function toSnake( $symbol, $delim = '-' ) {
+  public static function toSnake(
+    $symbol, $delim = '-'
+  ) {
     $res = [];
     for ( $i = 0; $i < strlen( $symbol ); $i ++ ) {
       $c = $symbol[ $i ];
@@ -122,7 +123,9 @@ abstract class Task {
     return implode( '', $res );
   }
 
-  public function log( $msg, $time = 0 ) {
+  public function log(
+    $msg, $time = 0
+  ) {
     $words   = [];
     $words[] = 'Task';
     $words[] = $this->taskName;
@@ -138,13 +141,17 @@ abstract class Task {
   }
 
   /** Update a task's status transient.
-   * @param null|array $status    If the status is known give it here, otherwise give null
-   * @param null|bool  $available Set the available flag, or ignore it if null
-   * @param null|bool  $active    Set the active flag, or ignore it if null
-   * @param null|float $fraction  Set the fraction-complete flag, or ignore it if null.
+   *
+   * @param null|array $status If the status is known give it here, otherwise give null
+   * @param null|bool $available Set the available flag, or ignore it if null
+   * @param null|bool $active Set the active flag, or ignore it if null
+   * @param null|float $fraction Set the fraction-complete flag, or ignore it if null.
+   *
    * @return void
    */
-  public function setStatus( $status, $available = null, $active = null, $fraction = null ) {
+  public function setStatus(
+    $status, $available = null, $active = null, $fraction = null
+  ) {
     if ( $status === null ) {
       $status = $this->getStatus();
     }
@@ -162,7 +169,6 @@ abstract class Task {
     }
     $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
     set_transient( $jobResultName, $status, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
-
   }
 
   public function getStatus() {
@@ -179,10 +185,11 @@ abstract class Task {
 
   public function cancel() {
     wp_unschedule_hook( $this->hookName );
-
   }
 
-  public function maybeSchedule( $status = null ) {
+  public function maybeSchedule(
+    $status = null
+  ) {
     if ( ! isset( $status ) || $status === false ) {
       $status = $this->getStatus();
     }
@@ -191,7 +198,9 @@ abstract class Task {
     }
   }
 
-  public function needsRunning( $status = null ) {
+  public function needsRunning(
+    $status = null
+  ) {
     if ( ! isset( $status ) || $status === false ) {
       $status = $this->getStatus();
     }
@@ -217,7 +226,9 @@ abstract class Task {
    *
    * @return bool ready to use.
    */
-  public function isActive( $status = null ) {
+  public function isActive(
+    $status = null
+  ) {
     $status = $status === null ? $this->getStatus() : $status;
 
     return is_array( $status ) && isset( $status['active'] ) && $status['active'];
@@ -234,7 +245,9 @@ abstract class Task {
    *
    * @return bool  true means it's missing.
    */
-  public function isMissing( $status = null ) {
+  public function isMissing(
+    $status = null
+  ) {
     $status = $status === null ? $this->getStatus() : $status;
 
     return $status === false;
@@ -249,15 +262,19 @@ abstract class Task {
    *
    * @return bool ready to use.
    */
-  public function isAvailable( $status = null ) {
+  public function isAvailable(
+    $status = null
+  ) {
     $status = $status === null ? $this->getStatus() : $status;
 
     return is_array( $status ) && isset( $status['available'] ) && $status['available'];
   }
 
-  public function fractionComplete ( $status = null) {
+  public function fractionComplete(
+    $status = null
+  ) {
     $status = $status === null ? $this->getStatus() : $status;
-    return is_array( $status ) && isset( $status['fraction'] ) && is_numeric($status['fraction']) ? $status['fraction'] : 1.0;
+    return is_array( $status ) && isset( $status['fraction'] ) && is_numeric( $status['fraction'] ) ? $status['fraction'] : 1.0;
   }
 
   protected function startChunk() {
@@ -285,5 +302,4 @@ abstract class Task {
       restore_current_blog();
     }
   }
-
 }

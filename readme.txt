@@ -1,8 +1,8 @@
 === Index WP Users For Speed ===
-Contributors: Ollie Jones
+Contributors: OllieJones
 Tags: users, database, index, performance, largesite
 Requires at least: 5.2
-Tested up to: 6.0
+Tested up to: 6.0.1
 Requires PHP: 5.6
 Stable tag: 1.0.1
 Network: true
@@ -31,7 +31,7 @@ This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/p
 
 = Should I back up my site before using this? =
 
-**Yes.** Backups are good practice. Still, this plugin makes no changes to your site or database layout. It adds some transients, and adds rows to wp_usermeta.
+**Yes.** Backups are good practice. Still, this plugin makes no changes to your site or database layout. It adds a few non-autoloaded options, and adds rows to wp_usermeta.
 
 = My WordPress host offers MariaDB, not MySQL. Can I use this plugin?
 
@@ -86,6 +86,10 @@ Configure it via the Index for Speed menu item under Users.
 2. This plugin's configuration panel.
 
 == Changelog ==
+
+= 1.0.2 =
+
+* Disable the large site
 
 = 1.0.1 =
 

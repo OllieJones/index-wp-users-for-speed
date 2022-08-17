@@ -12,7 +12,7 @@
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with many users.
  * Requires at least: 5.2
- * Tested up to:      6.0
+ * Tested up to:      6.0.1
  * Requires PHP:      5.6
  * Author:       OllieJones
  * Author URI:   https://github.com/OllieJones
@@ -51,7 +51,6 @@ const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 1000;
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/activator.php
- * @noinspection PhpIncludeInspection
  */
 function activate_index_wp_users_for_speed() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/activator.php';
@@ -61,7 +60,6 @@ function activate_index_wp_users_for_speed() {
 /**
  * The code that runs during plugin deactivation.
  * This action is documented in includes/deactivator.php
- * @noinspection PhpIncludeInspection
  */
 function deactivate_index_wp_users_for_speed() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/deactivator.php';
@@ -75,7 +73,6 @@ register_deactivation_hook( __FILE__, 'deactivate_index_wp_users_for_speed' );
  * The core plugin class that is used to define internationalization,
  * admin-specific hooks, and public-facing site hooks.
  */
-/** @noinspection PhpIncludeInspection */
 require plugin_dir_path( __FILE__ ) . 'includes/plugin.php';
 
 /**
