@@ -31,7 +31,7 @@ abstract class Task {
   public $lastTouch;
   public $fractionComplete = 0;
   public $useCount = 0;
-  public $hookName = 'index_wp_users_for_speed_task';
+  public $hookName = INDEX_WP_USERS_FOR_SPEED_HOOKNAME;
   public $siteId;
   public $timeout;
 
@@ -73,22 +73,14 @@ abstract class Task {
   public abstract function doChunk();
 
   public function schedule( $time = 0, $frequency = false ) {
-    $cronDisabled = defined( 'DISABLE_WP_CRON' ) && true === DISABLE_WP_CRON;
-    $useCron      = ( ! $cronDisabled ) || ( 0 !== $time );
-    if ( $useCron ) {
-      $this->scheduleCron( $time, $frequency );
-    } else {
-    }
-    $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
-  }
-
-  protected function scheduleCron( $time, $frequency ) {
     $cronArg = $this->persist();
     if ( $frequency === false ) {
+      $time = $time ?: time();
       wp_schedule_single_event( $time, $this->hookName, [ $cronArg, $this->useCount ] );
     } else {
       wp_schedule_event( $time, $frequency, $this->hookName, [ $cronArg, $this->useCount ] );
     }
+    $msg = ( $frequency ?: 'one-off' ) . ' scheduled';
   }
 
   protected function persist() {

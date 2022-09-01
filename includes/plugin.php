@@ -65,13 +65,19 @@ class Index_Wp_Users_For_Speed {
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/progressbar.php';
     }
 
+    /* Disabled-cron only. We use WP_Cron's wp_schedule_single_event to do the batched-up index, so
+     * we need to activate it when it's disabled.  */
+    if ( ! wp_doing_cron() ) {
+      $cronDisabled = defined( 'DISABLE_WP_CRON' ) && true === DISABLE_WP_CRON;
+      if ( $cronDisabled ) {
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/instacron.php';
+      }
+    }
+
     /* stuff required for admin page but not for cron, REST */
     if ( is_admin() ) {
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/admin.php';
-    } else {
-      /* front-facing: empty for now */
     }
-
   }
 
   /**

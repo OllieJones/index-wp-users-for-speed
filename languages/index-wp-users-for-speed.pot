@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2022-05-22T13:57:25-04:00\n"
+"POT-Creation-Date: 2022-09-01T15:55:11-04:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.6.0\n"
 "X-Domain: index-wp-users-for-speed\n"
@@ -39,57 +39,94 @@ msgstr ""
 msgid "Index For Speed"
 msgstr ""
 
-#: admin/admin.php:67
+#: admin/admin.php:66
 msgid "Rebuilding user indexes"
 msgstr ""
 
-#: admin/admin.php:72
+#: admin/admin.php:71
 msgid "Rebuild indexes"
 msgstr ""
 
-#: admin/admin.php:79
+#: admin/admin.php:78
 msgid "...at this time"
 msgstr ""
 
-#: admin/admin.php:123
+#: admin/admin.php:84
+msgid "Controlling choice of users"
+msgstr ""
+
+#: admin/admin.php:89
+msgid "For Posts and Pages"
+msgstr ""
+
+#: admin/admin.php:136
 msgid "Incorrect time."
 msgstr ""
 
-#: admin/admin.php:132
+#: admin/admin.php:145
 msgid "User index rebuilding starting"
 msgstr ""
 
 #. translators: 1: localized time like 1:22 PM or 13:22
-#: admin/admin.php:142
+#: admin/admin.php:155
 msgid "Automatic index rebuilding scheduled for %1$s each day"
 msgstr ""
 
-#: admin/admin.php:150
+#: admin/admin.php:163
 msgid "Automatic index rebuilding disabled"
 msgstr ""
 
-#: admin/admin.php:218
+#: admin/admin.php:232
 msgid "You may rebuild your user indexes each day, or immediately."
 msgstr ""
 
-#: admin/admin.php:219
+#: admin/admin.php:233
 msgid "(It is possible for them to become out-of-date.)"
 msgstr ""
 
-#: admin/admin.php:235
+#: admin/admin.php:241
+msgid "The author-choice menu on Posts and Pages can be unwieldy when your site has many authors. You can limit the number of choices, and you can show your most active authors first."
+msgstr ""
+
+#: admin/admin.php:257
 msgid "daily"
 msgstr ""
 
-#: admin/admin.php:243
+#: admin/admin.php:265
 msgid "never"
 msgstr ""
 
-#: admin/admin.php:251
+#: admin/admin.php:273
 msgid "immediately, then daily"
 msgstr ""
 
-#: admin/admin.php:259
+#: admin/admin.php:281
 msgid "immediately, but not daily"
+msgstr ""
+
+#: admin/admin.php:299
+msgid "Avoid rebuilding exactly on the hour to avoid contending with other processing jobs."
+msgstr ""
+
+#: admin/admin.php:333
+#: admin/admin.php:351
+msgid "Enable"
+msgstr ""
+
+#: admin/admin.php:339
+msgid "showing only"
+msgstr ""
+
+#: admin/admin.php:345
+msgid "choices in the Quick Edit author menu."
+msgstr ""
+
+#: admin/admin.php:348
+msgid "If you disable this option, your author menu will let you choose any registered author."
+msgstr ""
+
+#: admin/admin.php:357
+msgid "showing authors with the most posts first in the Quick Edit author menu."
 msgstr ""
 
 #: admin/progressbar.php:55
