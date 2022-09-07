@@ -7,7 +7,6 @@ use WP_REST_Response;
 use WP_User;
 use WP_User_Query;
 
-/** @noinspection PhpIncludeInspection */
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
 
 /**
@@ -192,12 +191,12 @@ class UserHandler extends WordPressHooks {
     $options    = get_option( $this->options_name );
     $fixed_args = $this->filtered_query_args( $query_args, $parsed_args );
 
-    $fixed_args['fields'][] = 'post_count';
     if ( isset ( $options ['quickedit_threshold_on'] ) && 'on' === $options ['quickedit_threshold_on'] ) {
-      $fixed_args ['number']              = $options ['quickedit_threshold_limit'];
+      $fixed_args ['number'] = $options ['quickedit_threshold_limit'];
     }
     if ( isset ( $options ['quickedit_mostposts_on'] ) && 'on' === $options ['quickedit_mostposts_on'] ) {
-      $fixed_args ['orderby'] = [ 'post_count' => 'DESC' , 'display_name' => 'ASC' ];
+      unset ( $fixed_args['order'] );
+      $fixed_args ['orderby'] = [ 'post_count' => 'DESC', 'display_name' => 'ASC' ];
     }
     return $fixed_args;
   }
@@ -265,6 +264,48 @@ class UserHandler extends WordPressHooks {
     return $query_args;
   }
 
+  /** Traverse a nested WP_Query_Meta query array flattening the
+   *  real terms in it.
+   *
+   * @param array $query
+   *
+   * @return array Flattened array.
+   */
+  private function parseQuery( $query ) {
+    $result = [];
+
+    foreach ( $query as $k => $q ) {
+      if ( $k !== 'relation' ) {
+        if ( array_key_exists( 'key', $q ) && array_key_exists( 'compare', $q ) ) {
+          $result [] = $q;
+        } else {
+          $result = array_merge( $result, $this->parseQuery( $q ) );
+        }
+      }
+    }
+    return $result;
+  }
+
+  /** Flatten out the meta query terms we get from a multisite setup,
+   *   allowing their interpretation as if from a single site.
+   *  This is kludgey because it removes AND exists(wp_capabilities key).
+   *
+   * @param array $query
+   * @param string $keyToRemove Something like wp_2_capapabilities or wp_capabilities
+   *
+   * @return string[]
+   */
+  private function flattenQuery( $query, $keyToRemove ) {
+    $r = $this->parseQuery( $query );
+    $q = [ 'relation' => 'OR' ];
+    foreach ( $r as $item ) {
+      if ( $item['key'] !== $keyToRemove ) {
+        $q [] = $item;
+      }
+    }
+    return $q;
+  }
+
   /**
    * Filters the meta query's generated SQL.  'get_meta_sql'
    * We must intervene in query generation here due to a defect in WP Core's
@@ -282,45 +323,54 @@ class UserHandler extends WordPressHooks {
    * @since 3.1.0
    *
    */
-
-  public
-  function filter_meta_sql(
+  public function filter_meta_sql(
     $sql, $queries, $type, $primary_table, $primary_id_column, $context
   ) {
     global $wpdb;
     if ( $type !== 'user' ) {
       return $sql;
     }
-    if ( $queries['relation'] !== 'OR' ) {
+    /* single meta query that doesn't look like one of ours. */
+    if ( ! is_multisite() && $queries['relation'] !== 'OR' ) {
       return $sql;
     }
-    $keys = [];
-    foreach ( $queries as $query ) {
-      if ( is_array( $query ) ) {
-        if ( ! array_key_exists( 'compare', $query ) || $query ['compare'] !== 'EXISTS' ) {
-          return $sql;
+
+    if ( is_multisite() ) {
+      /* fix up the meta query */
+      $queries = $this->flattenQuery( $queries, $wpdb->prefix . 'capabilities' );
+    }
+
+    if ( $queries['relation'] === 'OR' ) {
+      $keys = [];
+      foreach ( $queries as $query ) {
+        if ( is_array( $query ) ) {
+          if ( ! array_key_exists( 'compare', $query ) || $query ['compare'] !== 'EXISTS' ) {
+            return $sql;
+          }
+          if ( ! array_key_exists( 'key', $query ) || ! is_string( $query['key'] ) ) {
+            return $sql;
+          }
+          $keys[] = $query['key'];
         }
-        if ( ! array_key_exists( 'key', $query ) || ! is_string( $query['key'] ) ) {
-          return $sql;
-        }
-        $keys[] = $query['key'];
       }
+      $joins  = [];
+      $wheres = [];
+      $k      = 1;
+      foreach ( $keys as $key ) {
+        $join      = "wp_usermeta um$k ON $primary_table.$primary_id_column = um$k.user_id AND um$k.meta_key = %s";
+        $join      = $wpdb->prepare( $join, $key );
+        $joins[]   = $join;
+        $wheres [] = "um$k.umeta_id IS NOT NULL";
+        $k ++;
+      }
+      $join  = PHP_EOL . ' LEFT JOIN ' . implode( PHP_EOL . ' LEFT JOIN ', $joins );
+      $where = PHP_EOL . ' AND (' . implode( PHP_EOL . ' OR ', $wheres ) . ')';
+      /* only do this once per invocation of user query with metadata */
+      remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
+      return [ 'join' => $join, 'where' => $where ];
+    } else {
+      return $sql;
     }
-    $joins  = [];
-    $wheres = [];
-    $k      = 1;
-    foreach ( $keys as $key ) {
-      $join      = "wp_usermeta um$k ON $primary_table.$primary_id_column = um$k.user_id AND um$k.meta_key = %s";
-      $join      = $wpdb->prepare( $join, $key );
-      $joins[]   = $join;
-      $wheres [] = "um$k.umeta_id IS NOT NULL";
-      $k ++;
-    }
-    $join  = PHP_EOL . ' LEFT JOIN ' . implode( PHP_EOL . ' LEFT JOIN ', $joins );
-    $where = PHP_EOL . ' AND (' . implode( PHP_EOL . ' OR ', $wheres ) . ')';
-    /* only do this once per invocation of user query with metadata */
-    remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
-    return [ 'join' => $join, 'where' => $where ];
   }
 
   /**

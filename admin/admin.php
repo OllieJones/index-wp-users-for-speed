@@ -238,7 +238,7 @@ class Admin
   public function render_quickedit_section() {
     ?>
       <p>
-        <?php esc_html_e( 'The author-choice menu on Posts and Pages can be unwieldy when your site has many authors. You can limit the number of choices, and you can show your most active authors first.', 'index-wp-users-for-speed' ) ?>
+        <?php esc_html_e( 'The author-choice menu in Quick Edit for Posts and Pages can be unwieldy when your site has many authors. You can limit the number of choices, and you can show your most active authors first.', 'index-wp-users-for-speed' ) ?>
       </p>
     <?php
   }
