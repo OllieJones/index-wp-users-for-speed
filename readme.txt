@@ -2,9 +2,9 @@
 Contributors: OllieJones
 Tags: users, database, index, performance, largesite
 Requires at least: 5.2
-Tested up to: 6.0.1
+Tested up to: 6.0.2
 Requires PHP: 5.6
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -51,7 +51,7 @@ This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/p
 
 = Can I use this if I have disabled WP_Cron and use an operating system cronjob instead?
 
-**Yes, as of Version 1.0.2.**
+**Yes, as of Version 1.0.2 and higher.**
 
 = How does it work? (Geeky!) =
 
@@ -95,6 +95,10 @@ Configure it via the Index for Speed menu item under Users.
 
 == Changelog ==
 
+= 1.0.3 =
+
+* Fix bug deleting users.
+
 = 1.0.2 =
 
 * Handle disabled WP_Cron.
@@ -115,4 +119,4 @@ First release
 
 == Upgrade Notice ==
 
-Functions correctly on installations with WP_DISABLE_CRON.
+Functions correctly on installations with WP_DISABLE_CRON, and fixes a bug when deleting users.

@@ -7,12 +7,12 @@
  * @license  GPL-2.0-or-later
  * @wordpress-plugin0
  * Plugin Name: Index WP Users For Speed
- * Version:     1.0.2
- * Stable tag:  1.0.2
+ * Version:     1.0.3
+ * Stable tag:  1.0.3
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with many users.
  * Requires at least: 5.2
- * Tested up to:      6.0.1
+ * Tested up to:      6.0.2
  * Requires PHP:      5.6
  * Author:       OllieJones
  * Author URI:   https://github.com/OllieJones
@@ -34,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 const INDEX_WP_USERS_FOR_SPEED_NAME = 'index-wp-users-for-speed';
 define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
-const INDEX_WP_USERS_FOR_SPEED_VERSION          = '1.0.2';
+const INDEX_WP_USERS_FOR_SPEED_VERSION          = '1.0.3';
 const INDEX_WP_USERS_FOR_SPEED_PREFIX           = 'index-wp-users-for-speed-';
 const INDEX_WP_USERS_FOR_SPEED_HOOKNAME         = 'index_wp_users_for_speed_task';
 const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX       = 'iufs';

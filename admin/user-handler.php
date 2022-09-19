@@ -214,9 +214,10 @@ class UserHandler extends WordPressHooks {
       $capFound = 'edit_posts';
       unset ( $query_args['who'] );
     } else if ( isset( $parsed_args['capability'] ) ) {
+      $argsCap = is_array( $parsed_args['capability'] ) ? $parsed_args['capability'] : [ $parsed_args['capability'] ];
       /* capability item is set to either edit_posts or edit_pages */
       foreach ( [ 'edit_posts', 'edit_pages' ] as $capToCheck ) {
-        if ( in_array( $capToCheck, $parsed_args['capability'] ) ) {
+        if ( in_array( $capToCheck, $argsCap ) ) {
           $capFound = $capToCheck;
         }
       }
