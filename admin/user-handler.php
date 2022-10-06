@@ -57,80 +57,109 @@ class UserHandler extends WordPressHooks {
   }
 
   /**
-   * Fires immediately after a user is added to a site.
+   * Fires immediately before updating user metadata.
    *
-   * @param int $user_id User ID.
-   * @param string $role User role.
-   * @param int $blog_id Blog ID.
+   * We use this to watch for changes in the wp_capabilities metadata.
+   * (It's named wp_2_capabilities etc in multisite).
    *
-   * @noinspection PhpUnused
-   * @since MU (3.0.0)
+   * @param int $meta_id ID of the metadata entry to update.
+   * @param int $user_id ID of the object metadata is for.
+   * @param string $meta_key Metadata key.
+   * @param mixed $meta_value Metadata value, not serialized.
    *
-   */
-  public function action__add_user_to_blog( $user_id, $role, $blog_id ) {
-    $this->indexer->updateUserCounts( $role, + 1 );
-    $this->indexer->updateEditors( $user_id );
-    $this->indexer->updateIndexRole( $user_id, $role, $blog_id );
-  }
-
-  /**
-   * Fires before a user is removed from a site in multisite
-   *
-   * @param int $user_id ID of the user being removed.
-   * @param int $blog_id ID of the blog the user is being removed from.
-   * @param int $reassign ID of the user to whom to reassign posts.
-   *
-   * @noinspection PhpUnused
-   *
-   * @since 5.4.0 Added the `$reassign` parameter.
-   *
-   * @since MU (3.0.0)
-   */
-  public function action__remove_user_from_blog( $user_id, $blog_id, $reassign ) {
-    $user  = get_userdata( $user_id );
-    $roles = $user->roles;
-    $this->indexer->updateUserCounts( $roles, - 1 );
-    $this->indexer->updateEditors( $user_id, true );
-    $this->indexer->removeIndexRole( $user_id, $blog_id );
-  }
-
-  /**
-   * Fires immediately after a user is deleted from the database in single-site
-   *
-   * The deleted user's wp_usermeta data is already gone by this action.
-   *
-   * @param int $id ID of the deleted user.
-   * @param int|null $reassign ID of the user to reassign posts and links to.
-   *                           Default null, for no reassignment.
-   * @param WP_User $user WP_User object of the deleted user.
-   *
-   * @noinspection PhpUnused
-   *
-   * @since 5.5.0 Added the `$user` parameter.
+   * @return void
    * @since 2.9.0
+   *
    */
-  public function action__deleted_user( $id, $reassign, $user ) {
-    $roles = $user->roles;
-    $this->indexer->updateUserCounts( $roles, - 1 );
-    $this->indexer->updateEditors( $id, true );
+  public function action__update_user_meta( $meta_id, $user_id, $meta_key, $meta_value ) {
+    if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
+      return;
+    }
+    $newRoles = $meta_value;
+    $oldRoles = get_user_meta( $user_id, $meta_key, true );
+    $this->userRoleChange( $user_id, $newRoles, $oldRoles );
   }
 
   /**
-   * Fires after the user's role has changed.
+   * Fires immediately before user meta is added.
    *
-   * @param int $user_id The user ID.
-   * @param string $newRole The new role.
-   * @param string[] $oldRoles An array of the user's previous roles.
+   * We use this to watch a new wp_capabilities metadata item, meaning
+   * a new user is added, overall or to a particular multisite blog.
+   * It's named wp_2_capabilities etc in multisite.
    *
-   * @noinspection PhpUnused
-   * @since 3.6.0 Added $old_roles to include an array of the user's previous roles.
+   * @param int $user_id ID of the object metadata is for.
+   * @param string $meta_key Metadata key.
+   * @param mixed $meta_value Metadata value.
    *
-   * @since 2.9.0
+   * @since 3.1.0
+   *
    */
-  public function action__set_user_role( $user_id, $newRole, $oldRoles ) {
-    $this->indexer->updateUserCountsForRoleChange( $newRole, $oldRoles );
-    $this->indexer->updateEditors( $user_id );
-    $this->indexer->updateIndexRole( $user_id, $newRole, get_current_blog_id() );
+  public function action__add_user_meta( $user_id, $meta_key, $meta_value ) {
+    if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
+      return;
+    }
+    $this->indexer->updateUserCountsTotal( + 1 );
+    $this->userRoleChange( $user_id, $meta_value, [] );
+  }
+
+  /**
+   * Fires immediately before deleting user metadata.
+   *
+   * We use this to watch for deletion of the wp_capabilities metadata.
+   * That means the user is being deleted.
+   * It's named wp_2_capabilities etc in multisite.
+   * This fires when a user is removed from a blog in a multisite setup.
+   *
+   * @param string[] $meta_ids An array of metadata entry IDs to delete.
+   * @param int $user_id ID of the object metadata is for.
+   * @param string $meta_key Metadata key.
+   * @param mixed $meta_value Metadata value, not serialized.
+   *
+   * @since 3.1.0
+   *
+   */
+
+  public function action__delete_user_meta( $meta_ids, $user_id, $meta_key, $meta_value ) {
+    if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
+      return;
+    }
+    $oldRoles = get_user_meta( $user_id, $meta_key, true );
+    $this->indexer->updateUserCountsTotal( - 1 );
+    $this->userRoleChange( $user_id, [], $oldRoles );
+  }
+
+  /** Returns the capabilities meta key, or false if it's not the capabilities key.
+   *
+   * @param $meta_key
+   *
+   * @return false|string
+   */
+  private function isCapabilitiesKey( $meta_key ) {
+    global $wpdb;
+    return $meta_key === $wpdb->prefix . 'capabilities';
+  }
+
+  /**
+   * @param int $user_id
+   * @param array $newRoles
+   * @param array $oldRoles
+   *
+   * @return void
+   */
+  private function userRoleChange( $user_id, $newRoles, $oldRoles ) {
+    $toAdd    = array_diff_key( $newRoles, $oldRoles );
+    $toRemove = array_diff_key( $oldRoles, $newRoles );
+
+    foreach ( array_keys( $toRemove ) as $role ) {
+      $this->indexer->updateUserCounts( $role, - 1 );
+      $this->indexer->updateEditors( $user_id, true );
+      $this->indexer->removeIndexRole( $user_id, $role );
+    }
+    foreach ( array_keys( $toAdd ) as $role ) {
+      $this->indexer->updateUserCounts( $role, + 1 );
+      $this->indexer->updateEditors( $user_id, false );
+      $this->indexer->addIndexRole( $user_id, $role );
+    }
   }
 
   /**

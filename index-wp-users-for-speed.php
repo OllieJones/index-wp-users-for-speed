@@ -7,8 +7,8 @@
  * @license  GPL-2.0-or-later
  * @wordpress-plugin0
  * Plugin Name: Index WP Users For Speed
- * Version:     1.0.4
- * Stable tag:  1.0.4
+ * Version:     1.0.5
+ * Stable tag:  1.0.5
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with many users.
  * Requires at least: 5.2
@@ -34,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 const INDEX_WP_USERS_FOR_SPEED_NAME = 'index-wp-users-for-speed';
 define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
-const INDEX_WP_USERS_FOR_SPEED_VERSION          = '1.0.4';
+const INDEX_WP_USERS_FOR_SPEED_VERSION          = '1.0.5';
 const INDEX_WP_USERS_FOR_SPEED_PREFIX           = 'index-wp-users-for-speed-';
 const INDEX_WP_USERS_FOR_SPEED_HOOKNAME         = 'index_wp_users_for_speed_task';
 const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX       = 'iufs';
@@ -49,7 +49,7 @@ const INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK   = 2;
  * This number is limited to avoid swamping MariaDB / MySQL with vast transactions
  * when manipulating large numbers of users. The batches run with wpcron.
  */
-const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 1000;
+const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 4096;
 
 /**
  * The code that runs during plugin activation.

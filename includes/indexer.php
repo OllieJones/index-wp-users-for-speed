@@ -23,7 +23,6 @@ class Indexer {
 
     /* a magic count of users to indicate "don't know yet" */
     self::$sentinelCount = 1024 * 1024 * 1024 * 2 - 7;
-
   }
 
   /** Write out a log (to a transient).
@@ -190,7 +189,7 @@ class Indexer {
    */
   public function updateEditors( $user_id, $removingUser = false ) {
     $userdata = get_userdata( $user_id );
-    $canEdit  = ! $removingUser && $userdata->has_cap( 'edit_posts' );
+    $canEdit  = ( ! $removingUser ) && $userdata->has_cap( 'edit_posts' );
     $task     = new GetEditors();
     $editors  = $task->getStatus();
     if ( $task->isAvailable( $editors ) ) {
@@ -222,31 +221,21 @@ class Indexer {
     return false;
   }
 
-  public function metaIndexRoleFraction () {
+  public function metaIndexRoleFraction() {
     $task   = new PopulateMetaIndexRoles();
     $status = $task->getStatus();
     return $task->fractionComplete( $status );
-
   }
+
   public function isMetaIndexRoleAvailable() {
     $task   = new PopulateMetaIndexRoles();
     $status = $task->getStatus();
     return $task->isAvailable( $status );
   }
 
-  /** WHen a user changes roles, update the user counts.
+  /** Update the user count for a particular role or roles.
    *
-   * @param $newRole
-   * @param array $oldRoles
-   *
-   * @return void
-   */
-  public function updateUserCountsForRoleChange( $newRole, array $oldRoles ) {
-    $this->updateUserCounts( $newRole, + 1 );
-    $this->updateUserCounts( $oldRoles, - 1 );
-  }
-
-  /** Update the user count for a particular role.
+   * Does not change the total user count.
    *
    * @param string[]|string $roles rolename or names to change
    * @param integer $value number of users to add or subtract
@@ -267,19 +256,33 @@ class Indexer {
         $userCounts['avail_roles'][ $role ] += $value;
       }
 
+      $task->setStatus( $userCounts );
+    }
+  }
+
+  /** Update the total user count
+   *
+   * @param int $increment
+   *
+   * @return void
+   */
+  public function updateUserCountsTotal( $increment ) {
+    $task       = new CountUsers();
+    $userCounts = $task->getStatus();
+    if ( $task->isAvailable( $userCounts ) ) {
       if ( is_numeric( $userCounts['total_users'] ) ) {
-        $userCounts['total_users'] += $value;
+        $userCounts['total_users'] += $increment;
       }
       $task->setStatus( $userCounts );
     }
   }
 
-  public function getUserCounts( $allowFakes = true) {
+  public function getUserCounts( $allowFakes = true ) {
     $task = new CountUsers();
 
     $userCounts = $task->getStatus();
     if ( ! $task->isAvailable( $userCounts ) ) {
-      if ($allowFakes) {
+      if ( $allowFakes ) {
         /* no user counts yet. We will fake them until they're available */
         $userCounts = $this->fakeUserCounts();
       }
@@ -331,67 +334,33 @@ class Indexer {
                    AND t.TABLE_NAME = %s";
 
     return $wpdb->get_var( $wpdb->prepare( $q, $wpdb->users ) );
-
   }
 
-  public function removeIndexRole( $user_id, $blog_id ) {
+  public function removeIndexRole( $user_id, $role ) {
     global $wpdb;
 
-    if (is_multisite()) {
-      switch_to_blog( $blog_id );
-    }
-    $prefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
-    $q      = "DELETE FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') ";
-    $q      = $wpdb->prepare( $q, $user_id, $wpdb->esc_like( $prefix ) );
-    $wpdb->query( $q );
-    if (is_multisite()) {
-      restore_current_blog();
+    $prefix    = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
+    $indexRole = $prefix . $role;
+    try {
+      $q = "DELETE FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key = %s ";
+      $q = $wpdb->prepare( $q, $user_id, $indexRole );
+      $wpdb->query( $q );
+    } catch ( Exception $ex ) {
+      error_log( 'index_wp_users_for_speed:removeIndexRole exception: ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
     }
   }
 
-  public function updateIndexRole( $user_id, $role, $blog_id ) {
+  public function addIndexRole( $user_id, $role ) {
     global $wpdb;
-
-    if (is_multisite()) {
-      switch_to_blog( $blog_id );
-    }
     $prefix    = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $indexRole = $prefix . $role;
 
     try {
-      $wpdb->query( 'START TRANSACTION' );
-      $q       = "SELECT umeta_id FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key LIKE CONCAT('%s', '%%') FOR UPDATE";
-      $q       = $wpdb->prepare( $q, $user_id, $wpdb->esc_like( $prefix ) );
-      $results = $wpdb->get_results( $q );
-      $count   = 0;
-      foreach ( $results as $result ) {
-        $count ++;
-        if ( $count === 1 ) {
-          /* update the first role item we found */
-          $q1 = "UPDATE $wpdb->usermeta m SET meta_key = '%s' WHERE m.umeta_id = %d";
-          $q1 = $wpdb->prepare( $q1, $indexRole, $result->umeta_id );
-          $wpdb->query( $q1 );
-        } else {
-          /* clear out any duplicate role items, one per user only */
-          $q2 = "DELETE FROM $wpdb->usermeta m WHERE m.umeta_id = %d";
-          $q2 = $wpdb->prepare( $q2, $result->umeta_id );
-          $wpdb->query( $q2 );
-        }
-      }
-      if ( $count === 0 ) {
-        /* no rows to update, insert one */
-        $q3 = "INSERT INTO $wpdb->usermeta (user_id, meta_key) VALUES (%d, %s);";
-        $q3 = $wpdb->prepare( $q3, $user_id, $indexRole );
-        $wpdb->query( $q3 );
-      }
-      $wpdb->query( 'COMMIT' );
+      $q3 = "INSERT INTO $wpdb->usermeta (user_id, meta_key) VALUES (%d, %s);";
+      $q3 = $wpdb->prepare( $q3, $user_id, $indexRole );
+      $wpdb->query( $q3 );
     } catch ( Exception $ex ) {
-      $wpdb->query( 'ROLLBACK' );
-      error_log( 'index_wp_users_for_speed: updateIndexRole exception: ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
-    } finally {
-      if ( is_multisite() ) {
-        restore_current_blog();
-      }
+      error_log( 'index_wp_users_for_speed: addIndexRole exception: ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
     }
   }
 

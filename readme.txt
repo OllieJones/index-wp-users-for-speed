@@ -4,7 +4,7 @@ Tags: users, database, index, performance, largesite
 Requires at least: 5.2
 Tested up to: 6.1
 Requires PHP: 5.6
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -94,6 +94,10 @@ Configure it via the Index for Speed menu item under Users.
 2. This plugin's configuration panel.
 
 == Changelog ==
+
+= 1.0.5 =
+
+* Allow multiple roles per user as provided in plugins like User Role Editor.
 
 = 1.0.4 =
 
