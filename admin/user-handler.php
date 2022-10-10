@@ -398,21 +398,14 @@ class UserHandler extends WordPressHooks {
           $keys[] = $query['key'];
         }
       }
-      $joins  = [];
-      $wheres = [];
-      $k      = 1;
+      $unions = [];
       foreach ( $keys as $key ) {
-        $join      = "wp_usermeta um$k ON $primary_table.$primary_id_column = um$k.user_id AND um$k.meta_key = %s";
-        $join      = $wpdb->prepare( $join, $key );
-        $joins[]   = $join;
-        $wheres [] = "um$k.umeta_id IS NOT NULL";
-        $k ++;
+        $unions [] = $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = %s", $key );
       }
-      $join  = PHP_EOL . ' LEFT JOIN ' . implode( PHP_EOL . ' LEFT JOIN ', $joins );
-      $where = PHP_EOL . ' AND (' . implode( PHP_EOL . ' OR ', $wheres ) . ')';
+      $where = PHP_EOL . " AND $wpdb->users.ID IN (" . implode( PHP_EOL . 'UNION ALL' . PHP_EOL, $unions ) . ')' . PHP_EOL;
       /* only do this once per invocation of user query with metadata */
       remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
-      return [ 'join' => $join, 'where' => $where ];
+      return [ 'join' => '', 'where' => $where ];
     } else {
       return $sql;
     }
