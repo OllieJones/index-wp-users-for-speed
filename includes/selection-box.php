@@ -5,12 +5,18 @@ namespace IndexWpUsersForSpeed;
 use DOMDocument;
 use ValueError;
 
+/**
+ * Parse, edit, and reconstitute <select> tags.
+ */
 class SelectionBox {
 
   public $users;
   public $name;
   public $class;
 
+  /** Constructor.
+   * @param string|null $html Input <select> tag.
+   */
   public function __construct( $html ) {
     if ( is_string( $html ) ) {
       $this->parseHtmlSelectInfo( $html );
@@ -42,6 +48,11 @@ class SelectionBox {
     return;
   }
 
+  /** Generate a <select> tag.
+   * @param bool $pretty Format the output tag for reaaability.
+   *
+   * @return string HTML for select tag.
+   */
   public function generateSelect( $pretty = false ) {
     $o     = [];
     $class = is_array( $this->class ) ? implode( ' ', array_unique( $this->class ) ) : $this->class;

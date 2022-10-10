@@ -227,7 +227,7 @@ class UserHandler extends WordPressHooks {
      * Suppress most of the work for the second run, because
      * the output of the first run is in $this->dropdownQueryCache */
     if ( $this->selectionBoxCache ) {
-      $query_args ['number']  = 1;
+      $query_args ['number'] = 1;
       unset ( $query_args['orderby'] );
       return $query_args;
     }
@@ -680,39 +680,7 @@ class UserHandler extends WordPressHooks {
     } else {
       $this->selectionBoxCache = $selectionBox;
     }
-
-    wp_enqueue_style( 'iufs-jquery-ui',
-      plugins_url( 'css/jquery-ui.min.css', __FILE__ ),
-      [], INDEX_WP_USERS_FOR_SPEED_VERSION );
-    wp_enqueue_style( 'iufs-jquery-ui-structure',
-      plugins_url( 'css/jquery-ui.structure.min.css', __FILE__ ),
-      [], INDEX_WP_USERS_FOR_SPEED_VERSION );
-    wp_enqueue_style( 'iufs-jquery-ui-theme', plugins_url( 'css/jquery-ui.theme.min.css',
-      __FILE__ ), [], INDEX_WP_USERS_FOR_SPEED_VERSION );
-    wp_enqueue_script( 'jquery-ui-autocomplete' );
-
-    $this->selectionBoxCache->class[] = 'index-wp-users-for-speed';
-    return $this->selectionBoxCache->generateSelect( true );
-
-    $sourceScript = '';
-    $tag          = '';
-    $sourceScript .= 'jQuery( document ).ready(function() {' . PHP_EOL;
-    $sourceScript .= "const $listId = " . wp_json_encode( $this->selectionBoxCache->users, JSON_PRETTY_PRINT ) . ';' . PHP_EOL;
-    $sourceScript .= "
-      jQuery('.$listId').autocomplete({
-        source: $listId,
-        select: (event, ui) => {
-          const e = ui.item;
-          const result = '<p>label: ' + e.label + ' -id: ' + e.id + '</p>';
-          console.log (result);
-        }
-      });" . PHP_EOL;
-    $sourceScript .= '});' . PHP_EOL;
-
-    $sourceScript = "<script type=\"text/javascript\" id=\"$listId\"> " . $sourceScript . "</script>" . PHP_EOL;
-    $tag          .= "<input type=\"text\" id=\"$fieldName\" name=\"$fieldName\" class=\"$listId $className\">" . PHP_EOL;
-
-    return $tag;
+    return $this->selectionBoxCache->generateSelect( false );
   }
 }
 
