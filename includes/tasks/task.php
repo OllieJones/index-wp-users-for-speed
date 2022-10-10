@@ -16,9 +16,14 @@ function index_wp_users_for_speed_do_task( $taskName ) {
   $task = null;
   try {
     $task = Task::restorePersisted( $taskName );
-    $task->doTaskStep();
+    /* it's possible for the task, persisted in a transient, to be gone. */
+    if ( $task && method_exists($task, 'doTaskStep')) {
+      $task->doTaskStep();
+    } else {
+      error_log ('index_wp_users_for_speed_task: task expired, so cannot run: ' . $taskName);
+    }
   } catch ( Exception $ex ) {
-    $taskName = ( $task && $task->taskName ) ? $task->taskName : 'unknown task';
+    $taskName = ( $task && $task->taskName ) ? $task->taskName : 'persisted ' . $taskName;
     error_log( 'index_wp_users_for_speed_task: cron hook exception: ' . $taskName . ' ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
   }
 }

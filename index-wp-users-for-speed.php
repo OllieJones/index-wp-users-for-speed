@@ -39,8 +39,8 @@ const INDEX_WP_USERS_FOR_SPEED_PREFIX           = 'index-wp-users-for-speed-';
 const INDEX_WP_USERS_FOR_SPEED_HOOKNAME         = 'index_wp_users_for_speed_task';
 const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX       = 'iufs';
 const INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT = 200;
-const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME   = HOUR_IN_SECONDS * 49;
-const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME    = DAY_IN_SECONDS * 8;
+const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME   = DAY_IN_SECONDS * 15;
+const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME    = MONTH_IN_SECONDS * 3;
 const INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK   = 2;
 
 /**
@@ -49,7 +49,7 @@ const INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK   = 2;
  * This number is limited to avoid swamping MariaDB / MySQL with vast transactions
  * when manipulating large numbers of users. The batches run with wpcron.
  */
-const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 4096;
+const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 5000;
 
 /**
  * The code that runs during plugin activation.

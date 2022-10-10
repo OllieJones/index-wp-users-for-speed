@@ -47,7 +47,7 @@ This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/p
 
 = I see high CPU usage (load average) on my MariaDB / MySQL database server during user index building or refresh. Is that normal?
 
-**Yes.** Indexing your registered users requires us to insert a row in wp_usermeta for each of them. We do this work in batches of 1000 users to avoid locking up your MariaDB / MySQL server. Each batch takes server time. Once all the batches of index building or refresh are complete, your CPU usage will return to normal.
+**Yes.** Indexing your registered users requires us to insert a row in wp_usermeta for each of them. We do this work in batches of 5000 users to avoid locking up your MariaDB / MySQL server. Each batch takes server time. Once all the batches of index building or refresh are complete, your CPU usage will return to normal.
 
 = Can I use this if I have disabled WP_Cron and use an operating system cronjob instead?
 
