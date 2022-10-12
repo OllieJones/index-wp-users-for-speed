@@ -13,13 +13,15 @@ class SelectionBox {
   public $users;
   public $name;
   private $class;
+  private $options;
   private $serial = 0;
 
   /** Constructor.
    *
    * @param string|null $html Input <select> tag.
    */
-  public function __construct( $html ) {
+  public function __construct( $html, $options ) {
+    $this->options = $options;
     if ( is_string( $html ) ) {
       $this->parseHtmlSelectInfo( $html );
     }
@@ -96,11 +98,13 @@ class SelectionBox {
     $s           = [];
     $s []        = "<script type='text/javascript' id='$currentID-script'> ";
     $s []        = "window.wp_iufs = window.wp_iufs ? window.wp_iufs : {}";
-    $s []        = "wp_iufs.completionList = " . wp_json_encode( $this->users, $jsonpretty );
+    $s []        = "wp_iufs.completionList = " . wp_json_encode( $this->users, $jsonpretty );  //TODO kill this.
     $s []        = "</script>";
+    $nonce       = wp_create_nonce( 'wp_rest' );
+    $count       = $this->options['quickedit_threshold_limit'];
     $script      = implode( PHP_EOL, $s ) . $nl;
-    $placeholder = esc_attr__( 'Type the author\'s name',  'index-wp-users-for-speed' );
-    $tag         = "<span class='input-text-wrap'><input type='text' id='$currentID' name='$this->name-auto' class='{$this->classes()}' data-p1='$placeholder' data-p2='' placeholder='$placeholder'></span>$nl";
+    $placeholder = esc_attr__( 'Type the author\'s name', 'index-wp-users-for-speed' );
+    $tag         = "<span class='input-text-wrap'><input type='text' id='$currentID' name='$this->name-auto' class='{$this->classes()}' data-count='$count' data-nonce='$nonce' data-p1='$placeholder' data-p2='' placeholder='$placeholder'></span>$nl";
 
     $this->removeClass( $currentID );
     return $tag . $script;

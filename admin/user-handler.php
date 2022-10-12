@@ -661,12 +661,12 @@ class UserHandler extends WordPressHooks {
     $cachebust = INDEX_WP_USERS_FOR_SPEED_VERSION;
     wp_enqueue_style( 'iufs-jquery-ui', plugins_url( 'css/jquery-ui.css', __FILE__ ), [], $cachebust );
     wp_enqueue_style( 'iufs-jquery-ui-structure', plugins_url( 'css/jquery-ui.structure.css', __FILE__ ), [], $cachebust );
-    wp_enqueue_style( 'iufs-jquery-ui-theme', plugins_url( 'css/jquery-ui.theme.css',__FILE__ ), [], $cachebust );
+    wp_enqueue_style( 'iufs-jquery-ui-theme', plugins_url( 'css/jquery-ui.theme.css', __FILE__ ), [], $cachebust );
     wp_enqueue_script( 'jquery-ui-autocomplete' );
     wp_enqueue_script( 'iufs-jquery-ui-theme', plugins_url( 'js/quick-edit-autocomplete.js', __FILE__ ),
-      ['jquery-ui-autocomplete'], $cachebust );
+      [ 'jquery-ui-autocomplete' ], $cachebust );
 
-    $selectionBox = new SelectionBox( $html );
+    $selectionBox = new SelectionBox( $html, get_option( $this->options_name ) );
     $selectionBox->addClass( 'index-wp-users-for-speed' );
 
     if ( $this->selectionBoxCache ) {
@@ -680,11 +680,10 @@ class UserHandler extends WordPressHooks {
     } else {
       // HACK HACK AUTOcomplete only on first pass (individual inline edit)
       $this->selectionBoxCache = $selectionBox;
-      $autocompleteHtml = $this->selectionBoxCache->generateAutocomplete( true );
-
+      $autocompleteHtml        = $this->selectionBoxCache->generateAutocomplete( true );
     }
 
-    $selectHtml       = $this->selectionBoxCache->generateSelect( true );
+    $selectHtml = $this->selectionBoxCache->generateSelect( true );
 
     return $selectHtml . PHP_EOL . $autocompleteHtml;
   }
