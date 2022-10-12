@@ -2,6 +2,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+use WP_Http;
+
 function need_cron() {
   $cronDisabled = defined( 'DISABLE_WP_CRON' ) && true === DISABLE_WP_CRON;
   if ( $cronDisabled ) {
@@ -37,6 +39,6 @@ function kick_cron() {
     return;
   }
   $url = get_site_url( null, 'wp-cron.php' );
-  $req = new \WP_Http();
+  $req = new WP_Http();
   $res = $req->get( $url );
 }

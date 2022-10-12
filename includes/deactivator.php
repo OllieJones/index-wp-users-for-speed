@@ -35,7 +35,7 @@ class Deactivator {
     wp_unschedule_hook( 'index_wp_users_for_speed_repeating_task' );
     wp_unschedule_hook( 'index_wp_users_for_speed_task' );
 
-    Deactivator::depopulateIndexMetadata ();
+    Deactivator::depopulateIndexMetadata();
     Deactivator::deleteTransients();
   }
 
@@ -52,10 +52,11 @@ class Deactivator {
     }
   }
 
-  private static function depopulateIndexMetadata () {
+  private static function depopulateIndexMetadata() {
     $depop = new DepopulateMetaIndexes();
     $depop->init();
-    while (!$depop->doChunk()) {
+    /** @noinspection PhpStatementHasEmptyBodyInspection */
+    while ( ! $depop->doChunk() ) {
       /* empty */
     }
   }

@@ -12,9 +12,11 @@ class SelectionBox {
 
   public $users;
   public $name;
-  public $class;
+  private $class;
+  private $serial = 0;
 
   /** Constructor.
+   *
    * @param string|null $html Input <select> tag.
    */
   public function __construct( $html ) {
@@ -48,15 +50,33 @@ class SelectionBox {
     return;
   }
 
+  private function classes() {
+    return implode( ' ', array_unique( $this->class ) );
+  }
+
+  public function addClass( $class ) {
+    if ( is_string( $class ) ) {
+      $class = [ $class ];
+    }
+    $this->class = array_unique( array_merge( $this->class, $class ) );
+  }
+
+  public function removeClass( $class ) {
+    if ( is_string( $class ) ) {
+      $class = [ $class ];
+    }
+    $this->class = array_diff( $this->class, $class );
+  }
+
   /** Generate a <select> tag.
+   *
    * @param bool $pretty Format the output tag for reaaability.
    *
    * @return string HTML for select tag.
    */
   public function generateSelect( $pretty = false ) {
-    $o     = [];
-    $class = is_array( $this->class ) ? implode( ' ', array_unique( $this->class ) ) : $this->class;
-    $o []  = "<select name='$this->name' class='$class'>";
+    $o    = [];
+    $o [] = "<select name='$this->name' class='{$this->classes()}'>";
     foreach ( $this->users as $user ) {
       $o [] = ( $pretty ? '  ' : '' ) . "<option value='$user->id'>$user->label</option>";
     }
@@ -64,10 +84,39 @@ class SelectionBox {
     return implode( $pretty ? PHP_EOL : '', $o );
   }
 
+  /** Generate an autocomplete tag.
+   */
+  public function generateAutocomplete( $pretty = false ) {
+    $nl         = $pretty ? PHP_EOL : '';
+    $jsonpretty = $pretty ? JSON_PRETTY_PRINT : JSON_ERROR_NONE;
+
+    $currentID = $this->name . '-' . ++ $this->serial;
+    $this->addClass( $currentID );
+
+    $s           = [];
+    $s []        = "<script type='text/javascript' id='$currentID-script'> ";
+    $s []        = "window.wp_iufs = window.wp_iufs ? window.wp_iufs : {}";
+    $s []        = "wp_iufs.completionList = " . wp_json_encode( $this->users, $jsonpretty );
+    $s []        = "</script>";
+    $script      = implode( PHP_EOL, $s ) . $nl;
+    $placeholder = esc_attr__( 'Type the author\'s name',  'index-wp-users-for-speed' );
+    $tag         = "<span class='input-text-wrap'><input type='text' id='$currentID' name='$this->name-auto' class='{$this->classes()}' data-p1='$placeholder' data-p2='' placeholder='$placeholder'></span>$nl";
+
+    $this->removeClass( $currentID );
+    return $tag . $script;
+  }
+
+  /** Prepend a user to the list of users
+   *
+   * @param $user
+   *
+   * @return SelectionBox
+   */
   public function prepend( $user ) {
     if ( ! is_array( $user ) ) {
       $user = [ $user ];
     }
     $this->users = array_merge( $user, $this->users );
+    return $this;
   }
 }

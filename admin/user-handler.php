@@ -2,11 +2,7 @@
 
 namespace IndexWpUsersForSpeed;
 
-use DOMDocument;
-use ValueError;
 use WP_REST_Request;
-use WP_REST_Response;
-use WP_User;
 use WP_User_Query;
 
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
@@ -30,7 +26,6 @@ class UserHandler extends WordPressHooks {
   private $userCount = 0;
   private $options_name;
   private $selectionBoxCache;
-  private $codeGenSerialNo = 0;
 
   public function __construct() {
 
@@ -662,7 +657,18 @@ class UserHandler extends WordPressHooks {
    */
   public function filter__wp_dropdown_users( $html ) {
 
+    /* cache busting for debugging */
+    $cachebust = INDEX_WP_USERS_FOR_SPEED_VERSION;
+    wp_enqueue_style( 'iufs-jquery-ui', plugins_url( 'css/jquery-ui.css', __FILE__ ), [], $cachebust );
+    wp_enqueue_style( 'iufs-jquery-ui-structure', plugins_url( 'css/jquery-ui.structure.css', __FILE__ ), [], $cachebust );
+    wp_enqueue_style( 'iufs-jquery-ui-theme', plugins_url( 'css/jquery-ui.theme.css',__FILE__ ), [], $cachebust );
+    wp_enqueue_script( 'jquery-ui-autocomplete' );
+    wp_enqueue_script( 'iufs-jquery-ui-theme', plugins_url( 'js/quick-edit-autocomplete.js', __FILE__ ),
+      ['jquery-ui-autocomplete'], $cachebust );
+
     $selectionBox = new SelectionBox( $html );
+    $selectionBox->addClass( 'index-wp-users-for-speed' );
+
     if ( $this->selectionBoxCache ) {
       /* Already ran a version of this, look for the No Change entry and put it into the cached SelectionBox */
       if ( count( $selectionBox->users ) > 0
@@ -670,10 +676,17 @@ class UserHandler extends WordPressHooks {
            && ( count( $this->selectionBoxCache->users ) === 0 || $this->selectionBoxCache->users[0]->id !== - 1 ) ) {
         $this->selectionBoxCache->prepend( $selectionBox->users[0] );
       }
+      $autocompleteHtml = '';
     } else {
+      // HACK HACK AUTOcomplete only on first pass (individual inline edit)
       $this->selectionBoxCache = $selectionBox;
+      $autocompleteHtml = $this->selectionBoxCache->generateAutocomplete( true );
+
     }
-    return $this->selectionBoxCache->generateSelect( false );
+
+    $selectHtml       = $this->selectionBoxCache->generateSelect( true );
+
+    return $selectHtml . PHP_EOL . $autocompleteHtml;
   }
 }
 

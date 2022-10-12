@@ -20,3 +20,12 @@ div.wrap.index-users > form > table.form-table > tbody > tr > td > p.menu-note {
 input#quickedit_threshold_limit {
     width: 5em;
 }
+
+/* conceal dropdown in favor of autocomplete field */
+tr.inline-edit-row div.inline-edit-wrapper select.authors.index-wp-users-for-speed {
+    display: none;
+}
+/* TODO show author dropdown in bulk edit til we get that one working. */
+tr.inline-edit-row.bulk-edit-row div.inline-edit-wrapper select.authors.index-wp-users-for-speed {
+    display: inherit;
+}
