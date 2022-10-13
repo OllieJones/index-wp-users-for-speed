@@ -14,7 +14,6 @@ class SelectionBox {
   public $name;
   private $class;
   private $options;
-  private $serial = 0;
 
   /** Constructor.
    *
@@ -92,22 +91,12 @@ class SelectionBox {
     $nl         = $pretty ? PHP_EOL : '';
     $jsonpretty = $pretty ? JSON_PRETTY_PRINT : JSON_ERROR_NONE;
 
-    $currentID = $this->name . '-' . ++ $this->serial;
-    $this->addClass( $currentID );
-
-    $s           = [];
-    $s []        = "<script type='text/javascript' id='$currentID-script'> ";
-    $s []        = "window.wp_iufs = window.wp_iufs ? window.wp_iufs : {}";
-    $s []        = "wp_iufs.completionList = " . wp_json_encode( $this->users, $jsonpretty );  //TODO kill this.
-    $s []        = "</script>";
     $nonce       = wp_create_nonce( 'wp_rest' );
     $count       = $this->options['quickedit_threshold_limit'];
-    $script      = implode( PHP_EOL, $s ) . $nl;
     $placeholder = esc_attr__( 'Type the author\'s name', 'index-wp-users-for-speed' );
-    $tag         = "<span class='input-text-wrap'><input type='text' id='$currentID' name='$this->name-auto' class='{$this->classes()}' data-count='$count' data-nonce='$nonce' data-p1='$placeholder' data-p2='' placeholder='$placeholder'></span>$nl";
+    $tag         = "<span class='input-text-wrap'><input type='text' name='$this->name-auto' class='{$this->classes()}' data-count='$count' data-nonce='$nonce' data-p1='$placeholder' data-p2='' placeholder='$placeholder'></span>$nl";
 
-    $this->removeClass( $currentID );
-    return $tag . $script;
+    return $tag ;
   }
 
   /** Prepend a user to the list of users

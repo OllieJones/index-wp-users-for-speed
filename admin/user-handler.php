@@ -222,9 +222,9 @@ class UserHandler extends WordPressHooks {
      * Suppress most of the work for the second run, because
      * the output of the first run is in $this->dropdownQueryCache */
     if ( $this->selectionBoxCache ) {
-      $query_args ['number'] = 1;
-      unset ( $query_args['orderby'] );
-      return $query_args;
+      $fixed_args ['number'] = 1;
+      unset ( $fixed_args['orderby'] );
+      return $fixed_args;
     }
 
     $options = get_option( $this->options_name );
@@ -236,7 +236,9 @@ class UserHandler extends WordPressHooks {
       unset ( $fixed_args['order'] );
       $fixed_args ['orderby'] = [ 'post_count' => 'DESC', 'display_name' => 'ASC' ];
     }
-
+    // TODO does this work to streamline the dropdown query given that we use autocomplete
+    $fixed_args ['number'] = 1;
+    unset ( $fixed_args['orderby'] );
     return $fixed_args;
   }
 
@@ -400,10 +402,11 @@ class UserHandler extends WordPressHooks {
       $where = PHP_EOL . " AND $wpdb->users.ID IN (" . implode( PHP_EOL . 'UNION ALL' . PHP_EOL, $unions ) . ')' . PHP_EOL;
       /* only do this once per invocation of user query with metadata */
       remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
-      return [ 'join' => '', 'where' => $where ];
-    } else {
-      return $sql;
+
+      $sql['join']  = '';
+      $sql['where'] = $where;
     }
+    return $sql;
   }
 
   /**
@@ -671,14 +674,11 @@ class UserHandler extends WordPressHooks {
            && ( count( $this->selectionBoxCache->users ) === 0 || $this->selectionBoxCache->users[0]->id !== - 1 ) ) {
         $this->selectionBoxCache->prepend( $selectionBox->users[0] );
       }
-      $autocompleteHtml = '';
     } else {
-      // HACK HACK AUTOcomplete only on first pass (individual inline edit)
       $this->selectionBoxCache = $selectionBox;
-      $autocompleteHtml        = $this->selectionBoxCache->generateAutocomplete( true );
     }
-
-    $selectHtml = $this->selectionBoxCache->generateSelect( true );
+    $autocompleteHtml = $this->selectionBoxCache->generateAutocomplete( false );
+    $selectHtml       = $this->selectionBoxCache->generateSelect( false );
 
     return $selectHtml . PHP_EOL . $autocompleteHtml;
   }

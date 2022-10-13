@@ -25,7 +25,3 @@ input#quickedit_threshold_limit {
 tr.inline-edit-row div.inline-edit-wrapper select.authors.index-wp-users-for-speed {
     display: none;
 }
-/* TODO show author dropdown in bulk edit til we get that one working. */
-tr.inline-edit-row.bulk-edit-row div.inline-edit-wrapper select.authors.index-wp-users-for-speed {
-    display: inherit;
-}

@@ -3,21 +3,35 @@
 
 jQuery(async function ($) {
 
-  const sleep = milliseconds => new Promise(r => setTimeout(r, milliseconds))
-  /* Get an event when the user clicks quick-edit or, TODO, bulk-edit
-   * and defer handling the event, using setTimeout, until the next time
-   * through the Javascript main loop. That's because we may get our
-   * event before wp-admin/js/inline-edit-post.js line 127 gets theirs,
-   * and they insert the quick-edit code into the DOM, copying it from
-   * #inline-edit.
-   * For bulk edit <div class="hidden" id="inline_3932">   (the number is the post ID)
-   *
-   */
-
-  //http://qa1.lan.plumislandmedia.net/wp-json/wp/v2/users?context=view&who=authors&per_page=50&_fields=id%2Cname&search=qa&_locale=user
+  const theList = $('#the-list')
   let searchTerm
-
   const splitter = new RegExp('\\s+')
+
+
+  function setSelected(selectElement, id, label) {
+    /* No options here? Weird. But just put one so we can use it. */
+    if (selectElement.options.length < 1) {
+      selectElement.appendChild(new HTMLOptionElement())
+    }
+
+    const option = selectElement.options[0];
+    option.innerText = label;
+    option.value = id
+
+    /* deselect all except first option */
+    let first = true
+    for (const option of selectElement.options) {
+      if (first) {
+        option.setAttribute('selected', '')
+        first = false
+      } else {
+        option.removeAttribute('selected')
+      }
+    }
+    selectElement.selectedIndex = 0
+  }
+
+  const sleep = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 
   /**
    * Sort the labels so items where the search term starts a name come first.
@@ -64,17 +78,25 @@ jQuery(async function ($) {
     )
   }
 
-  async function inlineClickHandler(event) {
-    const theList = event.delegateTarget;
-    await clickHandler(event, theList, 'inline')
+  async function bulkClickHandler(event) {
+    await clickHandler(event, 'bulk')
   }
 
-  async function clickHandler(event, theList, type) {
-    await sleep(5);
+  async function inlineClickHandler(event) {
+    await clickHandler(event, 'inline')
+  }
 
-    const select = $('tr.inline-edit-row.quick-edit-row select.index-wp-users-for-speed', theList)
+  /* Get an event when the user clicks quick-edit or bulk-edit
+   * and defer handling the event, using setTimeout, until the next time
+   * through the Javascript main loop. That's because we may get our
+   * event before wp-admin/js/inline-edit-post.js line 127 gets theirs,
+   * and they insert the quick-edit code into the DOM, copying it from
+   * #inline-edit.   */
+  async function clickHandler(event, type) {
+    await sleep(0);
+    const select = $('tr.inline-edit-row label.inline-edit-author select.index-wp-users-for-speed', theList)
     const selectElement = select[0]
-    const autoCompleteField = $('#post_author-1')
+    const autoCompleteField = $('tr.inline-edit-row label.inline-edit-author input.index-wp-users-for-speed', theList)
     dataset = autoCompleteField[0].dataset
     autoCompleteField.autocomplete({
         delay: 500,
@@ -85,8 +107,10 @@ jQuery(async function ($) {
           const selecteds = selectElement.selectedOptions
           if (selecteds.length === 1) {
             const selected = selecteds[0]
-            target.dataset.id = selected.value
-            if (typeof selected.label !== 'string' || selected.label.length === 0) {
+            const id = selected.value
+            target.dataset.id = id
+            let label = selected.label
+            if (typeof label !== 'string' || label.length === 0) {
               try {
                 /* No label on the first option in the select (no name for the author).
                  * Go find the item being edited, then the item's author.
@@ -96,30 +120,21 @@ jQuery(async function ($) {
                   editElement = editElement.parentNode
                 }
                 const id = editElement.id.split('-')[1]
-                const authorName = $('#post-' + id + ' .author').text()
-                target.dataset.p2 = authorName
-                selected.value = authorName
+                label = $('#post-' + id + ' .author').text()
               } catch (_) {
-                target.dataset.p2 = target.dataset.p1
+                label = target.dataset.p1
               }
-            } else {
-              target.dataset.p2 = selected.label
             }
-            target.setAttribute('placeholder', target.dataset.p2)
+            target.dataset.label = label
+            target.dataset.p2 = label
+            setSelected(selectElement, id, label)
+            target.setAttribute('placeholder', label)
           }
         },
         select:
-
           function (event, ui) {
             const chosen = ui.item
-            const option = document.createElement("OPTION")
-            option.innerText = chosen.label;
-            option.value = chosen.id
-            option.setAttribute('selected', '')
-            for (const option of selectElement.options) {
-              option.removeAttribute('selected')
-            }
-            selectElement.appendChild(option)
+            setSelected(selectElement, chosen.id, chosen.label)
           }
       }
     )
@@ -136,6 +151,14 @@ jQuery(async function ($) {
     })
   }
 
-  $('#the-list').on('click', '.editinline', inlineClickHandler)
+  /* quick edit */
+  theList.on('click', '.editinline', inlineClickHandler)
+
+  /* bulk edit */
+  $('#doaction').on('click', function (event) {
+    if (this.parentElement.querySelector('select').value === 'edit') {
+      bulkClickHandler(event).then()
+    }
+  });
 
 })
