@@ -656,15 +656,10 @@ class UserHandler extends WordPressHooks {
    *
    */
   public function filter__wp_dropdown_users( $html ) {
-
-    /* cache busting for debugging */
-    $cachebust = INDEX_WP_USERS_FOR_SPEED_VERSION;
-    wp_enqueue_style( 'iufs-jquery-ui', plugins_url( 'css/jquery-ui.css', __FILE__ ), [], $cachebust );
-    wp_enqueue_style( 'iufs-jquery-ui-structure', plugins_url( 'css/jquery-ui.structure.css', __FILE__ ), [], $cachebust );
-    wp_enqueue_style( 'iufs-jquery-ui-theme', plugins_url( 'css/jquery-ui.theme.css', __FILE__ ), [], $cachebust );
     wp_enqueue_script( 'jquery-ui-autocomplete' );
-    wp_enqueue_script( 'iufs-jquery-ui-theme', plugins_url( 'js/quick-edit-autocomplete.js', __FILE__ ),
-      [ 'jquery-ui-autocomplete' ], $cachebust );
+    wp_enqueue_script( 'iufs-ui-autocomplete',
+      plugins_url( 'js/quick-edit-autocomplete.js', __FILE__ ),
+      [ 'jquery-ui-autocomplete' ], INDEX_WP_USERS_FOR_SPEED_VERSION );
 
     $selectionBox = new SelectionBox( $html, get_option( $this->options_name ) );
     $selectionBox->addClass( 'index-wp-users-for-speed' );
