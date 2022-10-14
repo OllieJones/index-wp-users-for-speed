@@ -217,28 +217,21 @@ class UserHandler extends WordPressHooks {
    * @noinspection PhpUnused
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
+    /* Are we populating the author choice menu for the classic editor? */
+    if ( array_key_exists( 'include_selected', $parsed_args ) && $parsed_args['include_selected']
+         && array_key_exists( 'name', $parsed_args ) && $parsed_args['name'] === 'post_author_override'
+         && array_key_exists( 'selected', $parsed_args ) && is_numeric( $parsed_args['selected'] ) && $parsed_args['selected'] > 0 ) {
+      /* Fetch just that single author, by ID, into the dropdown. The autocomplete code will then use it. */
+      $query_args['include'] = [$parsed_args['selected']];
+      unset ($query_args['capability']);
+      return $query_args;
+    }
     $fixed_args = $this->filtered_query_args( $query_args, $parsed_args );
     /* This query is run twice, once for quickedit and again for bulkedit.
-     * Suppress most of the work for the second run, because
-     * the output of the first run is in $this->dropdownQueryCache */
-    if ( $this->selectionBoxCache ) {
-      $fixed_args ['number'] = 1;
-      unset ( $fixed_args['orderby'] );
-      return $fixed_args;
-    }
-
-    $options = get_option( $this->options_name );
-
-    if ( isset ( $options ['quickedit_threshold_on'] ) && 'on' === $options ['quickedit_threshold_on'] ) {
-      $fixed_args ['number'] = $options ['quickedit_threshold_limit'];
-    }
-    if ( isset ( $options ['quickedit_mostposts_on'] ) && 'on' === $options ['quickedit_mostposts_on'] ) {
-      unset ( $fixed_args['order'] );
-      $fixed_args ['orderby'] = [ 'post_count' => 'DESC', 'display_name' => 'ASC' ];
-    }
-    // TODO does this work to streamline the dropdown query given that we use autocomplete
+     * This suppresses most of the work in both runs.  */
     $fixed_args ['number'] = 1;
     unset ( $fixed_args['orderby'] );
+    unset ( $fixed_args['order'] );
     return $fixed_args;
   }
 

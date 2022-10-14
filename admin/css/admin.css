@@ -21,7 +21,15 @@ input#quickedit_threshold_limit {
     width: 5em;
 }
 
-/* conceal dropdown in favor of autocomplete field */
+/* conceal dropdown in favor of autocomplete field in posts / pages */
 tr.inline-edit-row div.inline-edit-wrapper select.authors.index-wp-users-for-speed {
     display: none;
+}
+/* conceal dropdown in favor of autocomplete field in classic editor */
+div#authordiv.postbox > div.inside > select.index-wp-users-for-speed {
+    display: none;
+}
+div#authordiv.postbox > div.inside > span.input-text-wrap > input.index-wp-users-for-speed {
+    width:100%;
+    max-width:40em;
 }

@@ -27,28 +27,32 @@ class SelectionBox {
   }
 
   private function parseHtmlSelectInfo( $html ) {
-    $inputDom = new DOMDocument();
-    $inputDom->loadHTML( $html );
+    $inputDom    = new DOMDocument();
     $this->users = [];
+    if ( is_string( $html ) && strlen( $html ) > 0 ) {
+      $inputDom->loadHTML( $html );
 
-    $selects     = $inputDom->getElementsByTagName( 'select' );
-    $selectCount = 0;
-    foreach ( $selects as $select ) {
-      if ( ++ $selectCount > 1 ) {
-        throw new ValueError( "More than one select" );
+      $selects     = $inputDom->getElementsByTagName( 'select' );
+      $selectCount = 0;
+      foreach ( $selects as $select ) {
+        if ( ++ $selectCount > 1 ) {
+          throw new ValueError( "More than one select" );
+        }
+        $attributes  = $select->attributes;
+        $this->name  = trim( $attributes->getNamedItem( 'name' )->nodeValue );
+        $this->class = array_unique( array_filter( explode( ' ', trim( $attributes->getNamedItem( 'class' )->nodeValue ) ) ) );
+        $options     = $select->getElementsByTagName( 'option' );
+        foreach ( $options as $option ) {
+          $id             = intval( $option->attributes->getNamedItem( 'value' )->nodeValue );
+          $label          = $option->textContent;
+          $this->users [] = (object) [ 'id' => $id, 'label' => $label ];
+        }
       }
-      $attributes  = $select->attributes;
-      $this->name  = $attributes->getNamedItem( 'name' )->nodeValue;
-      $this->class = array_unique( explode( ' ', $attributes->getNamedItem( 'class' )->nodeValue ) );
-      $options     = $select->getElementsByTagName( 'option' );
-      foreach ( $options as $option ) {
-        $id             = intval( $option->attributes->getNamedItem( 'value' )->nodeValue );
-        $label          = $option->textContent;
-        $this->users [] = (object) [ 'id' => $id, 'label' => $label ];
-      }
+      unset ( $inputDom );
+    } else {
+      $this->name  = 'unknown';
+      $this->class = [];
     }
-    unset ( $inputDom );
-    return;
   }
 
   private function classes() {
@@ -96,7 +100,7 @@ class SelectionBox {
     $placeholder = esc_attr__( 'Type the author\'s name', 'index-wp-users-for-speed' );
     $tag         = "<span class='input-text-wrap'><input type='text' name='$this->name-auto' class='{$this->classes()}' data-count='$count' data-nonce='$nonce' data-p1='$placeholder' data-p2='' placeholder='$placeholder'></span>$nl";
 
-    return $tag ;
+    return $tag;
   }
 
   /** Prepend a user to the list of users
