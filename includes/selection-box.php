@@ -92,13 +92,19 @@ class SelectionBox {
   /** Generate an autocomplete tag.
    */
   public function generateAutocomplete( $pretty = false ) {
-    $nl         = $pretty ? PHP_EOL : '';
-    $jsonpretty = $pretty ? JSON_PRETTY_PRINT : JSON_ERROR_NONE;
+    $nl = $pretty ? PHP_EOL : '';
 
+    /* we need to give the base URL for the REST API to Javascript
+     * so it gets the right site in multisite. */
+    $url         = get_site_url();
     $nonce       = wp_create_nonce( 'wp_rest' );
     $count       = $this->options['quickedit_threshold_limit'];
     $placeholder = esc_attr__( 'Type the author\'s name', 'index-wp-users-for-speed' );
-    $tag         = "<span class='input-text-wrap'><input type='text' name='$this->name-auto' class='{$this->classes()}' data-count='$count' data-nonce='$nonce' data-p1='$placeholder' data-p2='' placeholder='$placeholder'></span>$nl";
+    $tag         =
+      "<span class='input-text-wrap'><input
+ type='text' name='$this->name-auto' class='{$this->classes()}'
+ data-count='$count' data-nonce='$nonce' data-url='$url' data-p1='$placeholder' data-p2=''
+ placeholder='$placeholder'></span>$nl";
 
     return $tag;
   }

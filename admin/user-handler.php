@@ -56,10 +56,16 @@ class UserHandler extends WordPressHooks {
     return false;
   }
 
-  private function getCurrentUserRoles( $user_id, $meta_key ) {
+  private function getCurrentUserRoles( $user_id, $meta_key = null ) {
     global $wpdb;
-    $roles =  get_user_meta($user_id, $meta_key, true);
-    $metas = get_user_meta( $user_id, '', false );
+    if ( ! $meta_key ) {
+      $meta_key = $wpdb->prefix . 'capabilities';
+    }
+    $roles = get_user_meta( $user_id, $meta_key, true );
+    if ( is_string( $roles ) && strlen( $roles ) === 0 ) {
+      $roles = [];
+    }
+    $metas  = get_user_meta( $user_id, '', false );
     $prefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     foreach ( $metas as $key => $value ) {
       if ( strpos( $key, $prefix ) === 0 ) {
@@ -133,7 +139,6 @@ class UserHandler extends WordPressHooks {
    * @since 3.1.0
    *
    */
-
   public function action__delete_user_meta( $meta_ids, $user_id, $meta_key, $meta_value ) {
     if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
       return;
@@ -162,18 +167,21 @@ class UserHandler extends WordPressHooks {
    * @return void
    */
   private function userRoleChange( $user_id, $newRoles, $oldRoles ) {
-    $toAdd    = array_diff_key( $newRoles, $oldRoles );
-    $toRemove = array_diff_key( $oldRoles, $newRoles );
 
-    foreach ( array_keys( $toRemove ) as $role ) {
-      $this->indexer->updateUserCounts( $role, - 1 );
-      $this->indexer->updateEditors( $user_id, true );
-      $this->indexer->removeIndexRole( $user_id, $role );
-    }
-    foreach ( array_keys( $toAdd ) as $role ) {
-      $this->indexer->updateUserCounts( $role, + 1 );
-      $this->indexer->updateEditors( $user_id, false );
-      $this->indexer->addIndexRole( $user_id, $role );
+    if ($newRoles !== $oldRoles) {
+      $toAdd    = array_diff_key( $newRoles, $oldRoles );
+      $toRemove = array_diff_key( $oldRoles, $newRoles );
+
+      foreach ( array_keys( $toRemove ) as $role ) {
+        $this->indexer->updateUserCounts( $role, - 1 );
+        $this->indexer->updateEditors( $user_id, true );
+        $this->indexer->removeIndexRole( $user_id, $role );
+      }
+      foreach ( array_keys( $toAdd ) as $role ) {
+        $this->indexer->updateUserCounts( $role, + 1 );
+        $this->indexer->updateEditors( $user_id, false );
+        $this->indexer->addIndexRole( $user_id, $role );
+      }
     }
   }
 

@@ -52,7 +52,7 @@ jQuery(async function ($) {
   let dataset
 
   function fetch(req, res) {
-    const endpoint = `/wp-json/wp/v2/users?context=view&who=authors&per_page=${dataset.count}&_fields=id,name&_locale=user`
+    const endpoint = `${dataset.url}/wp-json/wp/v2/users?context=view&who=authors&per_page=${dataset.count}&_fields=id,name&_locale=user`
     searchTerm = req.term
     const search = `&search=${req.term}`
     $.ajax(

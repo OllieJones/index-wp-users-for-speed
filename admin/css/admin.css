@@ -22,7 +22,7 @@ input#quickedit_threshold_limit {
 }
 
 /* conceal dropdown in favor of autocomplete field in posts / pages */
-tr.inline-edit-row div.inline-edit-wrapper select.authors.index-wp-users-for-speed {
+tr.inline-edit-row td label select.authors.index-wp-users-for-speed {
     display: none;
 }
 /* conceal dropdown in favor of autocomplete field in classic editor */
