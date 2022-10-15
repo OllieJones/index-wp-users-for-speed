@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Index WP Users For Speed 1.0.4\n"
+"Project-Id-Version: Index WP Users For Speed 1.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/index-wp-users-for-speed\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2022-10-05T08:24:13-04:00\n"
+"POT-Creation-Date: 2022-10-15T13:11:25-04:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.6.0\n"
 "X-Domain: index-wp-users-for-speed\n"
@@ -52,101 +52,84 @@ msgid "...at this time"
 msgstr ""
 
 #: admin/admin.php:84
-msgid "Controlling choice of users"
+msgid "Controlling choice of authors"
 msgstr ""
 
 #: admin/admin.php:89
-msgid "For Posts and Pages"
+msgid "Show a maximum of"
 msgstr ""
 
-#: admin/admin.php:136
+#: admin/admin.php:129
 msgid "Incorrect time."
 msgstr ""
 
-#: admin/admin.php:145
+#: admin/admin.php:138
 msgid "User index rebuilding starting"
 msgstr ""
 
 #. translators: 1: localized time like 1:22 PM or 13:22
-#: admin/admin.php:155
+#: admin/admin.php:148
 msgid "Automatic index rebuilding scheduled for %1$s each day"
 msgstr ""
 
-#: admin/admin.php:163
+#: admin/admin.php:156
 msgid "Automatic index rebuilding disabled"
 msgstr ""
 
-#: admin/admin.php:232
+#: admin/admin.php:224
 msgid "You may rebuild your user indexes each day, or immediately."
 msgstr ""
 
-#: admin/admin.php:233
+#: admin/admin.php:225
 msgid "(It is possible for them to become out-of-date.)"
 msgstr ""
 
-#: admin/admin.php:241
-msgid "The author-choice menu in Quick Edit for Posts and Pages can be unwieldy when your site has many authors. You can limit the number of choices, and you can show your most active authors first."
+#: admin/admin.php:233
+msgid "Author-choice menus can be unwieldy when your site has many authors. You can limit the number of choices presented at a time. To narrow down your choices you can type more of the author's name into the menu."
 msgstr ""
 
-#: admin/admin.php:257
+#: admin/admin.php:249
 msgid "daily"
 msgstr ""
 
-#: admin/admin.php:265
+#: admin/admin.php:257
 msgid "never"
 msgstr ""
 
-#: admin/admin.php:273
+#: admin/admin.php:266
 msgid "immediately, then daily"
 msgstr ""
 
-#: admin/admin.php:281
+#: admin/admin.php:275
 msgid "immediately, but not daily"
 msgstr ""
 
-#: admin/admin.php:299
+#: admin/admin.php:293
 msgid "Avoid rebuilding exactly on the hour to avoid contending with other processing jobs."
 msgstr ""
 
-#: admin/admin.php:333
-#: admin/admin.php:351
-msgid "Enable"
+#: admin/admin.php:332
+msgid "choices at once in author selection menus."
 msgstr ""
 
-#: admin/admin.php:339
-msgid "showing only"
-msgstr ""
-
-#: admin/admin.php:345
-msgid "choices in the Quick Edit author menu."
-msgstr ""
-
-#: admin/admin.php:348
-msgid "If you disable this option, your author menu will let you choose any registered author."
-msgstr ""
-
-#: admin/admin.php:357
-msgid "showing authors with the most posts first in the Quick Edit author menu."
-msgstr ""
-
-#: admin/progressbar.php:55
-#: admin/progressbar.php:61
+#: admin/progressbar.php:51
+#: admin/progressbar.php:57
 msgid "% complete."
 msgstr ""
 
-#: admin/progressbar.php:57
+#: admin/progressbar.php:53
 msgid "Background user index refresh in progress:"
 msgstr ""
 
-#: admin/progressbar.php:58
+#: admin/progressbar.php:54
 msgid "You may use your site normally during index refreshing."
 msgstr ""
 
-#: admin/progressbar.php:60
+#: admin/progressbar.php:56
 msgid "Background user index building in progress:"
 msgstr ""
 
-#: admin/progressbar.php:62
+#: admin/progressbar.php:58
 msgid "You may use your site normally during index building."
 msgstr ""
 
@@ -154,6 +137,10 @@ msgstr ""
 msgid "Approximate number of users on this entire site"
 msgstr ""
 
-#: includes/indexer.php:173
+#: includes/indexer.php:172
 msgid "Still counting users..."
+msgstr ""
+
+#: includes/selection-box.php:100
+msgid "Type the author's name"
 msgstr ""

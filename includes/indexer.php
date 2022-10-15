@@ -335,27 +335,14 @@ class Indexer {
 
     $prefix    = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $indexRole = $prefix . $role;
-    try {
-      $q = "DELETE FROM $wpdb->usermeta m WHERE m.user_id = %d AND m.meta_key = %s ";
-      $q = $wpdb->prepare( $q, $user_id, $indexRole );
-      $wpdb->query( $q );
-    } catch ( Exception $ex ) {
-      error_log( 'index_wp_users_for_speed:removeIndexRole exception: ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
-    }
+    delete_user_meta( $user_id, $indexRole );
   }
 
   public function addIndexRole( $user_id, $role ) {
     global $wpdb;
     $prefix    = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $indexRole = $prefix . $role;
-
-    try {
-      $q3 = "INSERT INTO $wpdb->usermeta (user_id, meta_key) VALUES (%d, %s);";
-      $q3 = $wpdb->prepare( $q3, $user_id, $indexRole );
-      $wpdb->query( $q3 );
-    } catch ( Exception $ex ) {
-      error_log( 'index_wp_users_for_speed: addIndexRole exception: ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
-    }
+    add_user_meta( $user_id, $indexRole, null );
   }
 
   public function __clone() {

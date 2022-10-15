@@ -56,6 +56,20 @@ class UserHandler extends WordPressHooks {
     return false;
   }
 
+  private function getCurrentUserRoles( $user_id, $meta_key ) {
+    global $wpdb;
+    $roles =  get_user_meta($user_id, $meta_key, true);
+    $metas = get_user_meta( $user_id, '', false );
+    $prefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
+    foreach ( $metas as $key => $value ) {
+      if ( strpos( $key, $prefix ) === 0 ) {
+        $role            = explode( ':', $key )[1];
+        $roles [ $role ] = true;
+      }
+    }
+    return $roles;
+  }
+
   /**
    * Fires immediately before updating user metadata.
    *
@@ -76,7 +90,7 @@ class UserHandler extends WordPressHooks {
       return;
     }
     $newRoles = $meta_value;
-    $oldRoles = get_user_meta( $user_id, $meta_key, true );
+    $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
     $this->userRoleChange( $user_id, $newRoles, $oldRoles );
   }
 
@@ -99,7 +113,8 @@ class UserHandler extends WordPressHooks {
       return;
     }
     $this->indexer->updateUserCountsTotal( + 1 );
-    $this->userRoleChange( $user_id, $meta_value, [] );
+    $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
+    $this->userRoleChange( $user_id, $meta_value, $oldRoles );
   }
 
   /**
@@ -123,7 +138,7 @@ class UserHandler extends WordPressHooks {
     if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
       return;
     }
-    $oldRoles = get_user_meta( $user_id, $meta_key, true );
+    $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
     $this->indexer->updateUserCountsTotal( - 1 );
     $this->userRoleChange( $user_id, [], $oldRoles );
   }
@@ -222,8 +237,8 @@ class UserHandler extends WordPressHooks {
          && array_key_exists( 'name', $parsed_args ) && $parsed_args['name'] === 'post_author_override'
          && array_key_exists( 'selected', $parsed_args ) && is_numeric( $parsed_args['selected'] ) && $parsed_args['selected'] > 0 ) {
       /* Fetch just that single author, by ID, into the dropdown. The autocomplete code will then use it. */
-      $query_args['include'] = [$parsed_args['selected']];
-      unset ($query_args['capability']);
+      $query_args['include'] = [ $parsed_args['selected'] ];
+      unset ( $query_args['capability'] );
       return $query_args;
     }
     $fixed_args = $this->filtered_query_args( $query_args, $parsed_args );
