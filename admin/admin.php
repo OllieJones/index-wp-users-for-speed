@@ -81,12 +81,12 @@ class Admin
       'indexing' );
 
   add_settings_section( 'quickedit',
-      esc_html__( 'Controlling choice of users', 'index-wp-users-for-speed' ),
+      esc_html__( 'Controlling choice of authors', 'index-wp-users-for-speed' ),
       [ $this, 'render_quickedit_section' ],
       $page );
 
   add_settings_field( 'quickedit_threshold',
-      esc_html__( 'For Posts and Pages', 'index-wp-users-for-speed' ),
+      esc_html__( 'Show a maximum of', 'index-wp-users-for-speed' ),
       [ $this, 'render_quickedit_threshold_field' ],
       $page,
       'quickedit' );
@@ -98,9 +98,7 @@ class Admin
    add_option( $this->options_name, [
        'auto_rebuild'              => 'on',
        'rebuild_time'              => '00:25',
-       'quickedit_threshold_on'    => 'off',
        'quickedit_threshold_limit' => 50,
-       'quickedit_mostposts_on'    => 'on',
    ] );
   }
 
@@ -232,7 +230,7 @@ class Admin
  public function render_quickedit_section() {
   ?>
   <p>
-   <?php esc_html_e( 'The author-choice menu in Quick Edit for Posts and Pages can be unwieldy when your site has many authors. You can limit the number of choices, and you can show your most active authors first.', 'index-wp-users-for-speed' ) ?>
+   <?php esc_html_e( 'Author-choice menus can be unwieldy when your site has many authors. You can limit the number of choices presented at a time. To narrow down your choices you can type more of the author\'s name into the menu.', 'index-wp-users-for-speed' ) ?>
   </p>
   <?php
  }
@@ -321,37 +319,17 @@ class Admin
 
  public function render_quickedit_threshold_field() {
   $options   = get_option( $this->options_name );
-  $on        = isset( $options['quickedit_threshold_on'] ) && 'on' === $options['quickedit_threshold_on'] ? 'on' : 'off';
   $limit     = isset( $options['quickedit_threshold_limit'] ) ? $options['quickedit_threshold_limit'] : 50;
-  $mostPosts = isset( $options['quickedit_mostposts_on'] ) && 'on' === $options['quickedit_mostposts_on'] ? 'on' : 'off';
   ?>
   <div>
-   <label for="quickedit_threshold_on"><span><?php esc_html_e( 'Enable', 'index-wp-users-for-speed' ) ?></span></label>
-   <!--suppress HtmlFormInputWithoutLabel -->
-   <input type="checkbox"
-          id="quickedit_threshold_on"
-          name="<?php echo esc_attr( $this->options_name ) ?>[quickedit_threshold_on]"
-   <?php checked( $on, 'on' ) ?>"><label
-       for="quickedit_threshold_limit"><span><?php esc_html_e( 'showing only', 'index-wp-users-for-speed' ) ?></span><input
+   <label
+       for="quickedit_threshold_limit"><input
         type="number"
         id="quickedit_threshold_limit"
         name="<?php echo esc_attr( $this->options_name ) ?>[quickedit_threshold_limit]"
-        min="2"
+        min="10" max="100"
         value="<?php echo esc_attr( $limit ) ?>">
-    <span><?php esc_html_e( 'choices in the Quick Edit author menu.', 'index-wp-users-for-speed' ) ?></span>
-   </label></div>
-  <p class="menu-note">
-   <?php esc_html_e( 'If you disable this option, your author menu will let you choose any registered author.', 'index-wp-users-for-speed' ) ?>
-  </p>
-  <div>
-   <label for="quickedit_mostposts_on"><span><?php esc_html_e( 'Enable', 'index-wp-users-for-speed' ) ?></span></label>
-   <!--suppress HtmlFormInputWithoutLabel -->
-   <input type="checkbox"
-          id="quickedit_mostposts_on"
-          name="<?php echo esc_attr( $this->options_name ) ?>[quickedit_mostposts_on]"
-   <?php checked( $mostPosts, 'on' ) ?>"><span><?php
-    esc_html_e( 'showing authors with the most posts first in the Quick Edit author menu.', 'index-wp-users-for-speed' )
-    ?></span>
+    <span><?php esc_html_e( 'choices at once in author selection menus.', 'index-wp-users-for-speed' ) ?></span>
    </label></div>
   <?php
  }

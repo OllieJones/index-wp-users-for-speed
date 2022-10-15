@@ -326,14 +326,8 @@ class Indexer {
 
   public static function getNetworkUserCount() {
     global $wpdb;
-    $q = "SELECT t.TABLE_ROWS row_count
-                 FROM information_schema.TABLES t
-                 WHERE t.TABLE_SCHEMA = DATABASE()
-                   AND t.TABLE_TYPE = 'BASE TABLE'
-                   AND t.ENGINE IS NOT NULL
-                   AND t.TABLE_NAME = %s";
 
-    return $wpdb->get_var( $wpdb->prepare( $q, $wpdb->users ) );
+    return get_user_count();
   }
 
   public function removeIndexRole( $user_id, $role ) {
