@@ -56,15 +56,29 @@ class UserHandler extends WordPressHooks {
     return false;
   }
 
+  /** Make sure wp_capabilities option values don't contain unexpected junk.
+   *
+   * @param array $option Option value, from dbms.
+   *
+   * @return array Option value, cleaned up.
+   */
+  private function sanitizeCapabilitiesOption( $option ) {
+    if ( ! is_array( $option ) ) {
+      return [];
+    }
+    /* each array element must be 'string' => true in a valid option */
+    return array_filter( $option, function ( $value, $key ) {
+      return is_string( $key ) && $value === true;
+    }, ARRAY_FILTER_USE_BOTH );
+  }
+
   private function getCurrentUserRoles( $user_id, $meta_key = null ) {
     global $wpdb;
     if ( ! $meta_key ) {
       $meta_key = $wpdb->prefix . 'capabilities';
     }
-    $roles = get_user_meta( $user_id, $meta_key, true );
-    if ( is_string( $roles ) && strlen( $roles ) === 0 ) {
-      $roles = [];
-    }
+    $roles = $this->sanitizeCapabilitiesOption( get_user_meta( $user_id, $meta_key, true ) );
+
     $metas  = get_user_meta( $user_id, '', false );
     $prefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     foreach ( $metas as $key => $value ) {
@@ -95,7 +109,7 @@ class UserHandler extends WordPressHooks {
     if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
       return;
     }
-    $newRoles = $meta_value;
+    $newRoles = $this->sanitizeCapabilitiesOption( $meta_value );
     $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
     $this->userRoleChange( $user_id, $newRoles, $oldRoles );
   }
@@ -118,9 +132,10 @@ class UserHandler extends WordPressHooks {
     if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
       return;
     }
+    $newRoles = $this->sanitizeCapabilitiesOption( $meta_value );
     $this->indexer->updateUserCountsTotal( + 1 );
     $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
-    $this->userRoleChange( $user_id, $meta_value, $oldRoles );
+    $this->userRoleChange( $user_id, $newRoles, $oldRoles );
   }
 
   /**
@@ -168,7 +183,7 @@ class UserHandler extends WordPressHooks {
    */
   private function userRoleChange( $user_id, $newRoles, $oldRoles ) {
 
-    if ($newRoles !== $oldRoles) {
+    if ( $newRoles !== $oldRoles ) {
       $toAdd    = array_diff_key( $newRoles, $oldRoles );
       $toRemove = array_diff_key( $oldRoles, $newRoles );
 

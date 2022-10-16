@@ -213,6 +213,7 @@ class Admin
 
  public function render_admin_page() {
   /* avoid this overhead unless we actually USE the admin page */
+  wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/admin.css', [], $this->version, 'all' );
   require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
   $this->indexer = Indexer::getInstance();
   include_once $this->pluginPath . 'admin/views/page.php';
@@ -332,16 +333,6 @@ class Admin
     <span><?php esc_html_e( 'choices at once in author selection menus.', 'index-wp-users-for-speed' ) ?></span>
    </label></div>
   <?php
- }
-
- /**
-  * Register the stylesheets for the admin area.
-  *
-  * @noinspection PhpUnused
-  * @noinspection PhpRedundantOptionalArgumentInspection
-  */
- public function action__admin_enqueue_scripts() {
-  wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/admin.css', [], $this->version, 'all' );
  }
 
  /**
