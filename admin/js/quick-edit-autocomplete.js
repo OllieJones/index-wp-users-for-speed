@@ -52,12 +52,13 @@ jQuery(async function ($) {
   let dataset
 
   function fetch(req, res) {
-    const endpoint = `${dataset.url}/wp-json/wp/v2/users?context=view&who=authors&per_page=${dataset.count}&_fields=id,name&_locale=user`
+    const endpoint = `${dataset.url}/wp-json/wp/v2/users?context=view&per_page=${dataset.count}&_fields=id,name&_locale=user`
+    const capabilities = typeof dataset.capabilities === 'string' ? '&capabilities=' + dataset.capabilities : '&who=authors'
     searchTerm = req.term
     const search = `&search=${req.term}`
     $.ajax(
       {
-        url: endpoint + search,
+        url: endpoint + capabilities + search,
         dataType: 'json',
         type: 'get',
         beforeSend: function (xhr) {

@@ -81,12 +81,12 @@ class Admin
       'indexing' );
 
   add_settings_section( 'quickedit',
-      esc_html__( 'Controlling choice of authors', 'index-wp-users-for-speed' ),
+      esc_html__( 'Choosing authors when editing posts and pages', 'index-wp-users-for-speed' ),
       [ $this, 'render_quickedit_section' ],
       $page );
 
   add_settings_field( 'quickedit_threshold',
-      esc_html__( 'Show a maximum of', 'index-wp-users-for-speed' ),
+      esc_html__( 'Use selection boxes', 'index-wp-users-for-speed' ),
       [ $this, 'render_quickedit_threshold_field' ],
       $page,
       'quickedit' );
@@ -228,14 +228,6 @@ class Admin
   <?php
  }
 
- public function render_quickedit_section() {
-  ?>
-  <p>
-   <?php esc_html_e( 'Author-choice menus can be unwieldy when your site has many authors. You can limit the number of choices presented at a time. To narrow down your choices you can type more of the author\'s name into the menu.', 'index-wp-users-for-speed' ) ?>
-  </p>
-  <?php
- }
-
  public function render_auto_rebuild_field() {
   $options     = get_option( $this->options_name );
   $autoRebuild = isset( $options['auto_rebuild'] ) ? $options['auto_rebuild'] : 'on';
@@ -318,19 +310,31 @@ class Admin
   <?php
  }
 
+ public function render_quickedit_section() {
+  ?>
+  <p>
+   <?php esc_html_e( 'Author-choice dropdown menus can be unwieldy when your site has many authors. If you have more than this number of authors, you will see selection boxes instead of dropdown menus. Choose an author by typing a few characters of the name into the selection box.
+   
+   ', 'index-wp-users-for-speed' ) ?>
+  </p>
+  <?php
+ }
+
  public function render_quickedit_threshold_field() {
-  $options   = get_option( $this->options_name );
-  $limit     = isset( $options['quickedit_threshold_limit'] ) ? $options['quickedit_threshold_limit'] : 50;
+  $options = get_option( $this->options_name );
+  $limit   = isset( $options['quickedit_threshold_limit'] ) ? $options['quickedit_threshold_limit'] : 50;
   ?>
   <div>
    <label
-       for="quickedit_threshold_limit"><input
+       for="quickedit_threshold_limit">
+    <span><?php esc_html_e( 'when you have more than', 'index-wp-users-for-speed' ) ?></span>
+    <input
         type="number"
         id="quickedit_threshold_limit"
         name="<?php echo esc_attr( $this->options_name ) ?>[quickedit_threshold_limit]"
         min="10" max="100"
         value="<?php echo esc_attr( $limit ) ?>">
-    <span><?php esc_html_e( 'choices at once in author selection menus.', 'index-wp-users-for-speed' ) ?></span>
+    <span><?php esc_html_e( 'authors registered on your site.', 'index-wp-users-for-speed' ) ?></span>
    </label></div>
   <?php
  }

@@ -2,7 +2,6 @@
 
 namespace IndexWpUsersForSpeed;
 
-
 /**
  * Task to erase everything, in chunks.
  */
@@ -44,16 +43,23 @@ class DepopulateMetaIndexes extends Task {
     global $wpdb;
     $this->startChunk();
 
-    $currentEnd    = $this->currentStart + $this->batchSize;
-    $keyPrefix     = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
-    $queryTemplate = /** @lang text */
+    $previouslyShowing     = $wpdb->hide_errors();
+    $previouslySuppressing = $wpdb->suppress_errors( true );
+    $currentEnd            = $this->currentStart + $this->batchSize;
+    $keyPrefix             = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
+    $queryTemplate         = /** @lang text */
       "DELETE FROM $wpdb->usermeta WHERE meta_key LIKE CONCAT(%s, '%%') AND user_id >= %d AND user_id < %d";
-    $query         = $wpdb->prepare( $queryTemplate, $wpdb->esc_like( $keyPrefix ), $this->currentStart, $currentEnd );
-    $wpdb->query( $query );
+    $query                 = $wpdb->prepare( $queryTemplate, $wpdb->esc_like( $keyPrefix ), $this->currentStart, $currentEnd );
+
+    $this->doQuery( $query );
+
     $this->currentStart = $currentEnd;
     $done               = $this->currentStart >= $this->maxUserId;
 
     $this->fractionComplete = max( 0, min( 1, $this->currentStart / $this->maxUserId ) );
+    $wpdb->suppress_errors( $previouslySuppressing );
+    $wpdb->show_errors( $previouslyShowing );
+
     $this->endChunk();
 
     return $done;
@@ -64,5 +70,3 @@ class DepopulateMetaIndexes extends Task {
   }
 
 }
-
-

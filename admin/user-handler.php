@@ -26,6 +26,8 @@ class UserHandler extends WordPressHooks {
   private $userCount = 0;
   private $options_name;
   private $selectionBoxCache;
+  private $doAutocomplete;
+  private $requestedCapabilities;
 
   public function __construct() {
 
@@ -41,7 +43,7 @@ class UserHandler extends WordPressHooks {
   /**
    * Filters whether the site is considered large, based on its number of users.
    *
-   * Here we declare that it's not large.
+   * Here we declare that the site is not large.
    *
    * @param bool $is_large_user_count Whether the site has a large number of users.
    * @param int $count The total number of users.
@@ -221,6 +223,9 @@ class UserHandler extends WordPressHooks {
     if ( wp_doing_cron() ) {
       return $result;
     }
+    if ( 'force_recount' === $strategy ) {
+      return $result;
+    }
     /* this bad boy gets called recursively, the way we cache user counts. */
     if ( ! array_key_exists( $site_id, $this->recursionLevelBySite ) ) {
       $this->recursionLevelBySite[ $site_id ] = 0;
@@ -255,10 +260,20 @@ class UserHandler extends WordPressHooks {
    * @noinspection PhpUnused
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
-    /* Are we populating the author choice menu for the classic editor? */
-    if ( array_key_exists( 'include_selected', $parsed_args ) && $parsed_args['include_selected']
-         && array_key_exists( 'name', $parsed_args ) && $parsed_args['name'] === 'post_author_override'
-         && array_key_exists( 'selected', $parsed_args ) && is_numeric( $parsed_args['selected'] ) && $parsed_args['selected'] > 0 ) {
+    /* is this about posts or pages */
+    if ( array_key_exists( 'capability', $query_args ) ) {
+      $this->requestedCapabilities = $query_args['capability'];
+    }
+    /* Is our number of possible authors smaller than the threshold? */
+    $threshold            = get_option( $this->options_name )['quickedit_threshold_limit'];
+    $editors              = $this->indexer->getEditors();
+    $this->doAutocomplete = true;
+    if ( count( $editors ) <= $threshold ) {
+      $this->doAutocomplete  = false;
+      $query_args['include'] = $editors;
+    } else if ( array_key_exists( 'include_selected', $parsed_args ) && $parsed_args['include_selected']
+                && array_key_exists( 'name', $parsed_args ) && $parsed_args['name'] === 'post_author_override'
+                && array_key_exists( 'selected', $parsed_args ) && is_numeric( $parsed_args['selected'] ) && $parsed_args['selected'] > 0 ) {
       /* Fetch just that single author, by ID, into the dropdown. The autocomplete code will then use it. */
       $query_args['include'] = [ $parsed_args['selected'] ];
       unset ( $query_args['capability'] );
@@ -267,55 +282,57 @@ class UserHandler extends WordPressHooks {
     $fixed_args = $this->filtered_query_args( $query_args, $parsed_args );
     /* This query is run twice, once for quickedit and again for bulkedit.
      * This suppresses most of the work in both runs.  */
-    $fixed_args ['number'] = 1;
-    unset ( $fixed_args['orderby'] );
-    unset ( $fixed_args['order'] );
+    if ( $this->doAutocomplete ) {
+      $fixed_args ['number'] = 1;
+      unset ( $fixed_args['orderby'] );
+      unset ( $fixed_args['order'] );
+    }
     return $fixed_args;
   }
 
   private function filtered_query_args( $query_args, $parsed_args ) {
-    $capFound = null;
+    $capsFound = [];
 
-    /* if the query is already restricted with an "include" item, do nothing */
-    if ( is_array( $query_args['include'] ) && count( $query_args['include'] ) > 0 ) {
-      return $query_args;
-    }
-    /* Notice that the JSON ajax requests for lists of users have the deprecated who=authors
-     * query syntax. This code allows both that and the new capability=[edit_posts] syntax */
-    if ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' ) {
-      $capFound = 'edit_posts';
-      unset ( $query_args['who'] );
-    } else if ( isset( $parsed_args['capability'] ) ) {
-      $argsCap = is_array( $parsed_args['capability'] ) ? $parsed_args['capability'] : [ $parsed_args['capability'] ];
-      /* capability item is set to either edit_posts or edit_pages */
+    if ( array_key_exists( 'capability', $parsed_args ) || array_key_exists( 'capability__in', $parsed_args ) ) {
+      /* deal with the possibility that we have either the capability or the capability__in arg */
+      $cap     = array_key_exists( 'capability', $parsed_args ) ? $parsed_args['capability'] : [];
+      $cap     = is_scalar( $cap ) ? $cap : [ $cap ];
+      $caps    = array_key_exists( 'capability__in', $parsed_args ) ? $parsed_args['capability__in'] : [];
+      $argsCap = array_unique( $cap + $caps );
+      /* capabilites are edit_posts and/or edit_pages */
       foreach ( [ 'edit_posts', 'edit_pages' ] as $capToCheck ) {
         if ( in_array( $capToCheck, $argsCap ) ) {
-          $capFound = $capToCheck;
+          $capsFound [] = $capToCheck;
         }
       }
+    } else if ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' ) {
+      /* Clean up the obsolete 'who' REST argument if it's there, thanks Gutenberg editor. */
+      $capsFound = [ 'edit_posts', 'edit_pages' ];
+      unset ( $query_args['who'] );
     } else {
       return $query_args;
     }
-    /* get the pre-stored list of editors */
-    $editors = $this->indexer->getEditors();
     /* count up the users if we can */
     $userCounts = $this->indexer->getUserCounts( false );
+    $userCounts = is_array( $userCounts ) ? $userCounts : [];
     $roleCounts = array_key_exists( 'avail_roles', $userCounts ) ? $userCounts['avail_roles'] : [];
-    if ( $this->indexer->isMetaIndexRoleAvailable() &&
-         is_array( $editors ) &&
-         count( $editors ) >= INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT ) {
-      /* We have many registered editors and the meta indexing is done. Use it. */
-      /* Find the list of roles (administrator, contributor, etc.) with the $capFound capability */
+    if ( $this->indexer->isMetaIndexRoleAvailable() ) {
+      /* the meta indexing is done. Use it. */
+      /* Find the list of roles (administrator, contributor, etc.) with $capsFound capabilities */
       global $wp_roles;
+      /* sometimes it isn't initialized in multisite. */
+      $wp_roles = $wp_roles ?: new \WP_Roles();
       $wp_roles->for_site( get_current_blog_id() );
       $metaQuery = [];
-      foreach ( $wp_roles->roles as $name => $role ) {
-        $caps = &$role['capabilities'];
-        if ( array_key_exists( $capFound, $caps ) && $caps[ $capFound ] === true ) {
-          $userCount = array_key_exists( $name, $roleCounts ) ? $roleCounts[ $name ] : 0;
-          if ( $userCount > 0 ) {
-            $metaQuery[]     = $this->makeRoleQueryArgs( $name );
-            $this->userCount += $userCount;
+      foreach ( $capsFound as $capFound ) {
+        foreach ( $wp_roles->roles as $name => $role ) {
+          $caps = &$role['capabilities'];
+          if ( array_key_exists( $capFound, $caps ) && $caps[ $capFound ] === true ) {
+            $userCount = array_key_exists( $name, $roleCounts ) ? $roleCounts[ $name ] : 0;
+            if ( $userCount > 0 ) {
+              $metaQuery[]     = $this->makeRoleQueryArgs( $name );
+              $this->userCount += $userCount;
+            }
           }
         }
       }
@@ -329,6 +346,7 @@ class UserHandler extends WordPressHooks {
       $query_args ['meta_query'] = $metaQuery;
       unset ( $query_args['capability'] );
     } else {
+      /*  The meta indexing isn't yet done. Return partial list of editors. */
       $editors = $this->indexer->getEditors();
       if ( is_array( $editors ) ) {
         $query_args['include'] = $editors;
@@ -677,6 +695,11 @@ class UserHandler extends WordPressHooks {
    * @noinspection PhpUnused
    */
   public function filter__rest_user_query( $query_args, $request ) {
+    $threshold = get_option( $this->options_name )['quickedit_threshold_limit'];
+    $editors   = $this->indexer->getEditors();
+    if ( count( $editors ) <= $threshold ) {
+      $query_args['include'] = $editors;
+    }
     return $this->filtered_query_args( $query_args, $query_args );
   }
 
@@ -690,10 +713,17 @@ class UserHandler extends WordPressHooks {
    *
    */
   public function filter__wp_dropdown_users( $html ) {
+    if ( ! $this->doAutocomplete ) {
+      return $html;
+    }
+
     wp_enqueue_script( 'jquery-ui-autocomplete' );
     wp_enqueue_script( 'iufs-ui-autocomplete',
       plugins_url( 'js/quick-edit-autocomplete.js', __FILE__ ),
       [ 'jquery-ui-autocomplete' ], INDEX_WP_USERS_FOR_SPEED_VERSION );
+    wp_enqueue_style( 'iufs-ui-autocomplete-style',
+      plugins_url( 'css/quick-edit-autocomplete.css', __FILE__ ),
+      [], INDEX_WP_USERS_FOR_SPEED_VERSION );
 
     $selectionBox = new SelectionBox( $html, get_option( $this->options_name ) );
     $selectionBox->addClass( 'index-wp-users-for-speed' );
@@ -708,7 +738,7 @@ class UserHandler extends WordPressHooks {
     } else {
       $this->selectionBoxCache = $selectionBox;
     }
-    $autocompleteHtml = $this->selectionBoxCache->generateAutocomplete( false );
+    $autocompleteHtml = $this->selectionBoxCache->generateAutocomplete( $this->requestedCapabilities, false );
     $selectHtml       = $this->selectionBoxCache->generateSelect( false );
 
     return $selectHtml . PHP_EOL . $autocompleteHtml;

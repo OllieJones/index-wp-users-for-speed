@@ -18,29 +18,41 @@ class GetEditors extends Task {
   public function __construct( $siteId = null, $timeout = 0 ) {
 
     parent::__construct( $siteId, $timeout );
+    /* This may not be initialized in multisite. */
+    global $wp_roles;
+    $wp_roles = $wp_roles ?: new \WP_Roles();
   }
 
   /** Retrieve the user counts and update the transient
    * The output of this is used to limit the number of users handled by
-   * user-lookup queries when the role-based lookup isn't yet available.
+   * user-lookup queries when there are a small number, or when
+   * the role-based indexing isn't ready yet.
+   *
    * @return boolean  done When this is false, schedule another chunk.
    */
   public function doChunk() {
+
     $this->startChunk();
+    $userCount = get_option( INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options' )['quickedit_threshold_limit'];
+    $editors   = [];
 
-    $editors = [];
+    $params = [
+      'blog_id'        => $this->siteId,
+      'capability__in' => [ 'edit_posts', 'edit_pages' ],
+      'fields'         => 'ID',
+      'orderby'        => 'ID',
+      'number'         => $userCount + 1,
+      'count_total'    => false,
+    ];
 
-    $userQuery = new WP_User_Query(
-      [
-        'capabilities__in' => [ 'edit_posts', 'edit_pages' ],
-        'fields'           => 'ID',
-        'orderby'          => 'ID',
-        'number'           => INDEX_WP_USERS_FOR_SPEED_USER_COUNT_LIMIT,
-        'count_total'      => false,
-      ] );
+    global $wpdb;
+    $this->log( $wpdb->options );
+    $this->log( serialize( $params ) );
+    $userQuery = new WP_User_Query( $params );
     $qresults  = $userQuery->get_results();
     if ( ! empty ( $qresults ) ) {
-      $editors = array_map( 'intval', $qresults );
+      $editors = array_map( 'intval', array_filter( $qresults ) );
+      $this->log( serialize( $editors ) );
     }
 
     $this->setStatus( [ 'editors' => $editors ], true, false, 1 );
@@ -61,5 +73,3 @@ class GetEditors extends Task {
   }
 
 }
-
-

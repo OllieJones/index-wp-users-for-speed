@@ -22,7 +22,7 @@ class CountUsers extends Task {
   public function doChunk() {
     $this->startChunk();
 
-    $userCounts = count_users();
+    $userCounts = count_users('force_recount');
     $this->setStatus( $userCounts, true, false, 1 );
 
     $this->endChunk();
@@ -31,5 +31,3 @@ class CountUsers extends Task {
   }
 
 }
-
-

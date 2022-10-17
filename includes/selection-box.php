@@ -91,9 +91,15 @@ class SelectionBox {
 
   /** Generate an autocomplete tag.
    */
-  public function generateAutocomplete( $pretty = false ) {
+  public function generateAutocomplete( $requestedCapabilities, $pretty = false ) {
     $nl = $pretty ? PHP_EOL : '';
 
+    /* pass capabilities to page so REST query can include them */
+    $data_capabilities = '';
+    if ( $requestedCapabilities ) {
+      $requestedCapabilities = is_string( $requestedCapabilities ) ? [ $requestedCapabilities ] : $requestedCapabilities;
+      $data_capabilities     = esc_attr( 'data-capabilities=' . implode( ',', $requestedCapabilities ) );
+    }
     /* we need to give the base URL for the REST API to Javascript
      * so it gets the right site in multisite. */
     $url         = get_site_url();
@@ -104,7 +110,7 @@ class SelectionBox {
       "<span class='input-text-wrap'><input
  type='text' name='$this->name-auto' class='{$this->classes()}'
  data-count='$count' data-nonce='$nonce' data-url='$url' data-p1='$placeholder' data-p2=''
- placeholder='$placeholder'></span>$nl";
+ $data_capabilities placeholder='$placeholder'></span>$nl";
 
     return $tag;
   }

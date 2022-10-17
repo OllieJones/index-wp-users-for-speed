@@ -17,10 +17,10 @@ function index_wp_users_for_speed_do_task( $taskName ) {
   try {
     $task = Task::restorePersisted( $taskName );
     /* it's possible for the task, persisted in a transient, to be gone. */
-    if ( $task && method_exists($task, 'doTaskStep')) {
+    if ( $task && method_exists( $task, 'doTaskStep' ) ) {
       $task->doTaskStep();
     } else {
-      error_log ('index_wp_users_for_speed_task: task expired, so cannot run: ' . $taskName);
+      error_log( 'index_wp_users_for_speed_task: task expired, so cannot run: ' . $taskName );
     }
   } catch ( Exception $ex ) {
     $taskName = ( $task && $task->taskName ) ? $task->taskName : 'persisted ' . $taskName;
@@ -51,7 +51,7 @@ abstract class Task {
     $this->siteId    = $siteId;
     $this->timeout   = $timeout;
     $reflect         = new ReflectionClass( $this );
-    $this->taskName  = $reflect->getShortName();
+    $this->taskName  = $reflect->getShortName() . '_' . $siteId;
   }
 
   public static function restorePersisted( $taskName ) {
@@ -120,6 +120,23 @@ abstract class Task {
     return implode( '', $res );
   }
 
+  protected function generateCallTrace() {
+    $e     = new Exception();
+    $trace = explode( "\n", $e->getTraceAsString() );
+    // reverse array to make steps line up chronologically
+    $trace = array_reverse( $trace );
+    array_shift( $trace ); // remove {main}
+    array_pop( $trace ); // remove call to this method
+    $length = count( $trace );
+    $result = [];
+
+    for ( $i = 0; $i < $length; $i ++ ) {
+      $result[] = ( $i + 1 ) . ')' . substr( $trace[ $i ], strpos( $trace[ $i ], ' ' ) ); // replace '#someNum' with '$i)', set the right ordering
+    }
+
+    return "\t" . implode( "\n\t", $result );
+  }
+
   public function log(
     $msg, $time = 0
   ) {
@@ -128,12 +145,13 @@ abstract class Task {
     $words[] = $this->taskName;
     $words[] = '(' . $this->siteId . ')';
     $words[] = '#' . $this->useCount;
-    $words[] = $msg;
+    $words[] = is_string( $msg ) ? $msg : serialize( $msg );
     if ( $time ) {
       $words[] = 'for time';
       $words[] = date( 'Y-m-d H:i:s', $time );
     }
-    $msg = implode( ' ', $words );
+    $words [] = $this->generateCallTrace();
+    $msg      = implode( ' ', $words );
     Indexer::writeLog( $msg );
   }
 
@@ -288,15 +306,54 @@ abstract class Task {
     $this->useCount ++;
   }
 
-  protected function setBlog() {
+  public function setBlog() {
     if ( is_multisite() ) {
       switch_to_blog( $this->siteId );
     }
   }
 
-  protected function restoreBlog() {
+  public function restoreBlog() {
     if ( is_multisite() ) {
       restore_current_blog();
     }
   }
+
+  /** Do $wpdb->query, retrying if a deadlock is found.
+   *
+   * @param string $query The duly prepared query
+   * @param int $retries The maximum number of times to retry before giving up, default 5.
+   * @param float $delay The time, in seconds, to delay after a deadlock failure, default 0.1.
+   *
+   * @return bool|int|mixed|\mysqli_result|resource|null
+   */
+  public function doQuery ($query, $retries = 5, $delay = 0.1) {
+    global $wpdb;
+    $result = 0;
+
+    /* deal with potential deadlocks deactivating */
+    $retry = $retries;
+    while ( $retry > 0 ) {
+      $success = true;
+      $result  = $wpdb->query( $query );
+      if ( $result === false ) {
+        $err     = $wpdb->error;
+        $message = '';
+        $message = is_string( $err ) ? $err : $message;
+        $message = is_wp_error( $err ) ? $err->get_error_message() : $message;
+        if ( false === stripos( $message, 'Deadlock found' ) ) {
+          $success = false;
+        }
+      }
+      if ( $success ) {
+        break;
+      }
+      usleep( $delay * 1000000 );
+      $retry --;
+      if ($retry <= 0 ) {
+        error_log("Deadlock after $retries retries: $query");
+      }
+    }
+    return $result;
+  }
+
 }
