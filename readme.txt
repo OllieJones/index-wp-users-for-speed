@@ -105,6 +105,11 @@ Once you have activated it, configure it via the Index for Speed menu item under
 
 == Changelog ==
 
+= 1.1.2 =
+
+* Correct query-optimization error.
+* Update the usermeta table's query-planning statistics after adding user metadata.
+
 = 1.1.1 =
 
 * Replace the author dropdown menus in Quick Edit and Bulk Edit with autocompletion fields, to

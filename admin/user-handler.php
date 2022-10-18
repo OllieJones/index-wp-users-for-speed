@@ -296,7 +296,7 @@ class UserHandler extends WordPressHooks {
     if ( array_key_exists( 'capability', $parsed_args ) || array_key_exists( 'capability__in', $parsed_args ) ) {
       /* deal with the possibility that we have either the capability or the capability__in arg */
       $cap     = array_key_exists( 'capability', $parsed_args ) ? $parsed_args['capability'] : [];
-      $cap     = is_scalar( $cap ) ? $cap : [ $cap ];
+      $cap     = is_array( $cap ) ? $cap : [ $cap ];
       $caps    = array_key_exists( 'capability__in', $parsed_args ) ? $parsed_args['capability__in'] : [];
       $argsCap = array_unique( $cap + $caps );
       /* capabilites are edit_posts and/or edit_pages */
