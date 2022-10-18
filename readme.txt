@@ -1,10 +1,10 @@
 === Index WP Users For Speed ===
 Contributors: Oliver Jones
-Tags: users, database, index, performance, largesite
+Tags: users, database, index, performance, largesite, dashboard
 Requires at least: 5.2
 Tested up to: 6.1
 Requires PHP: 5.6
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -15,7 +15,7 @@ Primary Branch: main
 Text Domain: index-wp-users-for-speed
 Domain Path: /languages
 
-Do you have thousands of users on your WordPress site? Look them up fast by indexing them in your metadata. Eliminate slow loading on Users, Posts, and Pages panels in your dashboard.
+Do you have thousands of users on your WordPress site? Look them up fast. Find authors more easily. Speed up your laggy dashboard.
 
 == Description ==
 
@@ -82,15 +82,33 @@ Once the indexing rows are in place, you can add, delete, or change user roles w
 
 WordPress's trac (defect-tracking) system has [this ticket # 38741](https://core.trac.wordpress.org/ticket/38741).
 
+<h4>Why?</h4>
+
+Three reasons (maybe four):
+
+1. to save carbon footprint.
+2. to save carbon footprint.
+3. to save carbon footprint.
+4. to save people time.
+
+Seriously, the microwatt hours of electricity saved by faster web site technologies add up fast, especially at WordPress's global scale.
+
 == Installation ==
 
-Install and activate this plugin in the usual way via the Plugins panel in your site's dashboard.
+Install and activate this plugin in the usual way via the Plugins panel in your site's dashboard. Once you have activated it, configure it via the Index for Speed menu item under Users.
 
-Or, if you use [composer](https://getcomposer.org/) to configure your site, install it with this command.
 
-`composer require wpackagist-plugin/index-wp-users-for-speed`
+= WP-CLI =
 
-Once you have activated it, configure it via the Index for Speed menu item under Users.
+`wp plugin install index-wp-users-for-speed
+wp plugin activate index-wp-users-for-speed
+`
+= Composer =
+
+If you configure your WordPress installation using composer, you may install this plugin into your WordPress top level configuration with the command
+
+`composer require "wpackagist-plugin/index-wp-users-for-speed":"^1.1"`
+
 
 = Credits =
 * "Crowd", a photo by James Cridland, in the banner and icon. [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
