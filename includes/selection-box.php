@@ -80,9 +80,13 @@ class SelectionBox {
    * @return string HTML for select tag.
    */
   public function generateSelect( $pretty = false ) {
-    $o    = [];
-    $o [] = "<select name='$this->name' class='{$this->classes()}'>";
-    foreach ( $this->users as $user ) {
+    $o     = [];
+    $o []  = "<select name='$this->name' class='{$this->classes()}'>";
+    $users = $this->users;
+    usort( $users, function ( $a, $b ) {
+      return strnatcasecmp( $a->label, $b->label );
+    } );
+    foreach ( $users as $user ) {
       $o [] = ( $pretty ? '  ' : '' ) . "<option value='$user->id'>$user->label</option>";
     }
     $o [] = "</select>";
