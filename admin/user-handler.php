@@ -32,6 +32,7 @@ class UserHandler extends WordPressHooks {
   private $doAutocomplete;
   private $requestedCapabilities;
   private $savedOrderby;
+  private $doingRestQuery;
 
   public function __construct() {
 
@@ -511,6 +512,12 @@ class UserHandler extends WordPressHooks {
         }
       }
     }
+
+    /* Are we doing a REST query? If so we can get rid of the ordering to speed things up. */
+    if ($this->doingRestQuery) {
+      $query->query_orderby = '';
+      $this->doingRestQuery = false;
+    }
     return $results;
   }
 
@@ -756,6 +763,7 @@ class UserHandler extends WordPressHooks {
     if ( count( $editors ) <= $threshold ) {
       $query_args['include'] = $editors;
     }
+    $this->doingRestQuery = true;
     return $this->filtered_query_args( $query_args, $query_args );
   }
 
@@ -799,6 +807,7 @@ class UserHandler extends WordPressHooks {
       } );
     }
     $this->savedOrderby = null;
+    $this->doingRestQuery = false;
     return $response;
   }
 
