@@ -323,18 +323,22 @@ class UserHandler extends WordPressHooks {
       /* sometimes it isn't initialized in multisite. */
       $wp_roles = $wp_roles ?: new \WP_Roles();
       $wp_roles->for_site( get_current_blog_id() );
-      $metaQuery = [];
+      $roleList = [];
       foreach ( $capsFound as $capFound ) {
         foreach ( $wp_roles->roles as $name => $role ) {
           $caps = &$role['capabilities'];
           if ( array_key_exists( $capFound, $caps ) && $caps[ $capFound ] === true ) {
             $userCount = array_key_exists( $name, $roleCounts ) ? $roleCounts[ $name ] : 0;
             if ( $userCount > 0 ) {
-              $metaQuery[]     = $this->makeRoleQueryArgs( $name );
-              $this->userCount += $userCount;
+              $roleList[ $name ] = true;
+              $this->userCount   += $userCount;
             }
           }
         }
+      }
+      $metaQuery = [];
+      foreach ( $roleList as $name => $_ ) {
+        $metaQuery[] = $this->makeRoleQueryArgs( $name );
       }
       if ( count( $metaQuery ) === 0 ) {
         return $query_args;
@@ -344,6 +348,7 @@ class UserHandler extends WordPressHooks {
       }
       add_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10, 6 );
       $query_args ['meta_query'] = $metaQuery;
+      unset ( $query_args ['capability__in'] );
       unset ( $query_args['capability'] );
     } else {
       /*  The meta indexing isn't yet done. Return partial list of editors. */
