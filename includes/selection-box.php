@@ -26,6 +26,11 @@ class SelectionBox {
     }
   }
 
+  /**
+   * @param string $html <select> tag with one or more OPTION tags
+   *
+   * @return void
+   */
   private function parseHtmlSelectInfo( $html ) {
     $inputDom    = new DOMDocument();
     $this->users = [];
@@ -43,8 +48,13 @@ class SelectionBox {
         $this->class = array_unique( array_filter( explode( ' ', trim( $attributes->getNamedItem( 'class' )->nodeValue ) ) ) );
         $options     = $select->getElementsByTagName( 'option' );
         foreach ( $options as $option ) {
-          $id             = intval( $option->attributes->getNamedItem( 'value' )->nodeValue );
-          $label          = $option->textContent;
+          $id    = intval( $option->attributes->getNamedItem( 'value' )->nodeValue );
+          $label = $option->textContent;
+          if ( $id < 0 ) {
+            $id = - 1;
+            /* this is a core localization, hence no domain */
+            $label = __( '&mdash; No Change &mdash;' );
+          }
           $this->users [] = (object) [ 'id' => $id, 'label' => $label ];
         }
       }
@@ -55,22 +65,38 @@ class SelectionBox {
     }
   }
 
+  /** Get a class attribute string from the array of class names.
+   * @return string
+   */
   private function classes() {
-    return implode( ' ', array_unique( $this->class ) );
+    return implode( ' ', array_unique( array_filter( $this->class ) ) );
   }
 
+  /** Add a class name.
+   * @param string $class Class name to add.
+   *
+   * @return void
+   */
   public function addClass( $class ) {
     if ( is_string( $class ) ) {
       $class = [ $class ];
     }
-    $this->class = array_unique( array_merge( $this->class, $class ) );
+    $this->class = array_unique( array_merge( array_filter( $this->class ), array_filter( $class ) ) );
   }
 
+  /** Remove a class name.
+   *
+   * Does nothing if the class isn't already there.
+   *
+   * @param string $class Class to remove.
+   *
+   * @return void
+   */
   public function removeClass( $class ) {
     if ( is_string( $class ) ) {
       $class = [ $class ];
     }
-    $this->class = array_diff( $this->class, $class );
+    $this->class = array_unique( array_filter (array_diff( $this->class, $class )));
   }
 
   /** Generate a <select> tag.
@@ -98,7 +124,7 @@ class SelectionBox {
   public function generateAutocomplete( $requestedCapabilities, $pretty = false ) {
     $nl = $pretty ? PHP_EOL : '';
 
-    /* pass capabilities to page so REST query can include them */
+    /* pass capabilities to the dataset of the <input> tag so the REST query can include them */
     $data_capabilities = '';
     if ( $requestedCapabilities ) {
       $requestedCapabilities = is_string( $requestedCapabilities ) ? [ $requestedCapabilities ] : $requestedCapabilities;

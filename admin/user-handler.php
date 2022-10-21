@@ -506,15 +506,16 @@ class UserHandler extends WordPressHooks {
               array_shift( $components );
               $field = implode( '.', $components );
             }
-            $fakeRow[ $field ] = '1';
+            $fakeRow[ $field ] = '-1';
           }
+          $query->query_fields = $fields;
           return [ (object) $fakeRow ];
         }
       }
     }
 
     /* Are we doing a REST query? If so we can get rid of the ordering to speed things up. */
-    if ($this->doingRestQuery) {
+    if ( $this->doingRestQuery ) {
       $query->query_orderby = '';
       $this->doingRestQuery = false;
     }
@@ -806,7 +807,7 @@ class UserHandler extends WordPressHooks {
         return strnatcasecmp( $a['name'], $b['name'] );
       } );
     }
-    $this->savedOrderby = null;
+    $this->savedOrderby   = null;
     $this->doingRestQuery = false;
     return $response;
   }
