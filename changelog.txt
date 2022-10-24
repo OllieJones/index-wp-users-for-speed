@@ -1,0 +1,20 @@
+= 1.0.3 =
+
+* Fix bug when deleting users.
+
+= 1.0.2 =
+
+* Handle disabled WP_Cron.
+* Add ordering of authors by post count, and limiting the number of authors, in Quick Edit pulldowns.
+* Correct some object-handling code, making protected methods public.
+
+= 1.0.1 =
+
+* Add notice bar showing progress. Use heartbeat to keep progress going.
+* Fix defect when changing user role.
+* Integrate correctly with https://core.trac.wordpress.org/ticket/38741 for large site handling.
+* Now allows changing user roles. Supports WordPress 6.0
+
+= 1.0.0 =
+
+First release

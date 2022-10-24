@@ -4,7 +4,7 @@ Tags: users, database, index, performance, largesite, dashboard
 Requires at least: 5.2
 Tested up to: 6.1
 Requires PHP: 5.6
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -82,7 +82,7 @@ Once the indexing rows are in place, you can add, delete, or change user roles w
 
 WordPress's trac (defect-tracking) system has [this ticket # 38741](https://core.trac.wordpress.org/ticket/38741).
 
-<h4>Why?</h4>
+= Why use this plugin? =
 
 Three reasons (maybe four):
 
@@ -97,7 +97,6 @@ Seriously, the microwatt hours of electricity saved by faster web site technolog
 
 Install and activate this plugin in the usual way via the Plugins panel in your site's dashboard. Once you have activated it, configure it via the Index for Speed menu item under Users.
 
-
 = WP-CLI =
 
 `wp plugin install index-wp-users-for-speed
@@ -105,7 +104,7 @@ wp plugin activate index-wp-users-for-speed
 `
 = Composer =
 
-If you configure your WordPress installation using composer, you may install this plugin into your WordPress top level configuration with the command
+If you configure your WordPress installation using composer, you may install this plugin into your WordPress top level configuration with this command.
 
 `composer require "wpackagist-plugin/index-wp-users-for-speed":"^1.1"`
 
@@ -123,6 +122,11 @@ If you configure your WordPress installation using composer, you may install thi
 
 == Changelog ==
 
+= 1.1.3 =
+
+* Correct query-optimization problem when rendering autocompletion fields.
+* Test and optimize with MariaDB 10.9.
+
 = 1.1.2 =
 
 * Correct query-optimization error.
@@ -139,37 +143,17 @@ allow more flexible changes of post and page authors.
 
 * Fix bug preventing wp-cli deactivation. Props to [João Faria](https://github.com/jffaria).
 
-= 1.0.3 =
-
-* Fix bug deleting users.
-
-= 1.0.2 =
-
-* Handle disabled WP_Cron.
-* Add ordering of authors by post count, and limiting the number of authors, in Quick Edit pulldowns.
-* Correct some object-handling code, making protected methods public.
-
-= 1.0.1 =
-
-* Add notice bar showing progress. Use heartbeat to keep progress going.
-* Fix defect when changing user role.
-* Integrate correctly with https://core.trac.wordpress.org/ticket/38741 for large site handling.
-* Now allows changing user roles. Supports WordPress 6.0
-
-= 1.0.0 =
-
-First release
-
 == Upgrade Notice ==
 
-Version 1.1.1 ...
+Version 1.1.3 ...
 
-* Is faster.
-* Replaces the author dropdown menus in Quick Edit and Bulk Edit with autocompletion fields, to
-allow more flexible changes of post and page authors. These author-choice fields now work similarly to the Author field in the Gutenberg post and page editor.
+* Has significant performance improvements.
+* Is tested with MySQL up to the latest of version 8, and with MariaDB up to version 10.9.
+* Allows easier selection of authors. Quick Edit, Bulk Edit, and the Classic Editor contain dropdown menus for selecting authors. This plugin replaces those menus with autocompletion fields, to
+allow more flexible changes of post and page authors. These author-choice fields now work similarly to the Author field in the Gutenberg post and page editor. (For sites with many authors, the dropdown menus perform poorly. And after version 6.0.2 they weren't available at all for large sites.
 * Allows multiple roles per user as provided in plugins like User Role Editor.
-* Fixes a multisite bug.
+* Fixes a few bug.
 
-In this version the dashboard panel no longer shows the options for controlling the choice of users. Replacing the dropdown menus with autocompletion fields has made those options obsolete.
+In this version the dashboard panel lets you specify a number of author users. If your site's number of author users is less than the number you specify you will see WordPress's ordinary dropdown.  The option to order authors by post count from earlier versions is no longer available, as it makes little sense when combined with autocompletion.
 
 Thanks to my loyal users who have reported problems.
