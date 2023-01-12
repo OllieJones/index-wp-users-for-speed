@@ -63,6 +63,41 @@ class UserHandler extends WordPressHooks {
     return false;
   }
 
+  /**
+   * Fires immediately before updating user metadata.
+   *
+   * We use this to watch for changes in the wp_capabilities metadata.
+   * (It's named wp_2_capabilities etc in multisite).
+   *
+   * @param int $meta_id ID of the metadata entry to update.
+   * @param int $user_id ID of the object metadata is for.
+   * @param string $meta_key Metadata key.
+   * @param mixed $meta_value Metadata value, not serialized.
+   *
+   * @return void
+   * @since 2.9.0
+   *
+   */
+  public function action__update_user_meta( $meta_id, $user_id, $meta_key, $meta_value ) {
+    if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
+      return;
+    }
+    $newRoles = $this->sanitizeCapabilitiesOption( $meta_value );
+    $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
+    $this->userRoleChange( $user_id, $newRoles, $oldRoles );
+  }
+
+  /** Returns the capabilities meta key, or false if it's not the capabilities key.
+   *
+   * @param $meta_key
+   *
+   * @return false|string
+   */
+  private function isCapabilitiesKey( $meta_key ) {
+    global $wpdb;
+    return $meta_key === $wpdb->prefix . 'capabilities';
+  }
+
   /** Make sure wp_capabilities option values don't contain unexpected junk.
    *
    * @param array $option Option value, from dbms.
@@ -98,27 +133,29 @@ class UserHandler extends WordPressHooks {
   }
 
   /**
-   * Fires immediately before updating user metadata.
-   *
-   * We use this to watch for changes in the wp_capabilities metadata.
-   * (It's named wp_2_capabilities etc in multisite).
-   *
-   * @param int $meta_id ID of the metadata entry to update.
-   * @param int $user_id ID of the object metadata is for.
-   * @param string $meta_key Metadata key.
-   * @param mixed $meta_value Metadata value, not serialized.
+   * @param int $user_id
+   * @param array $newRoles
+   * @param array $oldRoles
    *
    * @return void
-   * @since 2.9.0
-   *
    */
-  public function action__update_user_meta( $meta_id, $user_id, $meta_key, $meta_value ) {
-    if ( ! $this->isCapabilitiesKey( $meta_key ) ) {
-      return;
+  private function userRoleChange( $user_id, $newRoles, $oldRoles ) {
+
+    if ( $newRoles !== $oldRoles ) {
+      $toAdd    = array_diff_key( $newRoles, $oldRoles );
+      $toRemove = array_diff_key( $oldRoles, $newRoles );
+
+      foreach ( array_keys( $toRemove ) as $role ) {
+        $this->indexer->updateUserCounts( $role, - 1 );
+        $this->indexer->updateEditors( $user_id, true );
+        $this->indexer->removeIndexRole( $user_id, $role );
+      }
+      foreach ( array_keys( $toAdd ) as $role ) {
+        $this->indexer->updateUserCounts( $role, + 1 );
+        $this->indexer->updateEditors( $user_id, false );
+        $this->indexer->addIndexRole( $user_id, $role );
+      }
     }
-    $newRoles = $this->sanitizeCapabilitiesOption( $meta_value );
-    $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
-    $this->userRoleChange( $user_id, $newRoles, $oldRoles );
   }
 
   /**
@@ -168,43 +205,6 @@ class UserHandler extends WordPressHooks {
     $oldRoles = $this->getCurrentUserRoles( $user_id, $meta_key );
     $this->indexer->updateUserCountsTotal( - 1 );
     $this->userRoleChange( $user_id, [], $oldRoles );
-  }
-
-  /** Returns the capabilities meta key, or false if it's not the capabilities key.
-   *
-   * @param $meta_key
-   *
-   * @return false|string
-   */
-  private function isCapabilitiesKey( $meta_key ) {
-    global $wpdb;
-    return $meta_key === $wpdb->prefix . 'capabilities';
-  }
-
-  /**
-   * @param int $user_id
-   * @param array $newRoles
-   * @param array $oldRoles
-   *
-   * @return void
-   */
-  private function userRoleChange( $user_id, $newRoles, $oldRoles ) {
-
-    if ( $newRoles !== $oldRoles ) {
-      $toAdd    = array_diff_key( $newRoles, $oldRoles );
-      $toRemove = array_diff_key( $oldRoles, $newRoles );
-
-      foreach ( array_keys( $toRemove ) as $role ) {
-        $this->indexer->updateUserCounts( $role, - 1 );
-        $this->indexer->updateEditors( $user_id, true );
-        $this->indexer->removeIndexRole( $user_id, $role );
-      }
-      foreach ( array_keys( $toAdd ) as $role ) {
-        $this->indexer->updateUserCounts( $role, + 1 );
-        $this->indexer->updateEditors( $user_id, false );
-        $this->indexer->addIndexRole( $user_id, $role );
-      }
-    }
   }
 
   /**
@@ -273,7 +273,7 @@ class UserHandler extends WordPressHooks {
     $threshold            = get_option( $this->options_name )['quickedit_threshold_limit'];
     $editors              = $this->indexer->getEditors();
     $this->doAutocomplete = true;
-    if ( count( $editors ) <= $threshold ) {
+    if ( ! is_array( $editors ) || count( $editors ) <= $threshold ) {
       $this->doAutocomplete  = false;
       $query_args['include'] = $editors;
     } else if ( array_key_exists( 'include_selected', $parsed_args ) && $parsed_args['include_selected']
@@ -368,46 +368,22 @@ class UserHandler extends WordPressHooks {
     return $query_args;
   }
 
-  /** Traverse a nested WP_Query_Meta query array flattening the
-   *  real terms in it.
+  /** Create a meta arg for looking for an exsisting role tag
    *
-   * @param array $query
+   * @param string $role
+   * @param string $compare 'NOT EXISTS' or 'EXISTS' (the default).
    *
-   * @return array Flattened array.
+   * @return array meta query arg array
    */
-  private function parseQuery( $query ) {
-    $result = [];
+  private
+  function makeRoleQueryArgs(
+    $role, $compare = 'EXISTS'
+  ) {
+    global $wpdb;
+    $roleMetaPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
+    $roleMetaKey    = $roleMetaPrefix . $role;
 
-    foreach ( $query as $k => $q ) {
-      if ( $k !== 'relation' ) {
-        if ( array_key_exists( 'key', $q ) && array_key_exists( 'compare', $q ) ) {
-          $result [] = $q;
-        } else {
-          $result = array_merge( $result, $this->parseQuery( $q ) );
-        }
-      }
-    }
-    return $result;
-  }
-
-  /** Flatten out the meta query terms we get from a multisite setup,
-   *   allowing their interpretation as if from a single site.
-   *  This is kludgey because it removes AND exists(wp_capabilities key).
-   *
-   * @param array $query
-   * @param string $keyToRemove Something like wp_2_capapabilities or wp_capabilities
-   *
-   * @return string[]
-   */
-  private function flattenQuery( $query, $keyToRemove ) {
-    $r = $this->parseQuery( $query );
-    $q = [ 'relation' => 'OR' ];
-    foreach ( $r as $item ) {
-      if ( $item['key'] !== $keyToRemove ) {
-        $q [] = $item;
-      }
-    }
-    return $q;
+    return [ 'key' => $roleMetaKey, 'compare' => $compare ];
   }
 
   /**
@@ -470,6 +446,48 @@ class UserHandler extends WordPressHooks {
       $sql['where'] = $where;
     }
     return $sql;
+  }
+
+  /** Flatten out the meta query terms we get from a multisite setup,
+   *   allowing their interpretation as if from a single site.
+   *  This is kludgey because it removes AND exists(wp_capabilities key).
+   *
+   * @param array $query
+   * @param string $keyToRemove Something like wp_2_capapabilities or wp_capabilities
+   *
+   * @return string[]
+   */
+  private function flattenQuery( $query, $keyToRemove ) {
+    $r = $this->parseQuery( $query );
+    $q = [ 'relation' => 'OR' ];
+    foreach ( $r as $item ) {
+      if ( $item['key'] !== $keyToRemove ) {
+        $q [] = $item;
+      }
+    }
+    return $q;
+  }
+
+  /** Traverse a nested WP_Query_Meta query array flattening the
+   *  real terms in it.
+   *
+   * @param array $query
+   *
+   * @return array Flattened array.
+   */
+  private function parseQuery( $query ) {
+    $result = [];
+
+    foreach ( $query as $k => $q ) {
+      if ( $k !== 'relation' ) {
+        if ( array_key_exists( 'key', $q ) && array_key_exists( 'compare', $q ) ) {
+          $result [] = $q;
+        } else {
+          $result = array_merge( $result, $this->parseQuery( $q ) );
+        }
+      }
+    }
+    return $result;
   }
 
   /**
@@ -726,24 +744,6 @@ class UserHandler extends WordPressHooks {
     $qv['role']         = '';
     $qv['role__in']     = [];
     $qv['role__not_in'] = [];
-  }
-
-  /** Create a meta arg for looking for an exsisting role tag
-   *
-   * @param string $role
-   * @param string $compare 'NOT EXISTS' or 'EXISTS' (the default).
-   *
-   * @return array meta query arg array
-   */
-  private
-  function makeRoleQueryArgs(
-    $role, $compare = 'EXISTS'
-  ) {
-    global $wpdb;
-    $roleMetaPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
-    $roleMetaKey    = $roleMetaPrefix . $role;
-
-    return [ 'key' => $roleMetaKey, 'compare' => $compare ];
   }
 
   /**

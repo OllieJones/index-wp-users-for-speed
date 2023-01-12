@@ -75,7 +75,7 @@ abstract class Task {
     }
   }
 
-  public abstract function doChunk();
+  abstract public function doChunk();
 
   public function schedule( $time = 0, $frequency = false ) {
     $cronArg = $this->persist();
@@ -107,7 +107,8 @@ abstract class Task {
     $symbol, $delim = '-'
   ) {
     $res = [];
-    for ( $i = 0; $i < strlen( $symbol ); $i ++ ) {
+    $len = strlen( $symbol );
+    for ( $i = 0; $i < $len; $i ++ ) {
       $c = $symbol[ $i ];
       if ( ctype_upper( $c ) ) {
         $res[] = $delim;
@@ -127,11 +128,10 @@ abstract class Task {
     $trace = array_reverse( $trace );
     array_shift( $trace ); // remove {main}
     array_pop( $trace ); // remove call to this method
-    $length = count( $trace );
     $result = [];
 
-    for ( $i = 0; $i < $length; $i ++ ) {
-      $result[] = ( $i + 1 ) . ')' . substr( $trace[ $i ], strpos( $trace[ $i ], ' ' ) ); // replace '#someNum' with '$i)', set the right ordering
+    foreach ( $trace as $i => $iValue ) {
+      $result[] = ( $i + 1 ) . ')' . substr( $iValue, strpos( $iValue, ' ' ) ); // replace '#someNum' with '$i)', set the right ordering
     }
 
     return "\t" . implode( "\n\t", $result );

@@ -2,9 +2,9 @@
 Contributors: Oliver Jones
 Tags: users, database, index, performance, largesite, dashboard
 Requires at least: 5.2
-Tested up to: 6.1
+Tested up to: 6.1.1
 Requires PHP: 5.6
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -122,6 +122,11 @@ If you configure your WordPress installation using composer, you may install thi
 
 == Changelog ==
 
+= 1.1.4 =
+
+* Fix compatibility with WordPress pre 5.9.
+* Display more reliable user count on dashboard panel.
+
 = 1.1.3 =
 
 * Correct query-optimization problem when rendering autocompletion fields.
@@ -145,14 +150,14 @@ allow more flexible changes of post and page authors.
 
 == Upgrade Notice ==
 
-Version 1.1.3 ...
+Version 1.1.4 ...
 
 * Has significant performance improvements.
 * Is tested with MySQL up to the latest of version 8, and with MariaDB up to version 10.9.
 * Allows easier selection of authors. Quick Edit, Bulk Edit, and the Classic Editor contain dropdown menus for selecting authors. This plugin replaces those menus with autocompletion fields, to
 allow more flexible changes of post and page authors. These author-choice fields now work similarly to the Author field in the Gutenberg post and page editor. (For sites with many authors, the dropdown menus perform poorly. And after version 6.0.2 they weren't available at all for large sites.
 * Allows multiple roles per user as provided in plugins like User Role Editor.
-* Fixes a few bug.
+* Fixes a few bugs, and is compatible with WordPress versions pre-5.9.
 
 In this version the dashboard panel lets you specify a number of author users. If your site's number of author users is less than the number you specify you will see WordPress's ordinary dropdown.  The option to order authors by post count from earlier versions is no longer available, as it makes little sense when combined with autocompletion.
 

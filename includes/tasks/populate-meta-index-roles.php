@@ -62,8 +62,7 @@ class PopulateMetaIndexRoles extends Task {
 
     /* update table stats at the end of the indexing */
     if ( $done ) {
-      $query = $wpdb->prepare( "ANALYZE TABLE $wpdb->usermeta;" );
-      $this->doQuery( $query );
+      $this->doQuery( "ANALYZE TABLE $wpdb->usermeta;" );
     }
 
     $this->endChunk();

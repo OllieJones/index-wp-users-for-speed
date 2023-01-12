@@ -325,9 +325,12 @@ class Indexer {
   }
 
   public static function getNetworkUserCount() {
-    global $wpdb;
 
-    return get_user_count();
+    if (function_exists('get_user_count')) {
+      return get_user_count();
+    }
+    global $wpdb;
+    return $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->users;");
   }
 
   public function removeIndexRole( $user_id, $role ) {
