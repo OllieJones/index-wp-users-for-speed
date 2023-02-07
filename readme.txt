@@ -4,7 +4,7 @@ Tags: users, database, index, performance, largesite, dashboard
 Requires at least: 5.2
 Tested up to: 6.1.1
 Requires PHP: 5.6
-Stable tag: 1.1.4
+Stable tag: 1.1.5
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -122,6 +122,10 @@ If you configure your WordPress installation using composer, you may install thi
 
 == Changelog ==
 
+= 1.1.5 =
+
+Repair problem handing user queries with role__not_in and role__in search terms.
+
 = 1.1.4 =
 
 * Fix compatibility with WordPress pre 5.9.
@@ -150,8 +154,9 @@ allow more flexible changes of post and page authors.
 
 == Upgrade Notice ==
 
-Version 1.1.4 ...
+Version 1.1.5 ...
 
+* Fixes a compatibility problem with the When Last Login plugin.
 * Has significant performance improvements.
 * Is tested with MySQL up to the latest of version 8, and with MariaDB up to version 10.9.
 * Allows easier selection of authors. Quick Edit, Bulk Edit, and the Classic Editor contain dropdown menus for selecting authors. This plugin replaces those menus with autocompletion fields, to

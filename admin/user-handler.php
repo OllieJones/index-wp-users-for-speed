@@ -668,14 +668,17 @@ class UserHandler extends WordPressHooks {
     if ( isset( $qv['role'] ) && $qv['role'] !== '' ) {
       $roleSet [] = $qv['role'];
     }
+
     if ( isset( $qv['role__in'] ) ) {
-      $roleSet = array_merge( $roleSet, $qv['role__in'] );
+      $list    = is_array( $qv['role__in'] ) ? $qv['role__in'] : explode( ',', $qv['role__in'] );
+      $roleSet = array_merge( $roleSet, $list );
     }
     $roleSet = array_unique( $roleSet );
     /* make a set of roles to exclude */
     $roleExclude = [];
     if ( isset( $qv['role__not_in'] ) ) {
-      $roleExclude = array_merge( $roleExclude, $qv['role__not_in'] );
+      $list        = is_array( $qv['role__not_in'] ) ? $qv['role__not_in'] : explode( ',', $qv['role__not_in'] );
+      $roleExclude = array_merge( $roleExclude, $list );
     }
     $roleExclude = array_unique( $roleExclude );
 
