@@ -36,9 +36,12 @@ class Indexer {
   public static function writeLog( $msg, $maxlength = 256, $name = 'log' ) {
     global $wpdb;
     $wpdb->query( "LOCK TABLES $wpdb->options WRITE" );
-    $log      = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name );
-    $log      = is_string( $log ) ? $log : null;
-    $logarray = explode( PHP_EOL, $log );
+    $log = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name );
+    if ( is_string( $log ) ) {
+      $logarray = explode( PHP_EOL, $log );
+    } else {
+      $logarray = [];
+    }
     $logarray = array_slice( $logarray, 0, $maxlength );
     array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
     $log = implode( PHP_EOL, $logarray );
@@ -326,11 +329,11 @@ class Indexer {
 
   public static function getNetworkUserCount() {
 
-    if (function_exists('get_user_count')) {
+    if ( function_exists( 'get_user_count' ) ) {
       return get_user_count();
     }
     global $wpdb;
-    return $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->users;");
+    return $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->users;" );
   }
 
   public function removeIndexRole( $user_id, $role ) {
