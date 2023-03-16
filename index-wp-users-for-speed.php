@@ -12,7 +12,7 @@
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with thousands of users.
  * Requires at least: 5.2
- * Tested up to:      6.1.1
+ * Tested up to:      6.2
  * Requires PHP:      5.6
  * Author:       Oliver Jones
  * Author URI:   https://github.com/OllieJones
