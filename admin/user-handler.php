@@ -577,10 +577,7 @@ class UserHandler extends WordPressHooks {
    * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
    *
    */
-  private
-  function mungCountTotal(
-    $query
-  ) {
+  private function mungCountTotal( $query ) {
     /* we will bash $qv in place, so take it by ref */
     $qv = &$query->query_vars;
     if ( ! isset( $qv['count_total'] ) || $qv['count_total'] === false ) {
@@ -659,10 +656,7 @@ class UserHandler extends WordPressHooks {
    *
    * @return array
    */
-  private
-  function getRoleFilterSets(
-    array $qv
-  ) {
+  private function getRoleFilterSets( array $qv ) {
     /* make a set of roles to include */
     $roleSet = [];
     if ( isset( $qv['role'] ) && $qv['role'] !== '' ) {
@@ -697,10 +691,7 @@ class UserHandler extends WordPressHooks {
    * @param WP_User_Query $query Current instance of WP_User_Query (passed by reference).
    *
    */
-  private
-  function mungRoleFilters(
-    $query
-  ) {
+  private function mungRoleFilters( $query ) {
     /* we will bash $qv in place, so take it by ref */
     $qv = &$query->query_vars;
     list( $roleSet, $roleExclude ) = $this->getRoleFilterSets( $qv );
@@ -742,7 +733,15 @@ class UserHandler extends WordPressHooks {
       $meta = false;
     }
     /* stash those meta query args in the query variables we got */
-    $qv ['meta_query'] = $meta;
+    if ( isset( $qv['meta_query'] ) && $meta ) {
+      $new               = array();
+      $new ['relation']  = 'AND';
+      $new []            = $qv['meta_query'];
+      $new []            = $meta;
+      $qv ['meta_query'] = $new;
+    } else {
+      $qv ['meta_query'] = $meta;
+    }
     /* and erase the role filters they replace */
     $qv['role']         = '';
     $qv['role__in']     = [];
