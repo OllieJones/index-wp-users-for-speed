@@ -4,13 +4,13 @@ Tags: users, database, index, performance, largesite
 Requires at least: 5.2
 Tested up to: 6.6
 Requires PHP: 5.6
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Author URI: https://github.com/OllieJones
 Plugin URI: https://plumislandmedia.net/index-wp-users-for-speed/
-Github Plugin URI: https://github.com/OllieJones/index-wp-users-for-speed
+GitHub Plugin URI: https://github.com/OllieJones/index-wp-users-for-speed
 Primary Branch: main
 Text Domain: index-wp-users-for-speed
 Domain Path: /languages
@@ -124,6 +124,10 @@ If you configure your WordPress installation using composer, you may install thi
 3. The bulk editor for All Posts showing the selection box with autocompletion of author name.
 
 == Changelog ==
+
+= 1.1.7 =
+
+Display both user display name and login name in dropdowns.
 
 = 1.1.6 =
 

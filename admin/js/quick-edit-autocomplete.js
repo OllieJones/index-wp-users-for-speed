@@ -7,6 +7,32 @@ jQuery(async function ($) {
   let searchTerm
   const splitter = new RegExp('\\s+')
 
+  function completeTheLabel (target, id) {
+    const dataset = target.dataset
+    const endpoint = `${dataset.url}/wp-json/wp/v2/users?context=edit&_fields=id,name,username&_locale=user`
+    const search = '&include=' + id
+    const url =  endpoint + search
+    $.ajax(
+        {
+          url: url,
+          dataType: 'json',
+          type: 'get',
+          beforeSend: function (xhr) {
+            xhr.setRequestHeader('X-WP-Nonce', dataset.nonce);
+          },
+          success: function (data) {
+            if (data.length === 1)  {
+              item = data[0]
+              const label = item.name + ' (' + item.username + ')'
+              target.dataset.label = label
+              target.dataset.p2 = label
+              target.setAttribute('placeholder', label)
+
+            }
+          }
+        }
+    )
+  }
 
   function setSelected(selectElement, id, label) {
     /* No options here? Weird. But just put one so we can use it. */
@@ -52,7 +78,7 @@ jQuery(async function ($) {
   let dataset
 
   function fetch(req, res) {
-    const endpoint = `${dataset.url}/wp-json/wp/v2/users?context=view&per_page=${dataset.count}&_fields=id,name&_locale=user`
+    const endpoint = `${dataset.url}/wp-json/wp/v2/users?context=edit&per_page=${dataset.count}&_fields=id,name,username&_locale=user`
     const capabilities = typeof dataset.capabilities === 'string' ? '&capabilities=' + dataset.capabilities : '&who=authors'
     searchTerm = req.term
     const search = `&search=${req.term}`
@@ -69,7 +95,8 @@ jQuery(async function ($) {
             res(data);
           } else {
             const list = $.map(data, item => {
-              return {label: item.name, value: item.name, id: item.id}
+              const tag = item.name + ' (' + item.username + ')'
+              return {label: tag, value: tag, id: item.id}
             })
             list.sort(wordMatchesFirst)
             res(list)
@@ -142,6 +169,7 @@ jQuery(async function ($) {
               target.dataset.p2 = label
               setSelected(selectElement, id, label)
               target.setAttribute('placeholder', label)
+              completeTheLabel (target, id)
             }
           },
           select:
