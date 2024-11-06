@@ -763,7 +763,7 @@ class UserHandler extends WordPressHooks {
   public function filter__rest_user_query( $query_args, $request ) {
     $threshold = get_option( $this->options_name )['quickedit_threshold_limit'];
     $editors   = $this->indexer->getEditors();
-    if ( $editors && count( $editors ) <= $threshold ) {
+    if ( is_array( $editors ) && count( $editors ) <= $threshold ) {
       $query_args['include'] = $editors;
     }
     $this->doingRestQuery = true;
