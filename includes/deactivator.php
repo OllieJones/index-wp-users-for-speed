@@ -31,7 +31,7 @@ class Deactivator {
         switch_to_blog( $site_id );
       }
       Deactivator::depopulateIndexMetadata();
-      Deactivator::deleteTransients();
+      Deactivator::deleteCronOptions();
       if ( is_multisite() ) {
         restore_current_blog();
       }
@@ -47,17 +47,13 @@ class Deactivator {
     }
   }
 
-  private static function deleteTransients() {
+  private static function deleteCronOptions() {
     global $wpdb;
-    $transients = $wpdb->get_results(
+    $wpdb->query(
       $wpdb->prepare(
-        "SELECT option_name FROM $wpdb->options WHERE option_name LIKE CONCAT(%s, '%%')",
-        $wpdb->esc_like( '_transient_' . INDEX_WP_USERS_FOR_SPEED_PREFIX ) )
+        "DELETE FROM $wpdb->options WHERE option_name LIKE CONCAT(%s, '%%')",
+        $wpdb->esc_like( INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK ) )
     );
-    foreach ( $transients as $transient ) {
-      $name = str_replace( '_transient_', '', $transient->option_name );
-      delete_transient( $name );
-    }
   }
 
 }

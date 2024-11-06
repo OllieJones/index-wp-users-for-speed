@@ -95,11 +95,11 @@ class Admin
 
   /* make sure default option is in place, to avoid double sanitize call */
   if ( $option === false ) {
-   add_option( $this->options_name, [
+   update_option( $this->options_name, [
        'auto_rebuild'              => 'on',
        'rebuild_time'              => '00:25',
        'quickedit_threshold_limit' => 50,
-   ] );
+   ] , false );
   }
 
   register_setting(

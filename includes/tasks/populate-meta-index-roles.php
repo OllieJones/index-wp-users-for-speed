@@ -8,20 +8,27 @@ namespace IndexWpUsersForSpeed;
 class PopulateMetaIndexRoles extends Task {
 
   public $batchSize;
+  public $chunkSize;
   public $currentStart = - 1;
   public $roles;
   public $maxUserId;
 
   /**
    * @param int $batchSize number of users per batch (per chunk)
+   * @param int $chunkSize number of users per transaction within each batch.
    * @param int|null $siteId Site id for task.
    * @param int $timeout Runtime limit of task. Default = no limit
    */
-  public function __construct( $batchSize = INDEX_WP_USERS_FOR_SPEED_BATCHSIZE, $siteId = null, $timeout = 0 ) {
+  public function __construct(
+    $batchSize = INDEX_WP_USERS_FOR_SPEED_BATCHSIZE,
+    $chunkSize = INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE,
+    $siteId = null, $timeout = 0
+  ) {
 
     parent::__construct( $siteId, $timeout );
 
     $this->batchSize = $batchSize;
+    $this->chunkSize = $chunkSize;
     $this->roles     = [];
   }
 
@@ -47,19 +54,33 @@ class PopulateMetaIndexRoles extends Task {
 
     $queries    = $this->makeIndexerQueries( $this->roles );
     $currentEnd = $this->currentStart + $this->batchSize;
+    $transStart = $this->currentStart;
 
-    foreach ( $queries as $query ) {
-      $query .= ' WHERE a.user_id >= %d AND a.user_id < %d';
-      $q     = $wpdb->prepare( $query, $this->currentStart, $currentEnd );
+    $done = false;
+
+    while ( $transStart < $currentEnd ) {
+
+      $this->doQuery( 'BEGIN' );
+      $transEnd = min( $transStart + $this->chunkSize, $currentEnd );
+      $query    = "SELECT COUNT(*) FROM $wpdb->usermeta a WHERE a.meta_key = %s AND a.user_id >= %d AND a.user_id < %d ORDER BY a.user_id FOR UPDATE";
+      $q        = $wpdb->prepare( $query, $wpdb->prefix . 'capabilities', $transStart, $transEnd );
       $this->doQuery( $q );
+
+      foreach ( $queries as $query ) {
+        $query .= ' WHERE a.user_id >= %d AND a.user_id < %d';
+        $q     = $wpdb->prepare( $query, $transStart, $transEnd );
+        $this->doQuery( $q );
+      }
+      $this->doQuery( 'COMMIT' );
+      $transStart         = $transEnd;
+      $this->currentStart = $transEnd;
+
     }
-    $this->currentStart = $currentEnd;
 
     $done                   = $this->currentStart >= $this->maxUserId;
     $this->fractionComplete = min( 1, $this->currentStart / $this->maxUserId );
 
     $this->setStatus( null, null, ! $done, $this->fractionComplete );
-
     /* update table stats at the end of the indexing */
     if ( $done ) {
       $this->doQuery( "ANALYZE TABLE $wpdb->usermeta;" );

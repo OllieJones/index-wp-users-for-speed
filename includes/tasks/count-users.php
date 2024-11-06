@@ -16,7 +16,7 @@ class CountUsers extends Task {
     parent::__construct( $siteId, $timeout );
   }
 
-  /** Retrieve the user counts and update the transient
+  /** Retrieve the user counts and update the option
    * @return boolean  done When this is false, schedule another chunk.
    */
   public function doChunk() {
