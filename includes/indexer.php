@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpIncludeInspection */
+<?php /** @noinspection SpellCheckingInspection */
+
+/** @noinspection PhpIncludeInspection */
 
 namespace IndexWpUsersForSpeed;
 
@@ -25,18 +27,19 @@ class Indexer {
     self::$sentinelCount = 1024 * 1024 * 1024 * 2 - 7;
   }
 
-  /** Write out a log (to a transient).
+  /** Write out a log (to an option).
    *
    * @param string $msg Log entry.
    * @param int $maxlength Optional. Maximum number of entries in log. Default 256.
-   * @param string $name Optional. Optional. The suffix of the transient name. Default "log".
+   * @param string $name Optional. Optional. The suffix of the option name. Default "log".
    *
    * @return void
    */
   public static function writeLog( $msg, $maxlength = 256, $name = 'log' ) {
     global $wpdb;
     $wpdb->query( "LOCK TABLES $wpdb->options WRITE" );
-    $log = get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name );
+    $option = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK  . $name;
+    $log = get_option( $option );
     if ( is_string( $log ) ) {
       $logarray = explode( PHP_EOL, $log );
     } else {
@@ -45,7 +48,7 @@ class Indexer {
     $logarray = array_slice( $logarray, 0, $maxlength );
     array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
     $log = implode( PHP_EOL, $logarray );
-    set_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . $name, $log, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+    add_option ( $option, $log );
     $wpdb->query( 'UNLOCK TABLES' );
   }
 

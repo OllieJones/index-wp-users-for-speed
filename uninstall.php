@@ -28,3 +28,4 @@
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
   exit;
 }
+delete_option( INDEX_WP_USERS_FOR_SPEED_PREFIX . 'options' );

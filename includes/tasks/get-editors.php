@@ -23,7 +23,7 @@ class GetEditors extends Task {
     $wp_roles = $wp_roles ?: new \WP_Roles();
   }
 
-  /** Retrieve the user counts and update the transient
+  /** Retrieve the user counts and update the option
    * The output of this is used to limit the number of users handled by
    * user-lookup queries when there are a small number, or when
    * the role-based indexing isn't ready yet.
@@ -65,11 +65,11 @@ class GetEditors extends Task {
   }
 
   public function getResult() {
-    return get_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
+    return get_option( INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . "editors" );
   }
 
   public function reset() {
-    delete_transient( INDEX_WP_USERS_FOR_SPEED_PREFIX . "editors" );
+    delete_option( INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . "editors" );
   }
 
 }

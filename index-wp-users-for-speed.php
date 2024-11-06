@@ -7,8 +7,8 @@
  * @license  GPL-2.0-or-later
  * @wordpress-plugin0
  * Plugin Name: Index WP Users For Speed
- * Version:     1.1.7
- * Stable tag:  1.1.7
+ * Version:     1.1.8
+ * Stable tag:  1.1.8
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with thousands of users.
  * Requires at least: 5.2
@@ -34,13 +34,14 @@ if ( ! defined( 'WPINC' ) ) {
 
 const INDEX_WP_USERS_FOR_SPEED_NAME = 'index-wp-users-for-speed';
 define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
-const INDEX_WP_USERS_FOR_SPEED_VERSION          = '1.1.7';
-const INDEX_WP_USERS_FOR_SPEED_PREFIX           = 'index-wp-users-for-speed-';
-const INDEX_WP_USERS_FOR_SPEED_HOOKNAME         = 'index_wp_users_for_speed_task';
-const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX       = 'iufs';
-const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME   = DAY_IN_SECONDS * 15;
-const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME    = MONTH_IN_SECONDS * 3;
-const INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK   = 2;
+const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.1.8';
+const INDEX_WP_USERS_FOR_SPEED_PREFIX         = 'index-wp-users-for-speed-';
+const INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK    = 'index-wp-users-for-speed-task';
+const INDEX_WP_USERS_FOR_SPEED_HOOKNAME       = 'index_wp_users_for_speed_task';
+const INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX     = 'iufs';
+const INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME = DAY_IN_SECONDS * 15;
+const INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME  = MONTH_IN_SECONDS * 3;
+const INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK = 2;
 
 /**
  * The number of users we process at a time when creating index entries in wp_usermeta.
@@ -49,6 +50,11 @@ const INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK   = 2;
  * when manipulating large numbers of users. The batches run with wpcron.
  */
 const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 5000;
+/**
+ * The number of users we process per transaction when creating index entries in wp_usermeta.
+ * This must be smaller than INDEX_WP_USERS_FOR_SPEED_BATCHSIZE.
+ */
+const INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE = 50;
 
 /**
  * The code that runs during plugin activation.

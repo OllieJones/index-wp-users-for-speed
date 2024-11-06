@@ -16,11 +16,11 @@ function index_wp_users_for_speed_do_task( $taskName ) {
   $task = null;
   try {
     $task = Task::restorePersisted( $taskName );
-    /* it's possible for the task, persisted in a transient, to be gone. */
+    /* it's possible for the task, persisted in an option, to be gone. */
     if ( $task && method_exists( $task, 'doTaskStep' ) ) {
       $task->doTaskStep();
     } else {
-      error_log( 'index_wp_users_for_speed_task: task expired, so cannot run: ' . $taskName );
+      error_log( 'index_wp_users_for_speed_task: task missing, so cannot run: ' . $taskName );
     }
   } catch ( Exception $ex ) {
     $taskName = ( $task && $task->taskName ) ? $task->taskName : 'persisted ' . $taskName;
@@ -55,9 +55,9 @@ abstract class Task {
   }
 
   public static function restorePersisted( $taskName ) {
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . $taskName;
+    $option = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . $taskName;
 
-    return get_transient( $transientName );
+    return get_option( $option );
   }
 
   public function init() {
@@ -89,9 +89,9 @@ abstract class Task {
   }
 
   protected function persist() {
-    $jobName       = self::toSnake( $this->taskName );
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . $jobName;
-    set_transient( $transientName, $this, INDEX_WP_USERS_FOR_SPEED_SHORT_LIFETIME );
+    $jobName = self::toSnake( $this->taskName );
+    $option  = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . $jobName;
+    update_option( $option, $this, false );
 
     return $jobName;
   }
@@ -155,7 +155,7 @@ abstract class Task {
     Indexer::writeLog( $msg );
   }
 
-  /** Update a task's status transient.
+  /** Update a task's status option..
    *
    * @param null|array $status If the status is known give it here, otherwise give null
    * @param null|bool $available Set the available flag, or ignore it if null
@@ -182,20 +182,20 @@ abstract class Task {
     if ( isset( $fraction ) ) {
       $status['fraction'] = $fraction;
     }
-    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
-    set_transient( $jobResultName, $status, INDEX_WP_USERS_FOR_SPEED_LONG_LIFETIME );
+    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . 'result' . self::toSnake( $this->taskName );
+    update_option( $jobResultName, $status, false );
   }
 
   public function getStatus() {
-    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
+    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . 'result' . self::toSnake( $this->taskName );
 
-    return get_transient( $jobResultName );
+    return get_option( $jobResultName );
   }
 
   protected function clearPersisted() {
     $jobStatusName = self::toSnake( $this->taskName );
-    $transientName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'task' . $jobStatusName;
-    delete_transient( $transientName );
+    $option        = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . $jobStatusName;
+    delete_option( $option );
   }
 
   public function cancel() {
@@ -250,8 +250,8 @@ abstract class Task {
   }
 
   public function clearStatus() {
-    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX . 'result' . self::toSnake( $this->taskName );
-    delete_transient( $jobResultName );
+    $jobResultName = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . 'result' . self::toSnake( $this->taskName );
+    delete_option( $jobResultName );
   }
 
   /** Is a task's output completely missing.
@@ -326,7 +326,7 @@ abstract class Task {
    *
    * @return bool|int|mixed|\mysqli_result|resource|null
    */
-  public function doQuery ($query, $retries = 5, $delay = 0.1) {
+  public function doQuery( $query, $retries = 5, $delay = 0.1 ) {
     global $wpdb;
     $result = 0;
 
@@ -349,8 +349,8 @@ abstract class Task {
       }
       usleep( $delay * 1000000 );
       $retry --;
-      if ($retry <= 0 ) {
-        error_log("Deadlock after $retries retries: $query");
+      if ( $retry <= 0 ) {
+        error_log( "Deadlock after $retries retries: $query" );
       }
     }
     return $result;
