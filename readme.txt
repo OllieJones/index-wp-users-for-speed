@@ -4,7 +4,7 @@ Tags: users, database, index, performance, largesite
 Requires at least: 5.2
 Tested up to: 6.7
 Requires PHP: 5.6
-Stable tag: 1.1.8
+Stable tag: 1.1.9
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -124,6 +124,10 @@ If you configure your WordPress installation using composer, you may install thi
 3. The bulk editor for All Posts showing the selection box with autocompletion of author name.
 
 == Changelog ==
+
+= 1.1.9 =
+
+Fix typo in cron-disabled code path.
 
 = 1.1.8 =
 

@@ -26,7 +26,7 @@ function need_cron() {
       if ( $now >= $next ) {
         $next = $now + INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK;
         update_option( $option, $next, false );
-        update_action( 'shutdown', 'IndexWpUsersForSpeed\kick_cron', 9999, 0 );
+        add_action( 'shutdown', 'IndexWpUsersForSpeed\kick_cron', 9999, 0 );
       }
     }
   }
