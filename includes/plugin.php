@@ -61,7 +61,6 @@ class Index_Wp_Users_For_Speed {
     /** @noinspection PhpUndefinedConstantInspection */
     if ( wp_doing_cron() || wp_doing_ajax() || is_admin() || wp_is_json_request() || wp_is_xml_request() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/wordpress-hooks.php';
-      require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/i18n.php';
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/user-handler.php';
       require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/progressbar.php';
     }
