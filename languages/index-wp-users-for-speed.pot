@@ -1,21 +1,21 @@
-# Copyright (C) 2024 Oliver Jones
+# Copyright (C) 2025 Oliver Jones
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Index WP Users For Speed 1.1.9\n"
+"Project-Id-Version: Index WP Users For Speed 1.1.10\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/index-wp-users-for-speed\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-11-07T11:26:27+00:00\n"
+"POT-Creation-Date: 2025-06-19T18:05:38-04:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.9.0\n"
 "X-Domain: index-wp-users-for-speed\n"
 
 #. Plugin Name of the plugin
-#: admin/admin.php:52
+#: admin/admin.php:54
 msgid "Index WP Users For Speed"
 msgstr ""
 
@@ -35,88 +35,93 @@ msgstr ""
 msgid "https://github.com/OllieJones"
 msgstr ""
 
-#: admin/admin.php:53
+#: admin/admin.php:55
 msgid "Index For Speed"
 msgstr ""
 
-#: admin/admin.php:66
+#: admin/admin.php:68
 msgid "Rebuilding user indexes"
 msgstr ""
 
-#: admin/admin.php:71
+#: admin/admin.php:73
 msgid "Rebuild indexes"
 msgstr ""
 
-#: admin/admin.php:78
+#: admin/admin.php:80
 msgid "...at this time"
 msgstr ""
 
-#: admin/admin.php:84
+#: admin/admin.php:86
 msgid "Choosing authors when editing posts and pages"
 msgstr ""
 
-#: admin/admin.php:89
+#: admin/admin.php:91
 msgid "Use selection boxes"
 msgstr ""
 
-#: admin/admin.php:129
+#: admin/admin.php:131
 msgid "Incorrect time."
 msgstr ""
 
-#: admin/admin.php:138
+#: admin/admin.php:140
 msgid "User index rebuilding starting"
 msgstr ""
 
 #. translators: 1: localized time like 1:22 PM or 13:22
-#: admin/admin.php:148
+#: admin/admin.php:150
 msgid "Automatic index rebuilding scheduled for %1$s each day"
 msgstr ""
 
-#: admin/admin.php:156
+#: admin/admin.php:158
 msgid "Automatic index rebuilding disabled"
 msgstr ""
 
-#: admin/admin.php:225
+#: admin/admin.php:227
 msgid "You may rebuild your user indexes each day, or immediately."
 msgstr ""
 
-#: admin/admin.php:226
+#: admin/admin.php:228
 msgid "(It is possible for them to become out-of-date.)"
 msgstr ""
 
-#: admin/admin.php:242
+#: admin/admin.php:244
 msgid "daily"
 msgstr ""
 
-#: admin/admin.php:250
+#: admin/admin.php:252
 msgid "never"
 msgstr ""
 
-#: admin/admin.php:259
+#: admin/admin.php:261
 msgid "immediately, then daily"
 msgstr ""
 
-#: admin/admin.php:268
+#: admin/admin.php:270
 msgid "immediately, but not daily"
 msgstr ""
 
-#: admin/admin.php:286
+#: admin/admin.php:288
 msgid "Avoid rebuilding exactly on the hour to avoid contending with other processing jobs."
 msgstr ""
 
-#: admin/admin.php:316
+#: admin/admin.php:318
 msgid ""
 "Author-choice dropdown menus can be unwieldy when your site has many authors. If you have more than this number of authors, you will see selection boxes instead of dropdown menus. Choose an author by typing a few characters of the name into the selection box.\n"
 "   \n"
 "   "
 msgstr ""
 
-#: admin/admin.php:330
+#: admin/admin.php:332
 msgid "when you have more than"
 msgstr ""
 
-#: admin/admin.php:337
+#: admin/admin.php:339
 msgid "authors registered on your site."
+msgstr ""
+
+#: admin/admin.php:390
+msgctxt "verb"
+msgid "Sponsor"
 msgstr ""
 
 #: admin/progressbar.php:51

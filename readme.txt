@@ -2,9 +2,9 @@
 Contributors: OllieJones
 Tags: users, database, index, performance, largesite
 Requires at least: 5.2
-Tested up to: 6.8
+    Tested up to: 6.8.1
 Requires PHP: 5.6
-Stable tag: 1.1.9
+Stable tag: 1.1.10
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,6 +14,7 @@ GitHub Plugin URI: https://github.com/OllieJones/index-wp-users-for-speed
 Primary Branch: main
 Text Domain: index-wp-users-for-speed
 Domain Path: /languages
+Donate link: https://github.com/sponsors/OllieJones
 
 Do you have thousands of users on your WordPress site? Look them up fast. Find authors more easily. Speed up your laggy dashboard.
 
@@ -124,6 +125,10 @@ If you configure your WordPress installation using composer, you may install thi
 3. The bulk editor for All Posts showing the selection box with autocompletion of author name.
 
 == Changelog ==
+
+= 1.1.10 =
+
+Remove rendundant l11n loading.
 
 = 1.1.9 =
 
