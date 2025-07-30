@@ -265,6 +265,14 @@ class UserHandler extends WordPressHooks {
    * @noinspection PhpUnused
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
+    /* Did some other plugin, maybe Co-Authors-Plus?, already give us a list of users ? */
+    if ( is_array( $query_args ) && array_key_exists( 'include', $query_args ) && is_array( $query_args['include'] ) ) {
+      /* Does this query call for include [0] ? */
+      $include = $query_args['include'];
+      if ( 1 === count( $include ) && array_key_exists( 0, $include ) && 0 === $include[0] ) {
+        return $query_args;
+      }
+    }
     /* is this about posts or pages */
     if ( array_key_exists( 'capability', $query_args ) ) {
       $this->requestedCapabilities = $query_args['capability'];

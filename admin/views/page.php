@@ -16,7 +16,7 @@ use IndexWpUsersForSpeed\Indexer;
 
 /** @noinspection HtmlUnknownTarget */
 $hyperlink  = '<a href="%s" target="_blank">%s</a>';
-$supportUrl = "https://wordpress.org/support/plugin/index-wp-users-for-speed/";
+$supportUrl = "https://github.com/OllieJones/index-wp-users-for-speed/issues";
 $reviewUrl  = "https://wordpress.org/support/plugin/index-wp-users-for-speed/reviews/";
 $clickHere  = __( 'click here', 'index-wp-users-for-speed' );
 $support    = sprintf( $hyperlink, $supportUrl, $clickHere );
