@@ -266,17 +266,21 @@ class UserHandler extends WordPressHooks {
    */
   public function filter__wp_dropdown_users_args( $query_args, $parsed_args ) {
     /* short-circuit if only pre-determined users are already set in $query_args */
-    if ( array_key_exists( 'include', $query_args ) 
-        && count( array_filter( wp_array_slice_assoc( $query_args, 
-                                                     array('include', 
-                                                           'exclude', 
-                                                           'role', 
-                                                           'role__in', 
-                                                           'role__not_in', 
-                                                           'capability', 
-                                                           'capability__in', 
-                                                           'capability__not_in'
-                                                          ) ) ) ) == 1 ) {
+    $query_non_empty_args = array_filter( 
+      wp_array_slice_assoc( $query_args, 
+                            array('include', 
+                                  'exclude', 
+                                  'role', 
+                                  'role__in', 
+                                  'role__not_in', 
+                                  'capability', 
+                                  'capability__in', 
+                                  'capability__not_in'
+                                 ) 
+                          ) 
+    );
+    if ( array_key_exists( 'include', $query_non_empty_args ) 
+        && count( $query_non_empty_args ) == 1 ) {
         return $query_args;
     }
     /* is this about posts or pages */
