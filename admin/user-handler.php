@@ -648,9 +648,11 @@ class UserHandler extends WordPressHooks {
       $count = $counts['total_users'];
     } else if ( is_array( $counts['avail_roles'] ) ) {
       $availRoles = $counts['avail_roles'];
-      $role       = $roleSet[0];
-      if ( isset( $availRoles[ $role ] ) ) {
-        $count = $availRoles[ $role ];
+      if ( isset ( $roleSet[0] )) {
+        $role = $roleSet[0];
+        if ( isset( $availRoles[ $role ] ) ) {
+          $count = $availRoles[ $role ];
+        }
       }
     }
     if ( $count >= 0 ) {
