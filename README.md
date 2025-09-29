@@ -1,24 +1,25 @@
-=== Index WP Users For Speed ===
-Contributors: OllieJones
-Tags: users, database, index, performance, largesite
-Requires at least: 5.2
-Tested up to: 6.8.2
-Requires PHP: 5.6
-Stable tag: 1.1.12
-Network: true
-License: GPL v2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Author URI: https://github.com/OllieJones
-Plugin URI: https://plumislandmedia.net/index-wp-users-for-speed/
-GitHub Plugin URI: https://github.com/OllieJones/index-wp-users-for-speed
-Primary Branch: main
-Text Domain: index-wp-users-for-speed
-Domain Path: /languages
-Donate link: https://github.com/sponsors/OllieJones
+# Index WP Users For Speed
+
+**Contributors:** OllieJones \
+**Tags:** users, database, index, performance, largesite \
+**Requires at least:** 5.2 \
+**Tested up to:** 6.8.2 \
+**Requires PHP:** 5.6 \
+**Stable tag:** 1.1.12 \
+Network: true \
+**License:** GPL v2 or later \
+**License URI:** https://www.gnu.org/licenses/gpl-2.0.html \
+Author URI: https://github.com/OllieJones \
+Plugin URI: https://plumislandmedia.net/index-wp-users-for-speed/ \
+GitHub Plugin URI: https://github.com/OllieJones/index-wp-users-for-speed \
+Primary Branch: main \
+Text Domain: index-wp-users-for-speed \
+Domain Path: /languages \
+**Donate link:** https://github.com/sponsors/OllieJones \
 
 Do you have thousands of users on your WordPress site? Look them up fast. Find authors more easily. Speed up your laggy dashboard.
 
-== Description ==
+## Description
 
 This plugin speeds up the handling of your WordPress registered users, especially when your site has many thousands of them. (Congratulations! Building a successful site with thousands of users is an accomplishment.)   With optimized MySQL / MariaDB database techniques, it finds and displays your users more quickly. Your All Users panel on your dashboard displays faster and searches faster. Your All Posts and All Pages panels no longer lag when displaying. And, you can edit your posts to change authorship more efficiently.
 
@@ -36,33 +37,33 @@ This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/p
 
 I offer several plugins to help with your site's database efficiency. You can [read about them here](https://www.plumislandmedia.net/wordpress/performance/optimizing-wordpress-database-servers/).
 
-== Frequently Asked Questions ==
+## Frequently Asked Questions
 
-= Should I back up my site before using this? =
+### Should I back up my site before using this?
 
 **Yes.** Backups are good practice. Still, this plugin makes no changes to your site or database layout. It adds a few non-autoloaded options, and adds rows to wp_usermeta.
 
-= My WordPress host offers MariaDB, not MySQL. Can I use this plugin?
+### My WordPress host offers MariaDB, not MySQL. Can I use this plugin?
 
 **Yes.**
 
-= I have a multi-site WordPress installation. Can I use this plugin?
+### I have a multi-site WordPress installation. Can I use this plugin?
 
 **Yes.**
 
-= I see high CPU usage (load average) on my MariaDB / MySQL database server during user index building or refresh. Is that normal?
+### I see high CPU usage (load average) on my MariaDB / MySQL database server during user index building or refresh. Is that normal?
 
 **Yes.** Indexing your registered users requires us to insert a row in your wp_usermeta tab;e for each of them. We do this work in batches of 5000 users to avoid locking up your MariaDB / MySQL server. Each batch takes server time. Once all index building or refresh batches are complete, your CPU usage will return to normal.
 
-= Can I use this if I have disabled WP_Cron and use an operating system cronjob instead?
+### Can I use this if I have disabled WP_Cron and use an operating system cronjob instead?
 
 **Yes**
 
-= What if I assign multiple roles to some users? =
+### What if I assign multiple roles to some users?
 
 Plugins like Vladimir Garagulya's [User Role Editor](https://wordpress.org/plugins/user-role-editor/) let you assign multiple roles to users. This plugin handles those users correctly.
 
-= How does it work? (Geeky!) =
+### How does it work? (Geeky!)
 
 Standard WordPress puts a `wp_capabilities` row in the `wp_usermeta` table for each user. Its `meta_value` contains a small data structure. For example, an author has this data structure.
 
@@ -82,11 +83,11 @@ It takes a while to insert these extra indexing rows into the database; that hap
 
 Once the indexing rows are in place, you can add, delete, or change user roles without regenerating those rows: the plugin maintains them.
 
-= What is the background for this plugin? =
+### What is the background for this plugin?
 
 WordPress's trac (defect-tracking) system has [this ticket # 38741](https://core.trac.wordpress.org/ticket/38741).
 
-= Why use this plugin? =
+### Why use this plugin?
 
 Three reasons (maybe four):
 
@@ -97,95 +98,104 @@ Three reasons (maybe four):
 
 Seriously, the microwatt hours of electricity saved by faster web site technologies add up fast, especially at WordPress's global scale.
 
-== Installation ==
+## Installation
 
 Install and activate this plugin in the usual way via the Plugins panel in your site's dashboard. Once you have activated it, configure it via the Index for Speed menu item under Users.
 
-= WP-CLI =
+### WP-CLI
 
 `wp plugin install index-wp-users-for-speed
 wp plugin activate index-wp-users-for-speed
 `
-= Composer =
+### Composer
 
 If you configure your WordPress installation using composer, you may install this plugin into your WordPress top level configuration with this command.
 
 `composer require "wpackagist-plugin/index-wp-users-for-speed":"^1.1"`
 
 
-= Credits =
+### Credits
+
 * "Crowd", a photo by James Cridland, in the banner and icon. [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
 * Japreet Sethi for advice, and for testing on his large installation.
 * Rick James for everything.
 
-== Screenshots ==
+## Screenshots
 
-1. Access to this plugin's configuration panel.
-2. This plugin's configuration panel.
-3. The bulk editor for All Posts showing the selection box with autocompletion of author name.
+### 1. Access to this plugin's configuration panel.
 
-== Changelog ==
+[missing image]
+
+### 2. This plugin's configuration panel.
+
+[missing image]
+
+### 3. The bulk editor for All Posts showing the selection box with autocompletion of author name.
+
+[missing image]
 
 
-= 1.1.12 =
+## Changelog
+
+### 1.1.12
 
 Fix incompatibility with https://wordpress.org/plugins/advanced-ads/ . Props to @carlos978.
 
-= 1.1.11 =
+### 1.1.11
 
 Fix incompatibility with https://wordpress.org/plugins/co-authors-plus/ .
 
-= 1.1.10 =
+### 1.1.10
 
 Remove rendundant l11n loading.
 
-= 1.1.9 =
+### 1.1.9
 
 Fix typo in cron-disabled code path.
 
-= 1.1.8 =
+### 1.1.8
 
 Use transactions to hopefully avoid deadlocks. Use options instead of transients.
 
-= 1.1.7 =
+### 1.1.7
 
 Display both user display name and login name in dropdowns.
 
-= 1.1.6 =
+### 1.1.6
 
 Handles WP_User_Query operations with metadata search correctly.
 
-= 1.1.5 =
+### 1.1.5
 
 Repair problem handing user queries with role__not_in and role__in search terms.
 
-= 1.1.4 =
+### 1.1.4
 
 * Fix compatibility with WordPress pre 5.9.
 * Display more reliable user count on dashboard panel.
 
-= 1.1.3 =
+### 1.1.3
 
 * Correct query-optimization problem when rendering autocompletion fields.
 * Test and optimize with MariaDB 10.9.
 
-= 1.1.2 =
+### 1.1.2
 
 * Correct query-optimization error.
 * Update the usermeta table's query-planning statistics after adding user metadata.
 
-= 1.1.1 =
+### 1.1.1
 
 * Replace the author dropdown menus in Quick Edit and Bulk Edit with autocompletion fields, to
 allow more flexible changes of post and page authors.
 * Improve the performance of user lookups.
 * Allow multiple roles per user as provided in plugins like User Role Editor.
 
-= 1.0.4 =
+### 1.0.4
 
 * Fix bug preventing wp-cli deactivation. Props to [João Faria](https://github.com/jffaria).
 
-== Upgrade Notice ==
+## Upgrade Notice
 
 Version 1.1.12 fixes compatibility problems with some other plugins.
 
