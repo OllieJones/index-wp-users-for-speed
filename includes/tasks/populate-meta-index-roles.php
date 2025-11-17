@@ -14,22 +14,23 @@ class PopulateMetaIndexRoles extends Task {
   public $maxUserId;
 
   /**
-   * @param int $batchSize number of users per batch (per chunk)
-   * @param int $chunkSize number of users per transaction within each batch.
    * @param int|null $siteId Site id for task.
    * @param int $timeout Runtime limit of task. Default = no limit
    */
   public function __construct(
-    $batchSize = INDEX_WP_USERS_FOR_SPEED_BATCHSIZE,
-    $chunkSize = INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE,
     $siteId = null, $timeout = 0
   ) {
 
     parent::__construct( $siteId, $timeout );
 
-    $this->batchSize = $batchSize;
-    $this->chunkSize = $chunkSize;
-    $this->roles     = [];
+    $this->batchSize = defined( 'INDEX_WP_USERS_FOR_SPEED_BATCHSIZE' )
+      ? intval( INDEX_WP_USERS_FOR_SPEED_BATCHSIZE )
+      : intval( INDEX_WP_USERS_FOR_SPEED_BATCHSIZE_DEFAULT );
+    $this->chunkSize = defined( 'INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE' )
+      ? intval( INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE )
+      : intval( INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE_DEFAULT );
+
+    $this->roles = [];
   }
 
   public function init() {

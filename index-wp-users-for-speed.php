@@ -49,12 +49,12 @@ const INDEX_WP_USERS_FOR_SPEED_DELAY_CRONKICK = 2;
  * This number is limited to avoid swamping MariaDB / MySQL with vast transactions
  * when manipulating large numbers of users. The batches run with wpcron.
  */
-const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE = 5000;
+const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE_DEFAULT = 5000;
 /**
  * The number of users we process per transaction when creating index entries in wp_usermeta.
  * This must be smaller than INDEX_WP_USERS_FOR_SPEED_BATCHSIZE.
  */
-const INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE = 50;
+const INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE_DEFAULT = 50;
 
 /**
  * The code that runs during plugin activation.

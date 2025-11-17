@@ -13,17 +13,19 @@ class DepopulateMetaIndexes extends Task {
   public $roles = [];
 
   /**
-   * @param int $batchSize number of users per batch (per chunk)
    * @param int|null $siteId Site id for task.
    * @param int $timeout Runtime limit of task. Default = no limit
    */
-  public function __construct( $batchSize = INDEX_WP_USERS_FOR_SPEED_BATCHSIZE, $siteId = null, $timeout = 0 ) {
+  public function __construct( $siteId = null, $timeout = 0 ) {
 
     parent::__construct( $siteId, $timeout );
 
     $indexer = Indexer::getInstance();
 
-    $this->batchSize = $batchSize;
+    $this->batchSize = defined( 'INDEX_WP_USERS_FOR_SPEED_BATCHSIZE' )
+      ? intval( INDEX_WP_USERS_FOR_SPEED_BATCHSIZE )
+      : intval( INDEX_WP_USERS_FOR_SPEED_BATCHSIZE_DEFAULT );
+
     $this->setBlog();
     $this->maxUserId = $indexer->getMaxUserId();
     $this->restoreBlog();

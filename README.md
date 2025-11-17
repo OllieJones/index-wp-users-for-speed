@@ -79,9 +79,18 @@ This plugin adds rows to `wp_usermeta` describing each user's role (or roles) in
 
 `meta_key = 'wp_index_wp_users_for_speed_role_author'`
 
-It takes a while to insert these extra indexing rows into the database; that happens in the background.
+It takes a while to insert these extra indexing rows into the database; that happens with WP_Cron tasks in the background.
 
 Once the indexing rows are in place, you can add, delete, or change user roles without regenerating those rows: the plugin maintains them.
+
+### How does the plugin handle large numbers of users without timing out?
+
+It performs the indexing for batches of users, each in a separate WP_Cron task.
+
+The number of users in a batch defaults to 5000 and can be set, if need be, with the INDEX_WP_USERS_FOR_SPEED_BATCHSIZE variable in wp-config.php.
+
+It breaks each batch into chunks of 50 users, by default. That can be set with the INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE variable in wp-config.php.
+
 
 ### What is the background for this plugin?
 
@@ -141,6 +150,8 @@ If you configure your WordPress installation using composer, you may install thi
 ### 1.2.0
 
 Handle non-consecutive wp_user.ID values with large gaps.
+
+Control of batch and chunk size is possible in wp-config.php.
 
 ### 1.1.12
 
