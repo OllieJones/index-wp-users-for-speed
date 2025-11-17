@@ -91,6 +91,14 @@ abstract class Task {
   protected function persist() {
     $jobName = self::toSnake( $this->taskName );
     $option  = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . $jobName;
+    /* These task options contain serialized class instances.
+     * Deserialization failures are possible.
+     * This cleans up items that cannot be deserialized correctly. */
+    try {
+      get_option( $option );
+    } catch ( Exception $e ) {
+      delete_option( $option );
+    }
     update_option( $option, $this, false );
 
     return $jobName;

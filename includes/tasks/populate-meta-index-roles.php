@@ -53,10 +53,10 @@ class PopulateMetaIndexRoles extends Task {
     $this->startChunk();
 
     $queries    = $this->makeIndexerQueries( $this->roles );
-    $currentEnd = $this->currentStart + $this->batchSize;
     $transStart = $this->currentStart;
-
-    $done = false;
+    $indexer    = Indexer::getInstance();
+    $transStart = $indexer->getNextUserId( $transStart );
+    $currentEnd = $transStart + $this->batchSize;
 
     while ( $transStart < $currentEnd ) {
 

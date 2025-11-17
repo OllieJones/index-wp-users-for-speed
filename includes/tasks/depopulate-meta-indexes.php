@@ -36,7 +36,7 @@ class DepopulateMetaIndexes extends Task {
     $this->restoreBlog();
   }
 
-  /** Do a chunk of meta index insertion for roles.
+  /** Do a chunk of meta index deletion for roles.
    * @return boolean  done When this is false, schedule another chunk.
    */
   public function doChunk() {
@@ -45,11 +45,14 @@ class DepopulateMetaIndexes extends Task {
 
     $previouslyShowing     = $wpdb->hide_errors();
     $previouslySuppressing = $wpdb->suppress_errors( true );
-    $currentEnd            = $this->currentStart + $this->batchSize;
+    $currentStart          = $this->currentStart;
+    $indexer               = Indexer::getInstance();
+    $currentStart          = $indexer->getNextUserId( $currentStart );
+    $currentEnd            = $currentStart + $this->batchSize;
     $keyPrefix             = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
     $queryTemplate         = /** @lang text */
       "DELETE FROM $wpdb->usermeta WHERE meta_key LIKE CONCAT(%s, '%%') AND user_id >= %d AND user_id < %d";
-    $query                 = $wpdb->prepare( $queryTemplate, $wpdb->esc_like( $keyPrefix ), $this->currentStart, $currentEnd );
+    $query                 = $wpdb->prepare( $queryTemplate, $wpdb->esc_like( $keyPrefix ), $currentStart, $currentEnd );
 
     $this->doQuery( $query );
 

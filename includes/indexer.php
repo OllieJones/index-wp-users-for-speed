@@ -38,8 +38,8 @@ class Indexer {
   public static function writeLog( $msg, $maxlength = 256, $name = 'log' ) {
     global $wpdb;
     $wpdb->query( "LOCK TABLES $wpdb->options WRITE" );
-    $option = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK  . $name;
-    $log = get_option( $option );
+    $option = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . $name;
+    $log    = get_option( $option );
     if ( is_string( $log ) ) {
       $logarray = explode( PHP_EOL, $log );
     } else {
@@ -48,7 +48,7 @@ class Indexer {
     $logarray = array_slice( $logarray, 0, $maxlength );
     array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
     $log = implode( PHP_EOL, $logarray );
-    add_option ( $option, $log );
+    add_option( $option, $log );
     $wpdb->query( 'UNLOCK TABLES' );
   }
 
@@ -101,8 +101,21 @@ class Indexer {
    */
   public function getMaxUserId() {
     global $wpdb;
-
     return 1 + max( 1, intval( $wpdb->get_var( "SELECT MAX(ID) FROM $wpdb->users" ) ) );
+  }
+
+  /**
+   * Find the next user id in use greater than or equal to the present one,
+   * irrespective of site in multisite.
+   *
+   * @param $userId
+   *
+   * @return int The next user ID actually present.
+   */
+  public function getNextUserId( $userId = 0 ) {
+    global $wpdb;
+    $query = "SELECT MIN(ID) FROM $wpdb->users WHERE ID >= %d";
+    return intval( $wpdb->get_var( $wpdb->prepare( $query, $userId ) ) );
   }
 
   /** Remove all indexing.
