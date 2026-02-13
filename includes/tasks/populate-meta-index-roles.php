@@ -53,7 +53,6 @@ class PopulateMetaIndexRoles extends Task {
     global $wpdb;
     $this->startChunk();
 
-    $queries    = $this->makeIndexerQueries( $this->roles );
     $transStart = $this->currentStart;
     $indexer    = Indexer::getInstance();
     $transStart = $indexer->getNextUserId( $transStart );
@@ -67,10 +66,11 @@ class PopulateMetaIndexRoles extends Task {
       $q        = $wpdb->prepare( $query, $wpdb->prefix . 'capabilities', $transStart, $transEnd );
       $this->doQuery( $q );
 
+      /* Build queries with user_id range baked into each UNION subquery
+       * so MySQL uses the (user_id, meta_key) index per chunk. */
+      $queries = $this->makeIndexerQueries( $this->roles, $transStart, $transEnd );
       foreach ( $queries as $query ) {
-        $query .= ' WHERE a.user_id >= %d AND a.user_id < %d';
-        $q     = $wpdb->prepare( $query, $transStart, $transEnd );
-        $this->doQuery( $q );
+        $this->doQuery( $query );
       }
       $this->doQuery( 'COMMIT' );
       $transStart         = $transEnd;
@@ -92,7 +92,7 @@ class PopulateMetaIndexRoles extends Task {
     return $done;
   }
 
-  private function makeIndexerQueries( $roles ) {
+  private function makeIndexerQueries( $roles, $rangeStart, $rangeEnd ) {
     global $wpdb;
 
     $results = [];
@@ -101,7 +101,9 @@ class PopulateMetaIndexRoles extends Task {
     $capabilitiesKey = $wpdb->prefix . 'capabilities';
     $insertUnions    = [];
     $deleteUnions    = [];
-    /* This one finds the role index metakeys to insert into usermeta. This is idempotent. */
+    /* This one finds the role index metakeys to insert into usermeta. This is idempotent.
+     * The user_id range is applied inside each subquery so MySQL can use
+     * the (user_id, meta_key) index instead of scanning the full table. */
     $insertTemplate = /** @lang text */
       "SELECT a.user_id, %s meta_key
          FROM $wpdb->usermeta a
@@ -110,7 +112,8 @@ class PopulateMetaIndexRoles extends Task {
                AND b.meta_key = %s
         WHERE a.meta_key = %s
           AND a.meta_value LIKE CONCAT('%%', %s, '%%')
-          AND b.user_id IS NULL";
+          AND b.user_id IS NULL
+          AND a.user_id >= %d AND a.user_id < %d";
     /* This one finds the usermeta rows with wrong capabilities, to delete.
      * We want these delete and insert operations to be idempotent,
      * doing nothing if the proper row is already present.
@@ -123,12 +126,13 @@ class PopulateMetaIndexRoles extends Task {
                AND b.meta_key = %s
                AND b.meta_value LIKE CONCAT('%%', %s, '%%')
         WHERE a.meta_key = %s
-          AND b.umeta_id IS NULL";
+          AND b.umeta_id IS NULL
+          AND a.user_id >= %d AND a.user_id < %d";
 
     foreach ( $roles as $role ) {
       $prefixedRole   = $prefix . $role;
-      $insertUnions[] = $wpdb->prepare( $insertTemplate, $prefixedRole, $prefixedRole, $capabilitiesKey, $wpdb->esc_like( $role ) );
-      $deleteUnions[] = $wpdb->prepare( $deleteTemplate, $capabilitiesKey, $wpdb->esc_like( $role ), $prefixedRole );
+      $insertUnions[] = $wpdb->prepare( $insertTemplate, $prefixedRole, $prefixedRole, $capabilitiesKey, $wpdb->esc_like( $role ), $rangeStart, $rangeEnd );
+      $deleteUnions[] = $wpdb->prepare( $deleteTemplate, $capabilitiesKey, $wpdb->esc_like( $role ), $prefixedRole, $rangeStart, $rangeEnd );
     }
 
     $union = implode( ' UNION ALL ', $deleteUnions );
