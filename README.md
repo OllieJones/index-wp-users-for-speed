@@ -3,9 +3,9 @@
 **Contributors:** OllieJones \
 **Tags:** users, database, index, performance, largesite \
 **Requires at least:** 5.2 \
-**Tested up to:** 6.9 \
+**Tested up to:** 7.0 \
 **Requires PHP:** 5.6 \
-**Stable tag:** 1.2.0 \
+**Stable tag:** 1.3.0 \
 Network: true \
 **License:** GPL v2 or later \
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html \
@@ -146,6 +146,10 @@ If you configure your WordPress installation using composer, you may install thi
 
 
 ## Changelog
+
+### 1.3.0
+
+Remediate slow queries when creating and refreshing wp_usermeta user-indexing items. Props to @nandotess for the PR.
 
 ### 1.2.0
 
