@@ -4,6 +4,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 use DateTimeZone;
 use Exception;
 
@@ -366,6 +368,8 @@ class Admin
   */
  public function action_link( $actions ) {
    $mylinks = [
+       /* this is a core localization, hence no domain */
+       // phpcs:disable WordPress.WP.I18n.MissingArgDomain
      '<a href="' . admin_url( 'users.php?page=' . $this->plugin_name ) . '">' . __( 'Settings' ) . '</a>',
    ];
 

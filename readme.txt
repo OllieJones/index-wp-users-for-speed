@@ -30,6 +30,16 @@ This plugin helps speed up the handling of those large numbers of users. It does
 
 When slow queries are required to make sure the metadata indexes are up to date, this plugin does them in the background so nobody has to wait for them to complete. You can set the plugin to do this background work at a particular time each day. Many people prefer to do them overnight or at some other off-peak time.
 
+<h4>WP-CLI commands</h4>
+
+You can use WP-CLI commands built in to this plugin.
+
+`wp index-users status` shows the status of user index creation.
+
+`wp index-users remove` removes the user index information. This includes usermeta rows and options rows.
+
+`wp index-users rebuild` rebuilds the user index information. Notice that activating the plugin always begins building the user index information.
+
 <h4>How can I learn more about making my WordPress site more efficient?</h4>
 
 This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/plugins/index-wp-mysql-for-speed/). If that plugin is in use, this plugin will perform better. But they are in no way dependent on one another; you may use either, both, or of course neither.
@@ -140,6 +150,8 @@ If you configure your WordPress installation using composer, you may install thi
 
 Remediate slow queries when creating and refreshing wp_usermeta user-indexing items. Props to @nandotess for the PR.
 
+Add wp-cli support. Props to @faisalahammad for the PR.
+
 = 1.2.0 =
 
 Handle non-consecutive wp_user.ID values with large gaps.
@@ -156,6 +168,8 @@ Fix incompatibility with https://wordpress.org/plugins/co-authors-plus/ .
 
 == Upgrade Notice ==
 
-Version 1.2.0 handles discontinuous user ID values. The percent-complete display may be a bit misleading when there are large gaps in those values.
+This version remediates slow queries building and rebuilding the index rows in wp_usermeta.  Props to @nandotess.
+
+It adds wp-cli:  `wp index-users status`, `wp index-users remove`, and `wp index-users rebuild`. Props to @faisalahammad.
 
 Thanks to my loyal users who have reported problems.

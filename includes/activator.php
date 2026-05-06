@@ -2,6 +2,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 /**
  * Fired during plugin activation
  *

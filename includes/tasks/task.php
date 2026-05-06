@@ -2,6 +2,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 use Exception;
 use ReflectionClass;
 
@@ -342,6 +344,7 @@ abstract class Task {
     $retry = $retries;
     while ( $retry > 0 ) {
       $success = true;
+      // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery WordPress.DB.DirectDatabaseQuery.NoCaching
       $result  = $wpdb->query( $query );
       if ( $result === false ) {
         $err     = $wpdb->error;

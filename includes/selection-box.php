@@ -53,6 +53,7 @@ class SelectionBox {
           if ( $id < 0 ) {
             $id = - 1;
             /* this is a core localization, hence no domain */
+            // phpcs:disable WordPress.WP.I18n.MissingArgDomain
             $label = __( '&mdash; No Change &mdash;' );
           }
           $this->users [] = (object) [ 'id' => $id, 'label' => $label ];

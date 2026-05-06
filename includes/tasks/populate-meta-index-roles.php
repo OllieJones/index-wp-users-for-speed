@@ -2,6 +2,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 /**
  * Task to populate meta_key = 'whatever_role_administrator, etc.
  */

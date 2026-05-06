@@ -2,6 +2,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 /**
  * Task to erase everything, in chunks.
  */

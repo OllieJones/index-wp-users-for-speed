@@ -4,6 +4,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 /**
  * Progress bar handler.
  *
@@ -47,7 +49,7 @@ class ProgressBar {
   */
  public function percent_complete_notice() {
   if ( $this->percentComplete < 1.0 ) {
-   wp_enqueue_script( $this->plugin_name . '_percent', plugin_dir_url( __FILE__ ) . 'js/percent.js', [], $this->version );
+   wp_enqueue_script( $this->plugin_name . '_percent', plugin_dir_url( __FILE__ ) . 'js/percent.js', [], $this->version, array('in_footer' => true ) );
    $suffix = esc_html__( '% complete.', 'index-wp-users-for-speed' );
    if ( $this->available ) {
     $prefix   = esc_html__( 'Background user index refresh in progress:', 'index-wp-users-for-speed' );
@@ -61,7 +63,7 @@ class ProgressBar {
    $percent = "$prefix <span class=\"percent\">$percent</span>$suffix $sentence";
    ?>
    <div class="notice notice-info index-wp-users-for-speed is-dismissible">
-    <p><?php echo $percent ?></p>
+    <p><?php echo wp_kses( $percent, 'data' ) ?></p>
    </div>
    <?php
   }

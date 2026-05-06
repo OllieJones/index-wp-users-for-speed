@@ -9,13 +9,13 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-06T00:48:09+00:00\n"
+"POT-Creation-Date: 2026-05-06T20:20:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.9.0\n"
 "X-Domain: index-wp-users-for-speed\n"
 
 #. Plugin Name of the plugin
-#: admin/admin.php:54
+#: admin/admin.php:56
 msgid "Index WP Users For Speed"
 msgstr ""
 
@@ -35,133 +35,214 @@ msgstr ""
 msgid "https://github.com/OllieJones"
 msgstr ""
 
-#: admin/admin.php:55
+#: admin/admin.php:57
 msgid "Index For Speed"
 msgstr ""
 
-#: admin/admin.php:68
+#: admin/admin.php:70
 msgid "Rebuilding user indexes"
 msgstr ""
 
-#: admin/admin.php:73
+#: admin/admin.php:75
 msgid "Rebuild indexes"
 msgstr ""
 
-#: admin/admin.php:80
+#: admin/admin.php:82
 msgid "...at this time"
 msgstr ""
 
-#: admin/admin.php:86
+#: admin/admin.php:88
 msgid "Choosing authors when editing posts and pages"
 msgstr ""
 
-#: admin/admin.php:91
+#: admin/admin.php:93
 msgid "Use selection boxes"
 msgstr ""
 
-#: admin/admin.php:131
+#: admin/admin.php:133
 msgid "Incorrect time."
 msgstr ""
 
-#: admin/admin.php:140
+#: admin/admin.php:142
 msgid "User index rebuilding starting"
 msgstr ""
 
 #. translators: 1: localized time like 1:22 PM or 13:22
-#: admin/admin.php:150
+#: admin/admin.php:152
 msgid "Automatic index rebuilding scheduled for %1$s each day"
 msgstr ""
 
-#: admin/admin.php:158
+#: admin/admin.php:160
 msgid "Automatic index rebuilding disabled"
 msgstr ""
 
-#: admin/admin.php:227
+#: admin/admin.php:229
 msgid "You may rebuild your user indexes each day, or immediately."
 msgstr ""
 
-#: admin/admin.php:228
+#: admin/admin.php:230
 msgid "(It is possible for them to become out-of-date.)"
 msgstr ""
 
-#: admin/admin.php:244
+#: admin/admin.php:246
 msgid "daily"
 msgstr ""
 
-#: admin/admin.php:252
+#: admin/admin.php:254
 msgid "never"
 msgstr ""
 
-#: admin/admin.php:261
+#: admin/admin.php:263
 msgid "immediately, then daily"
 msgstr ""
 
-#: admin/admin.php:270
+#: admin/admin.php:272
 msgid "immediately, but not daily"
 msgstr ""
 
-#: admin/admin.php:288
+#: admin/admin.php:290
 msgid "Avoid rebuilding exactly on the hour to avoid contending with other processing jobs."
 msgstr ""
 
-#: admin/admin.php:318
+#: admin/admin.php:320
 msgid ""
 "Author-choice dropdown menus can be unwieldy when your site has many authors. If you have more than this number of authors, you will see selection boxes instead of dropdown menus. Choose an author by typing a few characters of the name into the selection box.\n"
 "   \n"
 "   "
 msgstr ""
 
-#: admin/admin.php:332
+#: admin/admin.php:334
 msgid "when you have more than"
 msgstr ""
 
-#: admin/admin.php:339
+#: admin/admin.php:341
 msgid "authors registered on your site."
 msgstr ""
 
-#: admin/admin.php:390
+#: admin/admin.php:394
 msgctxt "verb"
 msgid "Sponsor"
 msgstr ""
 
-#: admin/progressbar.php:51
-#: admin/progressbar.php:57
+#: admin/progressbar.php:53
+#: admin/progressbar.php:59
 msgid "% complete."
 msgstr ""
 
-#: admin/progressbar.php:53
+#: admin/progressbar.php:55
 msgid "Background user index refresh in progress:"
 msgstr ""
 
-#: admin/progressbar.php:54
+#: admin/progressbar.php:56
 msgid "You may use your site normally during index refreshing."
 msgstr ""
 
-#: admin/progressbar.php:56
+#: admin/progressbar.php:58
 msgid "Background user index building in progress:"
 msgstr ""
 
-#: admin/progressbar.php:58
+#: admin/progressbar.php:60
 msgid "You may use your site normally during index building."
 msgstr ""
 
-#: admin/views/page.php:21
+#: admin/views/page.php:23
 msgid "click here"
 msgstr ""
 
 #. translators: 1: embeds "For help please ..."  2: hyperlink to review page on wp.org
-#: admin/views/page.php:25
+#: admin/views/page.php:27
 msgid "For support please %1$s.  Please %2$s to rate this plugin. Your feedback helps make it better, faster, and more useful."
 msgstr ""
 
-#: admin/views/page.php:36
+#: admin/views/page.php:38
 msgid "Approximate number of users on this entire site"
 msgstr ""
 
-#: includes/indexer.php:191
+#: includes/indexer.php:193
 msgid "Still counting users..."
 msgstr ""
 
-#: includes/selection-box.php:138
+#: includes/selection-box.php:139
 msgid "Type the author's name"
+msgstr ""
+
+#: includes/wp-cli-command.php:74
+msgid "Starting index rebuild..."
+msgstr ""
+
+#: includes/wp-cli-command.php:77
+msgid "Counting users by role..."
+msgstr ""
+
+#: includes/wp-cli-command.php:81
+msgid "User counts updated."
+msgstr ""
+
+#: includes/wp-cli-command.php:84
+msgid "Retrieving editor list..."
+msgstr ""
+
+#: includes/wp-cli-command.php:88
+msgid "Editor list updated."
+msgstr ""
+
+#: includes/wp-cli-command.php:91
+msgid "Populating role metadata indexes..."
+msgstr ""
+
+#. translators: 1: Total number of batches to process
+#: includes/wp-cli-command.php:104
+msgid "Processing batches (est. %d)"
+msgstr ""
+
+#: includes/wp-cli-command.php:115
+msgid "Role metadata indexes rebuilt successfully."
+msgstr ""
+
+#: includes/wp-cli-command.php:145
+msgid "Removing user indexes..."
+msgstr ""
+
+#. translators: 1: Total number of batches to remove
+#: includes/wp-cli-command.php:156
+msgid "Removing batches (est. %d)"
+msgstr ""
+
+#: includes/wp-cli-command.php:177
+msgid "All user indexes removed."
+msgstr ""
+
+#. translators: %s: availability status (available / not available)
+#: includes/wp-cli-command.php:209
+msgid "Meta index roles: %s"
+msgstr ""
+
+#: includes/wp-cli-command.php:210
+msgid "available"
+msgstr ""
+
+#: includes/wp-cli-command.php:210
+msgid "not available"
+msgstr ""
+
+#. translators: %s: completion percentage
+#: includes/wp-cli-command.php:216
+msgid "Completion: %s%%"
+msgstr ""
+
+#. translators: %s: total number of users
+#: includes/wp-cli-command.php:226
+msgid "Total users: %s"
+msgstr ""
+
+#: includes/wp-cli-command.php:233
+msgid "User indexes are complete and available."
+msgstr ""
+
+#: includes/wp-cli-command.php:235
+msgid "User indexes are partially built."
+msgstr ""
+
+#: includes/wp-cli-command.php:237
+msgid "User indexes are not available."
 msgstr ""

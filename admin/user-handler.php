@@ -2,6 +2,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 use WP_Error;
 use WP_HTTP_Response;
 use WP_REST_Request;
@@ -841,7 +843,7 @@ class UserHandler extends WordPressHooks {
     wp_enqueue_script( 'jquery-ui-autocomplete' );
     wp_enqueue_script( 'iufs-ui-autocomplete',
       plugins_url( 'js/quick-edit-autocomplete.js', __FILE__ ),
-      [ 'jquery-ui-autocomplete' ], INDEX_WP_USERS_FOR_SPEED_VERSION );
+      [ 'jquery-ui-autocomplete' ], INDEX_WP_USERS_FOR_SPEED_VERSION, array( 'in_footer' => true ) );
     wp_enqueue_style( 'iufs-ui-autocomplete-style',
       plugins_url( 'css/quick-edit-autocomplete.css', __FILE__ ),
       [], INDEX_WP_USERS_FOR_SPEED_VERSION );

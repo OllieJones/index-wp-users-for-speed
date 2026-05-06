@@ -12,6 +12,8 @@
  */
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 use IndexWpUsersForSpeed\Indexer;
 
 /** @noinspection HtmlUnknownTarget */
@@ -29,19 +31,19 @@ settings_errors( $this->options_name );
 ?>
 
 <div class="wrap index-users">
- <h2 class="wp-heading-inline"><?php echo get_admin_page_title(); ?></h2>
+    <h2 class="wp-heading-inline"><?php echo wp_kses( get_admin_page_title(), 'post' ); ?></h2>
 
- <p><?php echo $supportString ?></p>
- <p>
-  <span><?php esc_html_e( 'Approximate number of users on this entire site', 'index-wp-users-for-speed' ) ?>: </span>
-  <span><?php echo esc_html( number_format_i18n( Indexer::getNetworkUserCount(), 0 ) ) ?></span>
- </p>
- <!--suppress HtmlUnknownTarget -->
- <form id="index-users-form" method="post" action="options.php">
-  <?php
-  settings_fields( $this->options_name );
-  do_settings_sections( $this->plugin_name );
-  submit_button();
-  ?>
- </form>
+    <p><?php echo wp_kses( $supportString, 'post' ) ?></p>
+    <p>
+        <span><?php esc_html_e( 'Approximate number of users on this entire site', 'index-wp-users-for-speed' ) ?>: </span>
+        <span><?php echo esc_html( number_format_i18n( Indexer::getNetworkUserCount(), 0 ) ) ?></span>
+    </p>
+    <!--suppress HtmlUnknownTarget -->
+    <form id="index-users-form" method="post" action="options.php">
+        <?php
+        settings_fields( $this->options_name );
+        do_settings_sections( $this->plugin_name );
+        submit_button();
+        ?>
+    </form>
 </div>

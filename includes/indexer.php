@@ -4,6 +4,8 @@
 
 namespace IndexWpUsersForSpeed;
 
+if ( ! defined( 'ABSPATH' ) ) die;
+
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;

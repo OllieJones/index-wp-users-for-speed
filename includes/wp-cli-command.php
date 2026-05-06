@@ -19,25 +19,25 @@ require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
  * ## EXAMPLES
  *
  *     # Rebuild all user indexes.
- *     $ wp index-wp-users-for-speed rebuild
+ *     $ wp index-users rebuild
  *     Success: User counts updated.
  *     Success: Editor list updated.
  *     5/5 [============================] 100%
  *     Success: Role metadata indexes rebuilt successfully.
  *
  *     # Check index status.
- *     $ wp iufs status
+ *     $ wp index-users status
  *     Meta index roles: available
  *     Completion: 100%
  *     Total users: 12,345
  *     Success: User indexes are complete and available.
  *
  *     # Remove all user indexes.
- *     $ wp iufs remove
+ *     $ wp index-users remove
  *     3/3 [============================] 100%
  *     Success: All user indexes removed.
  */
-class CLI_Command extends \WP_CLI_Command {
+class IndexWpUsers_CLI_Command extends \WP_CLI_Command {
 
   /**
    * Rebuild all user indexes synchronously.
@@ -58,10 +58,10 @@ class CLI_Command extends \WP_CLI_Command {
    * ## EXAMPLES
    *
    *     # Rebuild with default batch and chunk sizes.
-   *     $ wp index-wp-users-for-speed rebuild
+   *     $ wp index-users rebuild
    *
    *     # Rebuild with custom batch and chunk sizes.
-   *     $ wp iufs rebuild --batch-size=1000 --chunk-size=25
+   *     $ wp index-users rebuild --batch-size=1000 --chunk-size=25
    *
    * @param array $args       Positional arguments.
    * @param array $assoc_args Associative arguments (flags).
@@ -71,24 +71,24 @@ class CLI_Command extends \WP_CLI_Command {
     $batch_size = isset( $assoc_args['batch-size'] ) ? absint( $assoc_args['batch-size'] ) : 0;
     $chunk_size = isset( $assoc_args['chunk-size'] ) ? absint( $assoc_args['chunk-size'] ) : 0;
 
-    WP_CLI::log( __( 'Starting index rebuild...', 'index-wp-users-for-speed' ) );
+    \WP_CLI::log( __( 'Starting index rebuild...', 'index-wp-users-for-speed' ) );
 
     // Step 1: Count users by role.
-    WP_CLI::log( __( 'Counting users by role...', 'index-wp-users-for-speed' ) );
+    \WP_CLI::log( __( 'Counting users by role...', 'index-wp-users-for-speed' ) );
     $task = new CountUsers();
     $task->init();
     $task->doChunk();
-    WP_CLI::success( __( 'User counts updated.', 'index-wp-users-for-speed' ) );
+    \WP_CLI::success( __( 'User counts updated.', 'index-wp-users-for-speed' ) );
 
     // Step 2: Retrieve editor list.
-    WP_CLI::log( __( 'Retrieving editor list...', 'index-wp-users-for-speed' ) );
+    \WP_CLI::log( __( 'Retrieving editor list...', 'index-wp-users-for-speed' ) );
     $task = new GetEditors();
     $task->init();
     $task->doChunk();
-    WP_CLI::success( __( 'Editor list updated.', 'index-wp-users-for-speed' ) );
+    \WP_CLI::success( __( 'Editor list updated.', 'index-wp-users-for-speed' ) );
 
     // Step 3: Populate role metadata indexes.
-    WP_CLI::log( __( 'Populating role metadata indexes...', 'index-wp-users-for-speed' ) );
+    \WP_CLI::log( __( 'Populating role metadata indexes...', 'index-wp-users-for-speed' ) );
     $task = new PopulateMetaIndexRoles();
     if ( $batch_size > 0 ) {
       $task->batchSize = $batch_size;
@@ -100,6 +100,7 @@ class CLI_Command extends \WP_CLI_Command {
 
     $estimated_chunks = (int) ceil( $task->maxUserId / $task->batchSize );
     $progress = \WP_CLI\Utils\make_progress_bar(
+      /* translators: 1: Total number of batches to process */
       sprintf( __( 'Processing batches (est. %d)', 'index-wp-users-for-speed' ), $estimated_chunks ),
       $estimated_chunks
     );
@@ -111,7 +112,7 @@ class CLI_Command extends \WP_CLI_Command {
     }
     $progress->finish();
 
-    WP_CLI::success( __( 'Role metadata indexes rebuilt successfully.', 'index-wp-users-for-speed' ) );
+    \WP_CLI::success( __( 'Role metadata indexes rebuilt successfully.', 'index-wp-users-for-speed' ) );
   }
 
   /**
@@ -129,10 +130,10 @@ class CLI_Command extends \WP_CLI_Command {
    * ## EXAMPLES
    *
    *     # Remove all indexes.
-   *     $ wp index-wp-users-for-speed remove
+   *     $ wp index-users remove
    *
    *     # Remove with custom batch size.
-   *     $ wp iufs remove --batch-size=1000
+   *     $ wp index-users remove --batch-size=1000
    *
    * @param array $args       Positional arguments.
    * @param array $assoc_args Associative arguments (flags).
@@ -141,7 +142,7 @@ class CLI_Command extends \WP_CLI_Command {
   public function remove( $args, $assoc_args) {
     $batch_size = isset( $assoc_args['batch-size'] ) ? absint( $assoc_args['batch-size'] ) : 0;
 
-    WP_CLI::log( __( 'Removing user indexes...', 'index-wp-users-for-speed' ) );
+    \WP_CLI::log( __( 'Removing user indexes...', 'index-wp-users-for-speed' ) );
 
     $task = new DepopulateMetaIndexes();
     if ( $batch_size > 0 ) {
@@ -151,7 +152,8 @@ class CLI_Command extends \WP_CLI_Command {
 
     $estimated_chunks = (int) ceil( $task->maxUserId / $task->batchSize );
     $progress = \WP_CLI\Utils\make_progress_bar(
-      sprintf( __( 'Removing batches (est. %d)', 'index-wp-users-for-speed' ), $estimated_chunks ),
+    /* translators: 1: Total number of batches to remove */
+    sprintf( __( 'Removing batches (est. %d)', 'index-wp-users-for-speed' ), $estimated_chunks ),
       $estimated_chunks
     );
 
@@ -172,7 +174,7 @@ class CLI_Command extends \WP_CLI_Command {
     $task = new PopulateMetaIndexRoles();
     $task->clearStatus();
 
-    WP_CLI::success( __( 'All user indexes removed.', 'index-wp-users-for-speed' ) );
+    \WP_CLI::success( __( 'All user indexes removed.', 'index-wp-users-for-speed' ) );
   }
 
   /**
@@ -184,7 +186,7 @@ class CLI_Command extends \WP_CLI_Command {
    * ## EXAMPLES
    *
    *     # Check current index status.
-   *     $ wp index-wp-users-for-speed status
+   *     $ wp index-users status
    *     Meta index roles: available
    *     Completion: 100%
    *     Total users: 12,345
@@ -201,14 +203,14 @@ class CLI_Command extends \WP_CLI_Command {
     $fraction  = $indexer->metaIndexRoleFraction();
     $percent   = round( $fraction * 100, 1 );
 
-    WP_CLI::log(
+    \WP_CLI::log(
       sprintf(
         /* translators: %s: availability status (available / not available) */
         __( 'Meta index roles: %s', 'index-wp-users-for-speed' ),
         $available ? __( 'available', 'index-wp-users-for-speed' ) : __( 'not available', 'index-wp-users-for-speed' )
       )
     );
-    WP_CLI::log(
+    \WP_CLI::log(
       sprintf(
         /* translators: %s: completion percentage */
         __( 'Completion: %s%%', 'index-wp-users-for-speed' ),
@@ -218,7 +220,7 @@ class CLI_Command extends \WP_CLI_Command {
 
     $user_counts = $indexer->getUserCounts( false );
     if ( is_array( $user_counts ) && isset( $user_counts['total_users'] ) ) {
-      WP_CLI::log(
+      \WP_CLI::log(
         sprintf(
           /* translators: %s: total number of users */
           __( 'Total users: %s', 'index-wp-users-for-speed' ),
@@ -228,15 +230,14 @@ class CLI_Command extends \WP_CLI_Command {
     }
 
     if ( $available && $fraction >= 1.0 ) {
-      WP_CLI::success( __( 'User indexes are complete and available.', 'index-wp-users-for-speed' ) );
+      \WP_CLI::success( __( 'User indexes are complete and available.', 'index-wp-users-for-speed' ) );
     } elseif ( $available ) {
-      WP_CLI::warning( __( 'User indexes are partially built.', 'index-wp-users-for-speed' ) );
+      \WP_CLI::warning( __( 'User indexes are partially built.', 'index-wp-users-for-speed' ) );
     } else {
-      WP_CLI::warning( __( 'User indexes are not available.', 'index-wp-users-for-speed' ) );
+      \WP_CLI::warning( __( 'User indexes are not available.', 'index-wp-users-for-speed' ) );
     }
   }
 
 }
 
-WP_CLI::add_command( 'index-wp-users-for-speed', __NAMESPACE__ . '\CLI_Command' );
-WP_CLI::add_command( 'iufs', __NAMESPACE__ . '\CLI_Command' );
+\WP_CLI::add_command( 'index-users', __NAMESPACE__ . '\IndexWpUsers_CLI_Command' );

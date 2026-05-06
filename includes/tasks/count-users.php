@@ -1,6 +1,7 @@
 <?php /** @noinspection PhpUnused */
 
 namespace IndexWpUsersForSpeed;
+if ( ! defined( 'ABSPATH' ) ) die;
 
 /**
  * Task to count users by role.
