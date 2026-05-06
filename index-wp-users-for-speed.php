@@ -93,3 +93,7 @@ require plugin_dir_path( __FILE__ ) . 'includes/plugin.php';
 
 $plugin = new IndexWpUsersForSpeed\Index_Wp_Users_For_Speed();
 $plugin->run();
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+  require_once plugin_dir_path( __FILE__ ) . 'includes/wp-cli-command.php';
+}
