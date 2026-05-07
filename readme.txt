@@ -34,11 +34,11 @@ When slow queries are required to make sure the metadata indexes are up to date,
 
 You can use WP-CLI commands built in to this plugin.
 
-`wp index-users status` shows the status of user index creation.
+* `wp index-users status` shows the status of user index creation.
 
-`wp index-users remove` removes the user index information. This includes usermeta rows and options rows.
+* `wp index-users remove` removes the user index information. This includes usermeta rows and options rows.
 
-`wp index-users rebuild` rebuilds the user index information. Notice that activating the plugin always begins building the user index information.
+* `wp index-users rebuild` rebuilds the user index information. Notice that activating the plugin always begins building the user index information.
 
 <h4>How can I learn more about making my WordPress site more efficient?</h4>
 
@@ -62,7 +62,7 @@ I offer several plugins to help with your site's database efficiency. You can [r
 
 = I see high CPU usage (load average) on my MariaDB / MySQL database server during user index building or refresh. Is that normal?
 
-**Yes.** Indexing your registered users requires us to insert a row in your wp_usermeta tab;e for each of them. We do this work in batches of 5000 users to avoid locking up your MariaDB / MySQL server. Each batch takes server time. Once all index building or refresh batches are complete, your CPU usage will return to normal.
+**Yes.** Indexing your registered users requires us to insert a row in your wp_usermeta table for each of them. We do this work in batches of 5000 users to avoid locking up your MariaDB / MySQL server. Each batch takes server time. Once all index building or refresh batches are complete, your CPU usage will return to normal.
 
 = Can I use this if I have disabled WP_Cron and use an operating system cronjob instead?
 
@@ -80,7 +80,7 @@ Standard WordPress puts a `wp_capabilities` row in the `wp_usermeta` table for e
 
 In order to find all the authors WordPress must issue a database query containing a filter like this one, that starts and ends with the SQL wildcard character `%`.
 
-`meta_key = 'wp_capabilities' AND meta_value LIKE '%"author"%'`
+`meta_key = 'wp_capabilities' AND meta_value LIKE '%author%'`
 
 Filters like that are notoriously slow: they cannot exploit any database keys, and so MySQL or MariaDB must examine that `wp_usermeta` row for every user in your site.
 
