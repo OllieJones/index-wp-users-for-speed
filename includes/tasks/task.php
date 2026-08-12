@@ -22,10 +22,12 @@ function index_wp_users_for_speed_do_task( $taskName ) {
     if ( $task && method_exists( $task, 'doTaskStep' ) ) {
       $task->doTaskStep();
     } else {
+      //phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
       error_log( 'index_wp_users_for_speed_task: task missing, so cannot run: ' . $taskName );
     }
   } catch ( Exception $ex ) {
     $taskName = ( $task && $task->taskName ) ? $task->taskName : 'persisted ' . $taskName;
+    //phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
     error_log( 'index_wp_users_for_speed_task: cron hook exception: ' . $taskName . ' ' . $ex->getMessage() . ' ' . $ex->getTraceAsString() );
   }
 }
@@ -158,6 +160,7 @@ abstract class Task {
     $words[] = is_string( $msg ) ? $msg : serialize( $msg );
     if ( $time ) {
       $words[] = 'for time';
+      //phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date
       $words[] = date( 'Y-m-d H:i:s', $time );
     }
     $words [] = $this->generateCallTrace();
@@ -306,6 +309,7 @@ abstract class Task {
     if ( $this->useCount === 0 ) {
       $this->setStatus( null, null, true, 0.001 );
     }
+    //phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
     set_time_limit( $this->timeout );
     $this->lastTouch = time();
     $this->setBlog();
@@ -344,7 +348,7 @@ abstract class Task {
     $retry = $retries;
     while ( $retry > 0 ) {
       $success = true;
-      // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery WordPress.DB.DirectDatabaseQuery.NoCaching
+      //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
       $result  = $wpdb->query( $query );
       if ( $result === false ) {
         $err     = $wpdb->error;
@@ -361,6 +365,7 @@ abstract class Task {
       usleep( $delay * 1000000 );
       $retry --;
       if ( $retry <= 0 ) {
+        //phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
         error_log( "Deadlock after $retries retries: $query" );
       }
     }

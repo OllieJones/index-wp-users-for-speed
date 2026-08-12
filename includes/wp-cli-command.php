@@ -2,7 +2,7 @@
 /** @noinspection PhpUnused */
 
 namespace IndexWpUsersForSpeed;
-
+if ( ! defined( 'ABSPATH' ) ) exit;
 // If WP-CLI is not available, bail.
 if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
   return;

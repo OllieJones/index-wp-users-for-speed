@@ -363,6 +363,7 @@ class UserHandler extends WordPressHooks {
         $metaQuery['relation'] = 'OR';
       }
       add_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10, 6 );
+      //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
       $query_args ['meta_query'] = $metaQuery;
       unset ( $query_args ['capability__in'] );
       unset ( $query_args['capability'] );
@@ -726,14 +727,14 @@ class UserHandler extends WordPressHooks {
       $includes[] = $this->makeRoleQueryArgs( $role );
     }
     if ( count( $includes ) > 1 ) {
-      $includes = [ 'relation' => 'OR', $includes ];
+      $includes['relation'] = 'OR';
     }
     $excludes = [];
     foreach ( $roleExclude as $role ) {
       $excludes[] = $this->makeRoleQueryArgs( $role, 'NOT EXISTS' );
     }
     if ( count( $excludes ) > 1 ) {
-      $excludes = [ 'relation' => 'AND', $excludes ];
+      $excludes [ 'relation'] = 'AND';
     }
     if ( count( $includes ) > 0 && count( $excludes ) > 0 ) {
       $meta = [ 'relation' => 'AND', $includes, $excludes ];
@@ -750,8 +751,10 @@ class UserHandler extends WordPressHooks {
       $new ['relation']  = 'AND';
       $new []            = $qv['meta_query'];
       $new []            = $meta;
+      //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
       $qv ['meta_query'] = $new;
     } else {
+      //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
       $qv ['meta_query'] = $meta;
     }
     /* and erase the role filters they replace */

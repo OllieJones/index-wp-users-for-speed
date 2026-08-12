@@ -39,6 +39,7 @@ class Indexer {
    */
   public static function writeLog( $msg, $maxlength = 256, $name = 'log' ) {
     global $wpdb;
+    //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query( "LOCK TABLES $wpdb->options WRITE" );
     $option = INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK . $name;
     $log    = get_option( $option );
@@ -48,9 +49,12 @@ class Indexer {
       $logarray = [];
     }
     $logarray = array_slice( $logarray, 0, $maxlength );
+    //phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date
     array_unshift( $logarray, date( 'Y-m-d H:i:s' ) . ' ' . $msg );
     $log = implode( PHP_EOL, $logarray );
+    unset( $logarray );
     add_option( $option, $log );
+    //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query( 'UNLOCK TABLES' );
   }
 
@@ -103,6 +107,7 @@ class Indexer {
    */
   public function getMaxUserId() {
     global $wpdb;
+    //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
     return 1 + max( 1, intval( $wpdb->get_var( "SELECT MAX(ID) FROM $wpdb->users" ) ) );
   }
 
@@ -117,6 +122,7 @@ class Indexer {
   public function getNextUserId( $userId = 0 ) {
     global $wpdb;
     $query = "SELECT MIN(ID) FROM $wpdb->users WHERE ID >= %d";
+    //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
     return intval( $wpdb->get_var( $wpdb->prepare( $query, $userId ) ) );
   }
 
@@ -351,6 +357,7 @@ class Indexer {
       return get_user_count();
     }
     global $wpdb;
+    //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
     return $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->users;" );
   }
 

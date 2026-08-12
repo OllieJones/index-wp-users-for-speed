@@ -3,9 +3,9 @@
 **Contributors:** OllieJones \
 **Tags:** users, database, index, performance, largesite \
 **Requires at least:** 5.2 \
-**Tested up to:** 7.0 \
+**Tested up to:** 7.1 \
 **Requires PHP:** 5.6 \
-**Stable tag:** 1.3.0 \
+**Stable tag:** 1.3.1 \
 Network: true \
 **License:** GPL v2 or later \
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html \
@@ -156,6 +156,10 @@ If you configure your WordPress installation using composer, you may install thi
 
 
 ## Changelog
+
+### 1.3.1
+
+Correct defect handling user queries with multi-role role_in() clauses.
 
 ### 1.3.0
 

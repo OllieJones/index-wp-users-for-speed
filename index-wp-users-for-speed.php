@@ -7,12 +7,12 @@
  * @license  GPL-2.0-or-later
  * @wordpress-plugin0
  * Plugin Name: Index WP Users For Speed
- * Version:     1.3.0
- * Stable tag:  1.3.0
+ * Version:     1.3.1
+ * Stable tag:  1.3.1
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with thousands of users.
- * Requires at least: 5.2
- * Tested up to:      7.0
+ * Requires at least: 5.3
+ * Tested up to:      7.1
  * Requires PHP:      5.6
  * Author:       Oliver Jones
  * Author URI:   https://github.com/OllieJones
@@ -34,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 const INDEX_WP_USERS_FOR_SPEED_NAME = 'index-wp-users-for-speed';
 define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
-const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.3.0';
+const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.3.1';
 const INDEX_WP_USERS_FOR_SPEED_PREFIX         = 'index-wp-users-for-speed-';
 const INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK    = 'index-wp-users-for-speed-task';
 const INDEX_WP_USERS_FOR_SPEED_HOOKNAME       = 'index_wp_users_for_speed_task';
@@ -60,7 +60,7 @@ const INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE_DEFAULT = 50;
  * The code that runs during plugin activation.
  * This action is documented in includes/activator.php
  */
-function activate_index_wp_users_for_speed() {
+function index_wp_users_for_speed_activate() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/activator.php';
   Activator::activate();
 }
@@ -69,13 +69,13 @@ function activate_index_wp_users_for_speed() {
  * The code that runs during plugin deactivation.
  * This action is documented in includes/deactivator.php
  */
-function deactivate_index_wp_users_for_speed() {
+function index_wp_users_for_speed_deactivate() {
   require_once plugin_dir_path( __FILE__ ) . 'includes/deactivator.php';
   Deactivator::deactivate();
 }
 
-register_activation_hook( __FILE__, 'activate_index_wp_users_for_speed' );
-register_deactivation_hook( __FILE__, 'deactivate_index_wp_users_for_speed' );
+register_activation_hook( __FILE__, 'index_wp_users_for_speed_activate' );
+register_deactivation_hook( __FILE__, 'index_wp_users_for_speed_deactivate' );
 
 /**
  * The core plugin class that is used to define internationalization,

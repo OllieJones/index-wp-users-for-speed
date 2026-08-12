@@ -54,8 +54,8 @@ class DepopulateMetaIndexes extends Task {
     $currentStart          = $indexer->getNextUserId( $currentStart );
     $currentEnd            = $currentStart + $this->batchSize;
     $keyPrefix             = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX;
-    $queryTemplate         = /** @lang text */
-      "DELETE FROM $wpdb->usermeta WHERE meta_key LIKE CONCAT(%s, '%%') AND user_id >= %d AND user_id < %d";
+    $queryTemplate         =  "DELETE FROM $wpdb->usermeta WHERE meta_key LIKE CONCAT(%s, '%%') AND user_id >= %d AND user_id < %d";
+    //phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
     $query                 = $wpdb->prepare( $queryTemplate, $wpdb->esc_like( $keyPrefix ), $currentStart, $currentEnd );
 
     $this->doQuery( $query );

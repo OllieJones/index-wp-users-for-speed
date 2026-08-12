@@ -51,6 +51,7 @@ class Deactivator {
 
   private static function deleteCronOptions() {
     global $wpdb;
+    //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query(
       $wpdb->prepare(
         "DELETE FROM $wpdb->options WHERE option_name LIKE CONCAT(%s, '%%')",

@@ -65,6 +65,7 @@ class PopulateMetaIndexRoles extends Task {
       $this->doQuery( 'BEGIN' );
       $transEnd = min( $transStart + $this->chunkSize, $currentEnd );
       $query    = "SELECT COUNT(*) FROM $wpdb->usermeta a WHERE a.meta_key = %s AND a.user_id >= %d AND a.user_id < %d ORDER BY a.user_id FOR UPDATE";
+      //phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
       $q        = $wpdb->prepare( $query, $wpdb->prefix . 'capabilities', $transStart, $transEnd );
       $this->doQuery( $q );
 
@@ -133,7 +134,9 @@ class PopulateMetaIndexRoles extends Task {
 
     foreach ( $roles as $role ) {
       $prefixedRole   = $prefix . $role;
+      //phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
       $insertUnions[] = $wpdb->prepare( $insertTemplate, $prefixedRole, $prefixedRole, $capabilitiesKey, $wpdb->esc_like( $role ), $rangeStart, $rangeEnd );
+      //phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
       $deleteUnions[] = $wpdb->prepare( $deleteTemplate, $capabilitiesKey, $wpdb->esc_like( $role ), $prefixedRole, $rangeStart, $rangeEnd );
     }
 
