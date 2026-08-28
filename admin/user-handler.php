@@ -418,10 +418,11 @@ class UserHandler extends WordPressHooks {
     $sql, $queries, $type, $primary_table, $primary_id_column, $context
   ) {
     global $wpdb;
-    if ( $type !== 'user' ) {
+    /* Don't process unexpected queries */
+    if ( $type !== 'user' || 'WP_User_Query' !== get_class( $context ) || $wpdb->users !== $primary_table || 'ID' !== $primary_id_column ) {
       return $sql;
     }
-    /* single meta query that doesn't look like one of ours. */
+    /* A single meta query that doesn't look like one of ours. */
     if ( ! is_multisite() && ( ! array_key_exists( 'relation', $queries ) || $queries['relation'] !== 'OR' ) ) {
       return $sql;
     }
@@ -444,17 +445,17 @@ class UserHandler extends WordPressHooks {
           $keys[] = $query['key'];
         }
       }
-      $capabilityTags = array_map( function ( $key ) {
-        global $wpdb;
-        return $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = %s", $key );
-      }, $keys );
+      $roleQueries = [];
+      foreach ( $keys as $key ) {
+        $roleQueries[] = $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = %s", $key );
+      }
 
-      $where = PHP_EOL . " AND $wpdb->users.ID IN ( ". implode( PHP_EOL . ' UNION ALL ', $capabilityTags ) . ')' . PHP_EOL;
-      /* only do this once per invocation of user query with metadata */
+      $join = ' JOIN ( '. implode( PHP_EOL . ' UNION ALL ', $roleQueries ) . ') AS index_wp_users_roles ON ' . $primary_table . '.'. $primary_id_column . ' = index_wp_users_roles.user_id' . PHP_EOL;
+      /* Only do this filtering once per invocation of user query with metadata */
       remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
 
-      $sql['join']  = '';
-      $sql['where'] = $where;
+      $sql['join']  = $join;
+      $sql['where'] = '';
     }
     return $sql;
   }
