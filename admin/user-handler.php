@@ -446,10 +446,10 @@ class UserHandler extends WordPressHooks {
       }
       $capabilityTags = array_map( function ( $key ) {
         global $wpdb;
-        return $wpdb->prepare( "%s", $key );
+        return $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = %s", $key );
       }, $keys );
 
-      $where = PHP_EOL . " AND $wpdb->users.ID IN ( SELECT user_id FROM $wpdb->usermeta WHERE meta_key IN (" . implode( ',', $capabilityTags ) . '))' . PHP_EOL;
+      $where = PHP_EOL . " AND $wpdb->users.ID IN ( ". implode( PHP_EOL . ' UNION ALL ', $capabilityTags ) . ')' . PHP_EOL;
       /* only do this once per invocation of user query with metadata */
       remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
 
@@ -734,7 +734,7 @@ class UserHandler extends WordPressHooks {
       $excludes[] = $this->makeRoleQueryArgs( $role, 'NOT EXISTS' );
     }
     if ( count( $excludes ) > 1 ) {
-      $excludes [ 'relation'] = 'AND';
+      $excludes ['relation'] = 'AND';
     }
     if ( count( $includes ) > 0 && count( $excludes ) > 0 ) {
       $meta = [ 'relation' => 'AND', $includes, $excludes ];
@@ -747,10 +747,10 @@ class UserHandler extends WordPressHooks {
     }
     /* stash those meta query args in the query variables we got */
     if ( isset( $qv['meta_query'] ) && $meta ) {
-      $new               = array();
-      $new ['relation']  = 'AND';
-      $new []            = $qv['meta_query'];
-      $new []            = $meta;
+      $new              = array();
+      $new ['relation'] = 'AND';
+      $new []           = $qv['meta_query'];
+      $new []           = $meta;
       //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
       $qv ['meta_query'] = $new;
     } else {
@@ -761,6 +761,8 @@ class UserHandler extends WordPressHooks {
     $qv['role']         = '';
     $qv['role__in']     = [];
     $qv['role__not_in'] = [];
+
+    add_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10, 6 );
   }
 
   /**
