@@ -2,10 +2,10 @@
 
 **Contributors:** OllieJones \
 **Tags:** users, database, index, performance, largesite \
-**Requires at least:** 5.2 \
+**Requires at least:** 5.3 \
 **Tested up to:** 7.1 \
 **Requires PHP:** 5.6 \
-**Stable tag:** 1.3.1 \
+**Stable tag:** 1.4.0 \
 Network: true \
 **License:** GPL v2 or later \
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html \
@@ -157,9 +157,13 @@ If you configure your WordPress installation using composer, you may install thi
 
 ## Changelog
 
+### 1.4.0
+
+Rework query for unions of multiple user roles to avoid a combinatorial explosion.
+
 ### 1.3.1
 
-Correct defect handling user queries with multi-role role_in() clauses.
+Correct defect when handling user queries with multi-role role_in() clauses. Props to @za12bt.
 
 ### 1.3.0
 
@@ -183,8 +187,6 @@ Fix incompatibility with https://wordpress.org/plugins/co-authors-plus/ .
 
 ## Upgrade Notice
 
-This version remediates slow queries building and rebuilding the index rows in wp_usermeta.  Props to @nandotess.
-
-It adds wp-cli:  `wp index-users status`, `wp index-users remove`, and `wp index-users rebuild`. Props to @faisalahammad.
+This corrects a performance problem with user queries with multi-role role_in clauses. Props to @za12bt.
 
 Thanks to my loyal users who have reported problems.

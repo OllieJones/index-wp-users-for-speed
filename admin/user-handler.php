@@ -8,6 +8,7 @@ use WP_Error;
 use WP_HTTP_Response;
 use WP_REST_Request;
 use WP_REST_Response;
+use WP_Roles;
 use WP_User_Query;
 
 require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
@@ -69,7 +70,7 @@ class UserHandler extends WordPressHooks {
    * Fires immediately before updating user metadata.
    *
    * We use this to watch for changes in the wp_capabilities metadata.
-   * (It's named wp_2_capabilities etc in multisite).
+   * (It's named wp_2_capabilities etc. in multisite).
    *
    * @param int $meta_id ID of the metadata entry to update.
    * @param int $user_id ID of the object metadata is for.
@@ -91,9 +92,9 @@ class UserHandler extends WordPressHooks {
 
   /** Returns the capabilities meta key, or false if it's not the capabilities key.
    *
-   * @param $meta_key
+   * @param string $meta_key
    *
-   * @return false|string
+   * @return boolean
    */
   private function isCapabilitiesKey( $meta_key ) {
     global $wpdb;
@@ -165,7 +166,7 @@ class UserHandler extends WordPressHooks {
    *
    * We use this to watch a new wp_capabilities metadata item, meaning
    * a new user is added, overall or to a particular multisite blog.
-   * It's named wp_2_capabilities etc in multisite.
+   * It's named wp_2_capabilities etc. in multisite.
    *
    * @param int $user_id ID of the object metadata is for.
    * @param string $meta_key Metadata key.
@@ -189,7 +190,7 @@ class UserHandler extends WordPressHooks {
    *
    * We use this to watch for deletion of the wp_capabilities metadata.
    * That means the user is being deleted.
-   * It's named wp_2_capabilities etc in multisite.
+   * It's named wp_2_capabilities etc. in multisite.
    * This fires when a user is removed from a blog in a multisite setup.
    *
    * @param string[] $meta_ids An array of metadata entry IDs to delete.
@@ -314,7 +315,7 @@ class UserHandler extends WordPressHooks {
       $cap     = is_array( $cap ) ? $cap : [ $cap ];
       $caps    = array_key_exists( 'capability__in', $parsed_args ) ? $parsed_args['capability__in'] : [];
       $argsCap = array_unique( $cap + $caps );
-      /* capabilites are edit_posts and/or edit_pages */
+      /* Capabilities are edit_posts and/or edit_pages */
       foreach ( [ 'edit_posts', 'edit_pages' ] as $capToCheck ) {
         if ( in_array( $capToCheck, $argsCap ) ) {
           $capsFound [] = $capToCheck;
@@ -336,7 +337,7 @@ class UserHandler extends WordPressHooks {
       /* Find the list of roles (administrator, contributor, etc.) with $capsFound capabilities */
       global $wp_roles;
       /* sometimes it isn't initialized in multisite. */
-      $wp_roles = $wp_roles ?: new \WP_Roles();
+      $wp_roles = $wp_roles ?: new WP_Roles();
       $wp_roles->for_site( get_current_blog_id() );
       $roleList = [];
       foreach ( $capsFound as $capFound ) {
@@ -379,17 +380,14 @@ class UserHandler extends WordPressHooks {
     return $query_args;
   }
 
-  /** Create a meta arg for looking for an exsisting role tag
+  /** Create a meta arg for looking for an existing role tag
    *
    * @param string $role
    * @param string $compare 'NOT EXISTS' or 'EXISTS' (the default).
    *
    * @return array meta query arg array
    */
-  private
-  function makeRoleQueryArgs(
-    $role, $compare = 'EXISTS'
-  ) {
+  private function makeRoleQueryArgs( $role, $compare = 'EXISTS' ) {
     global $wpdb;
     $roleMetaPrefix = $wpdb->prefix . INDEX_WP_USERS_FOR_SPEED_KEY_PREFIX . 'r:';
     $roleMetaKey    = $roleMetaPrefix . $role;
@@ -414,9 +412,7 @@ class UserHandler extends WordPressHooks {
    * @since 3.1.0
    *
    */
-  public function filter_meta_sql(
-    $sql, $queries, $type, $primary_table, $primary_id_column, $context
-  ) {
+  public function filter_meta_sql( $sql, $queries, $type, $primary_table, $primary_id_column, $context ) {
     global $wpdb;
     /* Don't process unexpected queries */
     if ( $type !== 'user' || 'WP_User_Query' !== get_class( $context ) || $wpdb->users !== $primary_table || 'ID' !== $primary_id_column ) {
