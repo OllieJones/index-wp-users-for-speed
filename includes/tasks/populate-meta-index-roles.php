@@ -145,7 +145,7 @@ class PopulateMetaIndexRoles extends Task {
     $query     = "DELETE a FROM $wpdb->usermeta a JOIN ($union) b ON a.umeta_id = b.umeta_id";
     $results[] = $query;
 
-    $union = implode( ' UNION ', $insertUnions );
+    $union = implode( ' UNION ALL ', $insertUnions );
     /** @noinspection SqlResolve */
     $query     = "INSERT INTO $wpdb->usermeta (user_id, meta_key) SELECT user_id, meta_key FROM ($union) a";
     $results[] = $query;

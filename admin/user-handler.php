@@ -309,6 +309,10 @@ class UserHandler extends WordPressHooks {
   private function filtered_query_args( $query_args, $parsed_args ) {
     $capsFound = [];
 
+    if ( array_key_exists( 'search', $parsed_args ) && is_string( $parsed_args['search'] ) && mb_strlen( $parsed_args['search'] ) > 0 ) {
+      return $query_args;
+    }
+
     if ( array_key_exists( 'capability', $parsed_args ) || array_key_exists( 'capability__in', $parsed_args ) ) {
       /* deal with the possibility that we have either the capability or the capability__in arg */
       $cap     = array_key_exists( 'capability', $parsed_args ) ? $parsed_args['capability'] : [];
@@ -563,10 +567,7 @@ class UserHandler extends WordPressHooks {
    * @since 4.0.0
    *
    */
-  public
-  function action__pre_get_users(
-    $query
-  ) {
+  public function action__pre_get_users( $query ) {
 
     /* the order of these is important: mungCountTotal won't work after mungRoleFilters */
     $this->mungCountTotal( $query );
