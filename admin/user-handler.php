@@ -309,8 +309,11 @@ class UserHandler extends WordPressHooks {
   private function filtered_query_args( $query_args, $parsed_args ) {
     $capsFound = [];
 
-    if ( array_key_exists( 'search', $parsed_args ) && is_string( $parsed_args['search'] ) && mb_strlen( $parsed_args['search'] ) > 0 ) {
-      return $query_args;
+    if ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' ) {
+      /* Clean up the obsolete 'who' REST argument if it's there, thanks Gutenberg editor. */
+      $capsFound ['edit_posts'] = true;
+      $capsFound ['edit_pages'] = true;
+      unset ( $query_args['who'] );
     }
 
     if ( array_key_exists( 'capability', $parsed_args ) || array_key_exists( 'capability__in', $parsed_args ) ) {
@@ -322,17 +325,18 @@ class UserHandler extends WordPressHooks {
       /* Capabilities are edit_posts and/or edit_pages */
       foreach ( [ 'edit_posts', 'edit_pages' ] as $capToCheck ) {
         if ( in_array( $capToCheck, $argsCap ) ) {
-          $capsFound [] = $capToCheck;
+          $capsFound [ $capToCheck ] = true;
         }
       }
-    } else if ( isset( $query_args['who'] ) && $query_args['who'] === 'authors' ) {
-      /* Clean up the obsolete 'who' REST argument if it's there, thanks Gutenberg editor. */
-      $capsFound = [ 'edit_posts', 'edit_pages' ];
-      unset ( $query_args['who'] );
-    } else {
+    }
+    $capsFound = array_keys( $capsFound );
+    if ( 0 === count( $capsFound ) ) {
       return $query_args;
     }
-    /* count up the users if we can */
+    unset ( $query_args ['capability__in'] );
+    unset ( $query_args['capability'] );
+
+    /* Count up the users if we can, and get roles */
     $userCounts = $this->indexer->getUserCounts( false );
     $userCounts = is_array( $userCounts ) ? $userCounts : [];
     $roleCounts = array_key_exists( 'avail_roles', $userCounts ) ? $userCounts['avail_roles'] : [];
@@ -355,12 +359,32 @@ class UserHandler extends WordPressHooks {
           }
         }
       }
-      $metaQuery = [];
-      foreach ( $roleList as $name => $_ ) {
-        $metaQuery[]     = $this->makeRoleQueryArgs( $name );
-        $userCount       = array_key_exists( $name, $roleCounts ) ? $roleCounts[ $name ] : 0;
-        $this->userCount += $userCount;
+      if ( array_key_exists( 'role', $query_args ) && is_string( $query_args['role'] ) && mb_strlen( $query_args['role'] ) > 0 ) {
+        $roleList[ $query_args['role'] ] = true;
+        unset ( $query_args['role'] );
       }
+      if ( array_key_exists( 'role__in', $query_args ) && is_array( $query_args['role__in'] ) ) {
+        foreach ( $query_args['role__in'] as $role ) {
+          $roleList[ $role ] = true;
+        }
+        unset ( $query_args['role__in'] );
+      }
+      $searching = array_key_exists( 'search', $parsed_args ) && is_string( $parsed_args['search'] ) && mb_strlen( $parsed_args['search'] ) > 0;
+
+
+      $metaQuery      = [];
+      $totalUserCount = 0;
+      foreach ( $roleList as $name => $_ ) {
+        $metaQuery[]    = $this->makeRoleQueryArgs( $name );
+        $userCount      = array_key_exists( $name, $roleCounts ) ? $roleCounts[ $name ] : 0;
+        $totalUserCount += $userCount;
+      }
+
+      if (! $searching ) {
+        $this->userCount = $totalUserCount;
+      }
+
+
       if ( count( $metaQuery ) === 0 ) {
         return $query_args;
       }
@@ -370,8 +394,6 @@ class UserHandler extends WordPressHooks {
       add_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10, 6 );
       //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
       $query_args ['meta_query'] = $metaQuery;
-      unset ( $query_args ['capability__in'] );
-      unset ( $query_args['capability'] );
       $this->savedOrderby     = $query_args ['orderby'];
       $query_args ['orderby'] = 'ID';
     } else {
@@ -450,7 +472,7 @@ class UserHandler extends WordPressHooks {
         $roleQueries[] = $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = %s", $key );
       }
 
-      $join = ' JOIN ( '. implode( PHP_EOL . ' UNION ALL ', $roleQueries ) . ') AS index_wp_users_roles ON ' . $primary_table . '.'. $primary_id_column . ' = index_wp_users_roles.user_id' . PHP_EOL;
+      $join = ' JOIN ( ' . implode( PHP_EOL . ' UNION ALL ', $roleQueries ) . ') AS index_wp_users_roles ON ' . $primary_table . '.' . $primary_id_column . ' = index_wp_users_roles.user_id' . PHP_EOL;
       /* Only do this filtering once per invocation of user query with metadata */
       remove_filter( 'get_meta_sql', [ $this, 'filter_meta_sql' ], 10 );
 
@@ -649,7 +671,7 @@ class UserHandler extends WordPressHooks {
       $count = $counts['total_users'];
     } else if ( is_array( $counts['avail_roles'] ) ) {
       $availRoles = $counts['avail_roles'];
-      if ( isset ( $roleSet[0] )) {
+      if ( isset ( $roleSet[0] ) ) {
         $role = $roleSet[0];
         if ( isset( $availRoles[ $role ] ) ) {
           $count = $availRoles[ $role ];

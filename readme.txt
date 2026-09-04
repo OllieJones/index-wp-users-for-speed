@@ -4,7 +4,7 @@ Tags: users, database, index, performance, largesite
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 5.6
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,6 +146,10 @@ If you configure your WordPress installation using composer, you may install thi
 
 == Changelog ==
 
+= 1.4.1 =
+
+Handle pagination correctly for REST user search queries, remove deprecated 'who' parameter.
+
 = 1.4.0 =
 
 Rework query for unions of multiple user roles to avoid a combinatorial explosion.
@@ -176,6 +180,6 @@ Fix incompatibility with https://wordpress.org/plugins/co-authors-plus/ .
 
 == Upgrade Notice ==
 
-This corrects a performance problem with user queries with multi-role role_in clauses. Props to @za12bt.
+This corrects an author search problem in Gutenberg. Props to @hrood.
 
 Thanks to my loyal users who have reported problems.
