@@ -50,23 +50,59 @@ class ProgressBar {
  public function percent_complete_notice() {
   if ( $this->percentComplete < 1.0 ) {
    wp_enqueue_script( $this->plugin_name . '_percent', plugin_dir_url( __FILE__ ) . 'js/percent.js', [], $this->version, array('in_footer' => true ) );
-   $suffix = esc_html__( '% complete.', 'index-wp-users-for-speed' );
+   $suffix = __( '% complete.', 'index-wp-users-for-speed' );
    if ( $this->available ) {
-    $prefix   = esc_html__( 'Background user index refresh in progress:', 'index-wp-users-for-speed' );
-    $sentence = esc_html__( 'You may use your site normally during index refreshing.', 'index-wp-users-for-speed' );
+    $prefix   = __( 'Background user index refresh in progress:', 'index-wp-users-for-speed' );
+    $sentence = __( 'You may use your site normally during index refreshing.', 'index-wp-users-for-speed' );
    } else {
-    $prefix   = esc_html__( 'Background user index building in progress:', 'index-wp-users-for-speed' );
-    $suffix   = esc_html__( '% complete.', 'index-wp-users-for-speed' );
-    $sentence = esc_html__( 'You may use your site normally during index building.', 'index-wp-users-for-speed' );
+    $prefix   = __( 'Background user index building in progress:', 'index-wp-users-for-speed' );
+    $sentence = __( 'You may use your site normally during index building.', 'index-wp-users-for-speed' );
    }
    $percent = esc_html( number_format( $this->percentComplete * 100.0, 0 ) );
-   $percent = "$prefix <span class=\"percent\">$percent</span>$suffix $sentence";
-   ?>
-   <div class="notice notice-info index-wp-users-for-speed is-dismissible">
-    <p><?php echo wp_kses( $percent, 'data' ) ?></p>
-   </div>
-   <?php
+   $message = "$prefix <span class=\"percent\">$percent</span>$suffix $sentence";
+   self::render_notice(
+       $message,
+       array(
+           'type'               => 'info',
+           'dismissible'        => true,
+           'additional_classes' => array( 'index-wp-users-for-speed' ),
+       ) );
   }
+ }
+
+ /** Render an admin notice, using the WordPress 6.4 admin notice functions when available.
+  * Falls back to equivalent markup on older WordPress versions.
+  *
+  * @param string $message Notice message. May contain safe HTML.
+  * @param array  $args    Notice arguments: type, dismissible, additional_classes.
+  *
+  * @return void
+  */
+ public static function render_notice( $message, $args = array() ) {
+  if ( function_exists( 'wp_admin_notice' ) ) {
+   wp_admin_notice( $message, $args );
+   return;
+  }
+  $args    = wp_parse_args( $args, array(
+      'type'               => '',
+      'dismissible'        => false,
+      'additional_classes' => array(),
+  ) );
+  $classes = 'notice';
+  if ( '' !== $args['type'] ) {
+   $classes .= ' notice-' . $args['type'];
+  }
+  if ( $args['dismissible'] ) {
+   $classes .= ' is-dismissible';
+  }
+  if ( ! empty( $args['additional_classes'] ) ) {
+   $classes .= ' ' . implode( ' ', $args['additional_classes'] );
+  }
+  ?>
+  <div class="<?php echo esc_attr( $classes ); ?>">
+   <p><?php echo wp_kses_post( $message ); ?></p>
+  </div>
+  <?php
  }
 
  /** Heartbeat filter to update percent complete in progress bar.

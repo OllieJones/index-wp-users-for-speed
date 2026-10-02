@@ -1,3 +1,7 @@
+= 1.5.0 =
+
+Use the WordPress 6.4 admin notice functions to render the background indexing progress notice, with a fallback for older WordPress versions.
+
 = 1.1.10 =
 
 Remove redundant l11n loading.

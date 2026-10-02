@@ -2,6 +2,4 @@
 if ( ! defined( 'ABSPATH' ) ) die;
 ?>
 
-<div class="notice is-dismissible">
-    <p><?php echo esc_html( $this->getMessage() ); ?></p>
-</div>
+<?php \IndexWpUsersForSpeed\ProgressBar::render_notice( $this->getMessage(), array( 'dismissible' => true ) ); ?>

@@ -5,7 +5,7 @@
 **Requires at least:** 5.3 \
 **Tested up to:** 7.1 \
 **Requires PHP:** 5.6 \
-**Stable tag:** 1.4.1 \
+**Stable tag:** 1.5.0 \
 Network: true \
 **License:** GPL v2 or later \
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html \
@@ -156,6 +156,10 @@ If you configure your WordPress installation using composer, you may install thi
 
 
 ## Changelog
+
+### 1.5.0
+
+Use the WordPress 6.4 admin notice functions to render the background indexing progress notice, with a fallback for older WordPress versions.
 
 ### 1.4.1
 
