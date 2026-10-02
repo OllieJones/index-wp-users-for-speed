@@ -73,6 +73,9 @@ class Indexer {
     if ( $force || $task->needsRunning( $userCounts ) ) {
       $task->init();
       $task->maybeSchedule( $userCounts );
+    } else {
+      /* an available task can still be stalled by a killed refresh */
+      $task->maybeResumeStalled( $userCounts );
     }
 
     $task    = new GetEditors();
@@ -80,6 +83,8 @@ class Indexer {
     if ( $force || $task->needsRunning( $editors ) ) {
       $task->init();
       $task->maybeSchedule( $editors );
+    } else {
+      $task->maybeResumeStalled( $editors );
     }
 
     $task      = new PopulateMetaIndexRoles();
@@ -87,6 +92,8 @@ class Indexer {
     if ( $force || $task->needsRunning( $populated ) ) {
       $task->init();
       $task->maybeSchedule();
+    } else {
+      $task->maybeResumeStalled( $populated );
     }
   }
 

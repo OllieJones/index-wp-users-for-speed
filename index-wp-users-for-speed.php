@@ -7,8 +7,8 @@
  * @license  GPL-2.0-or-later
  * @wordpress-plugin0
  * Plugin Name: Index WP Users For Speed
- * Version:     1.4.1
- * Stable tag:  1.4.1
+ * Version:     1.5.0
+ * Stable tag:  1.5.0
  * Plugin URI:  https://plumislandmedia.org/index-wp-users-for-speed/
  * Description: Speed up your WordPress site with thousands of users.
  * Requires at least: 5.3
@@ -34,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 const INDEX_WP_USERS_FOR_SPEED_NAME = 'index-wp-users-for-speed';
 define( 'INDEX_WP_USERS_FOR_SPEED_FILENAME', plugin_basename( __FILE__ ) );
-const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.4.1';
+const INDEX_WP_USERS_FOR_SPEED_VERSION        = '1.5.0';
 const INDEX_WP_USERS_FOR_SPEED_PREFIX         = 'index-wp-users-for-speed-';
 const INDEX_WP_USERS_FOR_SPEED_PREFIX_TASK    = 'index-wp-users-for-speed-task';
 const INDEX_WP_USERS_FOR_SPEED_HOOKNAME       = 'index_wp_users_for_speed_task';
@@ -53,6 +53,12 @@ const INDEX_WP_USERS_FOR_SPEED_BATCHSIZE_DEFAULT = 5000;
  * This must be smaller than INDEX_WP_USERS_FOR_SPEED_BATCHSIZE.
  */
 const INDEX_WP_USERS_FOR_SPEED_CHUNKSIZE_DEFAULT = 50;
+/**
+ * How long, in seconds, a background task may sit idle before we consider
+ * it stalled and resume it from where it stopped.
+ * Set this in wp-config.php to something higher than the runtime of your longest batch.
+ */
+const INDEX_WP_USERS_FOR_SPEED_STALLTIMEOUT_DEFAULT = 3600;
 
 /**
  * The code that runs during plugin activation.

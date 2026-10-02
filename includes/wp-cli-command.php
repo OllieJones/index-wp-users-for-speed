@@ -13,7 +13,7 @@ require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
 /**
  * WP-CLI command for managing user speed indexes.
  *
- * Provides commands to rebuild, remove, and check the status of
+ * Provides commands to rebuild, remove, resume, and check the status of
  * the plugin's user metadata indexes.
  *
  * ## EXAMPLES
@@ -36,6 +36,10 @@ require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/indexer.php';
  *     $ wp index-users remove
  *     3/3 [============================] 100%
  *     Success: All user indexes removed.
+ *
+ *     # Resume stalled index tasks.
+ *     $ wp index-users resume
+ *     Success: No stalled index tasks found.
  */
 class IndexWpUsers_CLI_Command extends \WP_CLI_Command {
 
@@ -111,6 +115,9 @@ class IndexWpUsers_CLI_Command extends \WP_CLI_Command {
       $progress->tick();
     }
     $progress->finish();
+
+    // Mark the task available; doChunk alone never does that.
+    $task->complete();
 
     \WP_CLI::success( __( 'Role metadata indexes rebuilt successfully.', 'index-wp-users-for-speed' ) );
   }
@@ -236,6 +243,117 @@ class IndexWpUsers_CLI_Command extends \WP_CLI_Command {
     } else {
       \WP_CLI::warning( __( 'User indexes are not available.', 'index-wp-users-for-speed' ) );
     }
+  }
+
+  /**
+   * Resume stalled index tasks.
+   *
+   * Detects tasks whose status says active but whose work has stopped,
+   * for example when the host killed a long-running cron process.
+   * Reschedules them via WP-Cron, or finishes them right away with --run.
+   *
+   * ## OPTIONS
+   *
+   * [--run]
+   * : Finish the remaining work right now, instead of rescheduling
+   * the tasks via WP-Cron.
+   *
+   * ## EXAMPLES
+   *
+   *     # Reschedule any stalled tasks.
+   *     $ wp index-users resume
+   *
+   *     # Finish the remaining work without waiting for WP-Cron.
+   *     $ wp index-users resume --run
+   *
+   * @param array $args       Positional arguments.
+   * @param array $assoc_args Associative arguments (flags).
+   * @return void
+   */
+  public function resume( $args, $assoc_args) {
+    $run = \WP_CLI\Utils\get_flag_value( $assoc_args, 'run' );
+
+    $tasks   = [
+      new CountUsers(),
+      new GetEditors(),
+      new PopulateMetaIndexRoles(),
+    ];
+    $resumed = 0;
+    foreach ( $tasks as $task ) {
+      $status = $task->getStatus();
+      if ( ! $task->isStalled( $status ) ) {
+        continue;
+      }
+      $resumed ++;
+      if ( $run ) {
+        $this->runStalledTask( $task );
+        \WP_CLI::success(
+          sprintf(
+            /* translators: %s: task name */
+            __( 'Resumed %s and finished the remaining work.', 'index-wp-users-for-speed' ),
+            $task->taskName
+          )
+        );
+      } else if ( $task->hasPendingEvent() ) {
+        \WP_CLI::log(
+          sprintf(
+            /* translators: %s: task name */
+            __( '%s is already scheduled to continue index building.', 'index-wp-users-for-speed' ),
+            $task->taskName
+          )
+        );
+      } else {
+        $task->resume();
+        \WP_CLI::log(
+          sprintf(
+            /* translators: %s: task name */
+            __( 'Rescheduled %s to continue index building.', 'index-wp-users-for-speed' ),
+            $task->taskName
+          )
+        );
+      }
+    }
+    if ( 0 === $resumed ) {
+      \WP_CLI::success( __( 'No stalled index tasks found.', 'index-wp-users-for-speed' ) );
+    }
+  }
+
+  /** Run a stalled task's remaining chunks inline, then complete it.
+   *
+   * @param Task $task The stalled task.
+   *
+   * @return void
+   */
+  private function runStalledTask( Task $task ) {
+    $persisted = Task::restorePersisted( Task::toSnake( $task->taskName ) );
+    $worker    = $persisted instanceof Task ? $persisted : $task;
+    $worker->init();
+
+    if ( $persisted instanceof Task ) {
+      /* the work happens here, so take it away from any pending cron event */
+      wp_clear_scheduled_hook( $worker->hookName, [ Task::toSnake( $worker->taskName ), $persisted->useCount ] );
+    }
+
+    if ( $worker instanceof PopulateMetaIndexRoles ) {
+      $remaining = max( 0, $worker->maxUserId - max( 0, $worker->currentStart ) );
+      $estimated = (int) ceil( $remaining / $worker->batchSize );
+      $progress  = \WP_CLI\Utils\make_progress_bar(
+      /* translators: 1: number of batches still to process */
+        sprintf( __( 'Processing batches (%1$d remaining)', 'index-wp-users-for-speed' ), $estimated ),
+        $estimated
+      );
+      $done = false;
+      while ( ! $done ) {
+        $done = $worker->doChunk();
+        $progress->tick();
+      }
+      $progress->finish();
+    } else {
+      /** @noinspection PhpStatementHasEmptyBodyInspection */
+      while ( ! $worker->doChunk() ) {
+      }
+    }
+    $worker->complete();
   }
 
 }

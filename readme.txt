@@ -4,7 +4,7 @@ Tags: users, database, index, performance, largesite
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 5.6
-Stable tag: 1.4.1
+Stable tag: 1.5.0
 Network: true
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,8 @@ You can use WP-CLI commands built in to this plugin.
 
 * `wp index-users rebuild` rebuilds the user index information. Notice that activating the plugin always begins building the user index information.
 
+* `wp index-users resume` resumes background index tasks that have stalled. Use `wp index-users resume --run` to finish the remaining work right away, without waiting for WP-Cron.
+
 <h4>How can I learn more about making my WordPress site more efficient?</h4>
 
 This is a companion plugin to [Index WP MySQL for Speed](https://wordpress.org/plugins/index-wp-mysql-for-speed/). If that plugin is in use, this plugin will perform better. But they are in no way dependent on one another; you may use either, both, or of course neither.
@@ -67,6 +69,14 @@ I offer several plugins to help with your site's database efficiency. You can [r
 = Can I use this if I have disabled WP_Cron and use an operating system cronjob instead?
 
 **Yes**
+
+= The background index building notice seems stuck. What can I do? =
+
+If the process building the index gets killed, for example by your host's time limit, the plugin detects the stalled task and resumes it from where it stopped, usually within an hour. You do not need to deactivate and reactivate the plugin.
+
+To resume the stalled work right away, use `wp index-users resume`, or `wp index-users resume --run` to finish it without waiting for WP-Cron.
+
+If one batch of users takes your server longer than an hour, set the INDEX_WP_USERS_FOR_SPEED_STALLTIMEOUT variable in wp-config.php to a higher number of seconds.
 
 = What if I assign multiple roles to some users? =
 
@@ -145,6 +155,12 @@ If you configure your WordPress installation using composer, you may install thi
 3. The bulk editor for All Posts showing the selection box with autocompletion of author name.
 
 == Changelog ==
+
+= 1.5.0 =
+
+Detect stalled background index tasks and resume them from where they stopped.
+
+Add the `wp index-users resume` command, and mark the index status available after `wp index-users rebuild`.
 
 = 1.4.1 =
 

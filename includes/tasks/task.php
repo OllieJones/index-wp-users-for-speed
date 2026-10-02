@@ -73,10 +73,15 @@ abstract class Task {
     if ( ! $done ) {
       $this->schedule();
     } else {
-      $this->fractionComplete = 1;
-      $this->setStatus( null, true, false, 1 );
-      $this->clearPersisted();
+      $this->complete();
     }
+  }
+
+  /** Complete a task: mark its status available and forget its persisted state. */
+  public function complete() {
+    $this->fractionComplete = 1;
+    $this->setStatus( null, true, false, 1 );
+    $this->clearPersisted();
   }
 
   abstract public function doChunk();
@@ -223,7 +228,85 @@ abstract class Task {
     }
     if ( ! $this->isActive( $status ) ) {
       $this->schedule();
+    } else {
+      /* A task that is active but stalled gets resumed where it stopped. */
+      $this->maybeResumeStalled( $status );
     }
+  }
+
+  /** Resume a task that is active but stalled.
+   *
+   * Tasks that are available, like those the daily Reindex task kicks
+   * off, never reach maybeSchedule. This catches the stalled ones.
+   *
+   * @param array $status optional status.
+   *
+   * @return void
+   */
+  public function maybeResumeStalled( $status = null ) {
+    if ( $this->isStalled( $status ) && ! $this->hasPendingEvent() ) {
+      $this->resume();
+    }
+  }
+
+  /** Is a task stalled.
+   *
+   * A task counts as stalled when its status says active, but no chunk
+   * has started recently. This happens when the process running a chunk
+   * is killed, for example by the host's max_execution_time.
+   *
+   * @param array $status optional status.
+   *
+   * @return bool true means stalled.
+   */
+  public function isStalled(
+    $status = null
+  ) {
+    if ( ! $this->isActive( $status ) ) {
+      return false;
+    }
+    $persisted = self::restorePersisted( self::toSnake( $this->taskName ) );
+    if ( ! $persisted instanceof self ) {
+      /* status says active, but the task object is gone */
+      return true;
+    }
+
+    return ( time() - intval( $persisted->lastTouch ) ) > $this->stallTimeout();
+  }
+
+  /** Is a cron event pending for this task.
+   * @return bool true means one is scheduled.
+   */
+  public function hasPendingEvent() {
+    $persisted = self::restorePersisted( self::toSnake( $this->taskName ) );
+    if ( ! $persisted instanceof self ) {
+      return false;
+    }
+
+    return (bool) wp_next_scheduled( $this->hookName, [ self::toSnake( $this->taskName ), $persisted->useCount ] );
+  }
+
+  /** Resume a stalled task, picking up where it stopped.
+   * @return void
+   */
+  public function resume() {
+    $persisted = self::restorePersisted( self::toSnake( $this->taskName ) );
+    if ( $persisted instanceof self ) {
+      $persisted->log( 'resumed stalled task' );
+      $persisted->schedule();
+    } else {
+      /* no task object to resume: start over */
+      $this->clearStatus();
+      $this->init();
+      $this->schedule();
+    }
+  }
+
+  /** Seconds a task may sit idle before we consider it stalled. */
+  protected function stallTimeout() {
+    return max( 1, defined( 'INDEX_WP_USERS_FOR_SPEED_STALLTIMEOUT' )
+      ? intval( INDEX_WP_USERS_FOR_SPEED_STALLTIMEOUT )
+      : INDEX_WP_USERS_FOR_SPEED_STALLTIMEOUT_DEFAULT );
   }
 
   public function needsRunning(
